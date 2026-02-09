@@ -250,6 +250,17 @@ export default function LocationPicker() {
         };
     }, [autocomplete]);
 
+    useEffect(() => {
+        // Fresh user: no saved address
+        if (saveAddress.length === 0) {
+            setShowMapForNew(true);
+            setShowMapOverlay(true);
+            setSelectedAddressId(null);
+            setIsNextDisabled(true);
+        }
+    }, [saveAddress]);
+
+
     if (!isLoaded) return <div>Loading map…</div>;
     return (
         <div>
@@ -489,8 +500,8 @@ export default function LocationPicker() {
                                                             setIsLocationLoading(false);     // ✅ loading stop
                                                         }
                                                     }}
-                                                    className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2
-    ${isLocationLoading
+                                                    className={`flex-1 py-1 rounded font-medium flex items-center justify-center gap-0.5
+                                                            ${isLocationLoading
                                                             ? "bg-gray-300 cursor-not-allowed"
                                                             : "bg-[#01788E] text-white"
                                                         }`}

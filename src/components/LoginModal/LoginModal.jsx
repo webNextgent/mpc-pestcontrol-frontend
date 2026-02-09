@@ -476,19 +476,19 @@ const LoginModal = ({ open, onClose }) => {
                 {!otpSuccessModal ? (
                     <>
                         {/* Header */}
-                        <h2 className="text-[18px] md:text-[26px] font-bold mb-2 text-[#1a1a1a]">Log in or sign up</h2>
+                        <h2 className="text-[17px] md:text-[23px] font-bold md:mb-1 text-[#1a1a1a]">Log in or sign up</h2>
 
-                        <p className="text-[15px] text-[#333333] mb-6">
+                        <p className="text-[15px] text-[#333333] mb-3 md:mb-4">
                             Please enter your mobile number to proceed.
                         </p>
 
                         {/* Input Group */}
                         <div className="mb-4">
-                            <label className="block text-[15px] font-semibold mb-2 text-[#1a1a1a]">
+                            <label className="block text-[15px] font-semibold mb-1 md:mb-2 text-[#1a1a1a]">
                                 Mobile Number
                             </label>
 
-                            <div className={`flex items-center border ${validationError ? 'border-red-500' : 'border-[#008b9b]'} rounded h-14 px-4 focus-within:ring-1 ${validationError ? 'focus-within:ring-red-500' : 'focus-within:ring-[#008b9b]'} transition-all`}>
+                            <div className={`flex items-center border ${validationError ? 'border-red-500' : 'border-[#008b9b]'} rounded h-12 px-4 focus-within:ring-1 ${validationError ? 'focus-within:ring-red-500' : 'focus-within:ring-[#008b9b]'} transition-all`}>
                                 {/* Flag and Country Code */}
                                 <div
                                     onClick={() => setOpenModal(true)}
@@ -501,7 +501,7 @@ const LoginModal = ({ open, onClose }) => {
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <span className="text-[19px] text-[#1a1a1a] font-medium">{country.code}</span>
+                                    <span className="text-[16px] md:text-[18px] text-[#1a1a1a] font-medium">{country.code}</span>
                                 </div>
 
                                 {/* Input Field */}
@@ -514,7 +514,7 @@ const LoginModal = ({ open, onClose }) => {
                                         setValidationError("");
                                     }}
                                     placeholder="Phone Number"
-                                    className="flex-1 text-[19px] outline-none placeholder:text-[#9ca3af] bg-transparent"
+                                    className="flex-1 text-[16px] md:text-[18px] outline-none placeholder:text-[#9ca3af] bg-transparent"
                                     inputMode="numeric"
                                 />
 
@@ -540,7 +540,7 @@ const LoginModal = ({ open, onClose }) => {
                         <button
                             onClick={handleContinue}
                             disabled={loading || !phoneNumber}
-                            className={`w-full ${loading || !phoneNumber ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f16522] hover:bg-[#d9561a]'} text-white text-[16px] font-bold py-[13px] rounded transition-colors`}>
+                            className={`w-full ${loading || !phoneNumber ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f16522] hover:bg-[#d9561a]'} text-white text-[14px] md:text-[16px] font-bold py-[12px] md:py-[13px] rounded transition-colors`}>
                             {loading ? (
                                 <span className="flex items-center justify-center">
                                     <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -647,7 +647,7 @@ const LoginModal = ({ open, onClose }) => {
                             <input
                                 type="text"
                                 placeholder="Search"
-                                className="text-[19px] text-[#2d2d2d] outline-none w-full bg-transparent placeholder:text-gray-400 font-light"
+                                className="text-[16px] md:text-[18px] text-[#2d2d2d] outline-none w-full bg-transparent placeholder:text-gray-400 font-normal"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 autoFocus
@@ -680,10 +680,10 @@ const LoginModal = ({ open, onClose }) => {
                                     </div>
 
                                     <div className="flex items-center gap-2 overflow-hidden">
-                                        <span className="text-[18px] text-[#1a1a1a] font-normal truncate">
+                                        <span className="text-[16px] md:text-[18px] text-[#1a1a1a] font-normal truncate">
                                             {countryItem.name}
                                         </span>
-                                        <span className="text-[18px] text-gray-400 font-light">
+                                        <span className="text-[16px] md:text-[18px] text-gray-400 font-light">
                                             {countryItem.code}
                                         </span>
                                     </div>

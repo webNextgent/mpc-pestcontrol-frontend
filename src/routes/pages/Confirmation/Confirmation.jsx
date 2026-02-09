@@ -325,9 +325,8 @@ export default function Confirmation() {
 
                 {/* Payment Method */}
                 <h2 className="text-lg font-semibold mt-6 mb-3">Pay with</h2>
-
-                <div className="space-y-3">
-                    {/* Card (Online Payment) */}
+                {/* ond payment method selection  */}
+                {/* <div className="space-y-3">
                     <div
                         onClick={() => {
                             setOpenModal(true);
@@ -355,7 +354,6 @@ export default function Confirmation() {
                         </div>
                     </div>
 
-                    {/* Cash */}
                     <div
                         onClick={() => setPaymentMethod("Cash")}
                         className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer
@@ -376,6 +374,84 @@ export default function Confirmation() {
                                 onChange={() => setPaymentMethod("Cash")}
                                 className="h-4 w-4 cursor-pointer"
                             />
+                        </div>
+                    </div>
+                </div> */}
+
+                <div className="space-y-3">
+                    {/* Card (Online Payment) */}
+                    <div
+                        onClick={() => {
+                            setOpenModal(true);
+                            setPaymentMethod("Card");
+                        }}
+                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+        ${paymentMethod === "Card" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+                    >
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                                {/* Custom Radio Button */}
+                                <div className="relative flex items-center justify-center">
+                                    <input
+                                        type="radio"
+                                        name="payment"
+                                        checked={paymentMethod === "Card"}
+                                        readOnly
+                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                    />
+                                    <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                </div>
+
+                                <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                    Pay by card with Ziina
+                                </span>
+                            </div>
+
+                            {/* Card Logos */}
+                            <div className="flex items-center gap-2">
+                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3" />
+                                </div>
+                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+                                </div>
+                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
+                                    <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cash On Delivery */}
+                    <div
+                        onClick={() => setPaymentMethod("Cash")}
+                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+        ${paymentMethod === "Cash" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+                    >
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                                {/* Custom Radio Button */}
+                                <div className="relative flex items-center justify-center">
+                                    <input
+                                        type="radio"
+                                        name="payment"
+                                        checked={paymentMethod === "Cash"}
+                                        readOnly
+                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                    />
+                                    <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                </div>
+
+                                <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                    Cash On Delivery
+                                </span>
+                            </div>
+
+                            {/* Fee Badge */}
+                            <div className="bg-[#FFEDD5] text-[#C6724D] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#FDBA74]">
+                                +5% FEE
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -499,7 +575,7 @@ export default function Confirmation() {
             )}
         </div>
     );
-}
+};
 
 // import { useRef, useState } from "react";
 // import NextBtn from "../../../components/NextBtn/NextBtn";
