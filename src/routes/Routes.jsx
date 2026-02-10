@@ -68,7 +68,7 @@ export const router = createBrowserRouter([
             { path: 'delete-account', element: <ProtectedRouteUser> <DeleteAccount /></ProtectedRouteUser> },
             { path: 'invite-friend', element: <ProtectedRouteUser><InviteFriend /></ProtectedRouteUser> },
             { path: 'payment-success', element: <ProtectedRouteUser><PaymentSuccess /></ProtectedRouteUser> },
-            { path: 'payment-cancelled', element: <ProtectedRouteUser><PaymentCancelled /></ProtectedRouteUser> },
+            { path: 'payment-cancel', element: <ProtectedRouteUser><PaymentCancelled /></ProtectedRouteUser> },
 
             // admin routes 
             { path: 'add-services', element: <ProtectedRouteAdmin> <AddServices /></ProtectedRouteAdmin> },
