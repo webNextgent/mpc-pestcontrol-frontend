@@ -27,6 +27,7 @@ import ProtectedRouteUser from "./ProtectedRouteUser";
 import UserManagement from "../AdminDashboard/UserManagement";
 import ProtectedRouteAdmin from "./ProtectedRouteAdmin";
 import ScrollToTop from "../components/ScrollToTop/ScrollToTop";
+import PaymentSuccess from "../components/PaymentSuccess/PaymentSuccess";
 
 export const router = createBrowserRouter([
     {
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
             { path: 'wallet', element: <ProtectedRouteUser><MyWallet /> </ProtectedRouteUser> },
             { path: 'delete-account', element: <ProtectedRouteUser> <DeleteAccount /></ProtectedRouteUser> },
             { path: 'invite-friend', element: <ProtectedRouteUser><InviteFriend /></ProtectedRouteUser> },
+            { path: 'payment-success', element: <ProtectedRouteUser><PaymentSuccess /></ProtectedRouteUser> },
 
             // admin routes 
             { path: 'add-services', element: <ProtectedRouteAdmin> <AddServices /></ProtectedRouteAdmin> },
