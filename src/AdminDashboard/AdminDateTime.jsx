@@ -122,7 +122,7 @@ const AdminDateTime = () => {
             timeSlots: formattedSlots,
         };
 
-        console.log("Sending payload (12-hour format):", payload);
+        // console.log("Sending payload (12-hour format):", payload);
 
         setIsLoading(true);
         try {
@@ -180,7 +180,7 @@ const AdminDateTime = () => {
                             toast.error(res?.message || "Failed to delete");
                         }
                     } catch (err) {
-                        console.log(err);
+                        // console.log(err);
                         toast.error('Something was wrong');
                     }
                 }
@@ -219,7 +219,7 @@ const AdminDateTime = () => {
                 year: 'numeric'
             });
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             return dateString;
         }
     };
@@ -247,17 +247,17 @@ const AdminDateTime = () => {
 
     // Function to group time slots by date for table display
     const getGroupedData = () => {
-        console.log("Grouping data from appliedRecords:", appliedRecords);
+        // console.log("Grouping data from appliedRecords:", appliedRecords);
 
         const grouped = {};
 
         appliedRecords.forEach((record, recordIndex) => {
-            console.log(`Processing record ${recordIndex}:`, record);
+            // console.log(`Processing record ${recordIndex}:`, record);
 
             // Handle different data structures
             if (record.timeSlots && Array.isArray(record.timeSlots)) {
                 record.timeSlots.forEach((slot, slotIndex) => {
-                    console.log(`Slot ${slotIndex}:`, slot);
+                    // console.log(`Slot ${slotIndex}:`, slot);
 
                     // Check if slot has date property
                     const dateKey = slot.date || record.startDate || record.date;
@@ -302,7 +302,7 @@ const AdminDateTime = () => {
             } else if (record.time && Array.isArray(record.time)) {
                 // Alternative structure: record.time array
                 record.time.forEach((slot, slotIndex) => {
-                    console.log(`Time slot ${slotIndex}:`, slot);
+                    // console.log(`Time slot ${slotIndex}:`, slot);
 
                     const dateKey = record.date || record.startDate;
 
@@ -329,21 +329,21 @@ const AdminDateTime = () => {
             }
         });
 
-        console.log("Grouped result:", grouped);
+        // console.log("Grouped result:", grouped);
 
         // Convert to array and sort by date
         return Object.values(grouped).sort((a, b) => {
             try {
                 return new Date(a.date) - new Date(b.date);
             } catch (error) {
-                console.log(error);
+                // console.log(error);
                 return 0;
             }
         });
     };
 
     const groupedDates = getGroupedData();
-    console.log("Final grouped dates for display:", groupedDates);
+    // console.log("Final grouped dates for display:", groupedDates);
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -860,7 +860,7 @@ const AdminDateTime = () => {
                             Data is available from API but couldn't be displayed properly. Check the console for details.
                         </p>
                         <button
-                            onClick={() => console.log("Applied Records:", appliedRecords)}
+                            // onClick={() => console.log("Applied Records:", appliedRecords)}
                             className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors text-sm font-medium"
                         >
                             Check Console for Data

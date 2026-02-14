@@ -181,7 +181,7 @@ const AddPropertyItem = () => {
     }
 
     return (
-        <div className="md:p-6 border border-[#E5E7EB]">
+        <div className="p-2 md:p-6 border border-[#E5E7EB]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3 mb-7">
                 <h2 className="flex items-center gap-2.5 text-xl font-semibold text-[#5D4F52]">

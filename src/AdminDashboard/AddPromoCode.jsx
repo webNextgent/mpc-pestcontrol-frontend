@@ -64,7 +64,7 @@ const AddPromoCode = () => {
         try {
             const resPromo = await axiosSecure.post(`/promo-code/create`, promoData);
 
-            console.log(resPromo);
+            // console.log(resPromo);
 
             if (resPromo?.data?.success) {
                 setSuccess("Promo code added successfully!");
@@ -105,7 +105,7 @@ const AddPromoCode = () => {
                             setTimeout(() => setSuccess(''), 3000);
                         }
                     } catch (err) {
-                        console.log(err);
+                        // console.log(err);
                         toast.error('Something was wrong');
                     }
                 }

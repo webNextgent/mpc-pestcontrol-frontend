@@ -674,7 +674,7 @@ export default function Confirmation() {
 //             latitude: parsedLatitude,
 //             userId: user?.id
 //         };
-//         console.log(payload);
+//         // console.log(payload);
 
 //         try {
 //             const res = await axiosSecure.post("/booking/create", payload);

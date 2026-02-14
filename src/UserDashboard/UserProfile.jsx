@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 const UserProfile = () => {
   const { user, logOut } = useAuth();
   const axiosSecure = useAxiosSecure();
-console.log(user);
+// console.log(user);
   // Initialize form state with user data
   const [formData, setFormData] = useState({
     firstName: "",

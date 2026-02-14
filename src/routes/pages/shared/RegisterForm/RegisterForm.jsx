@@ -62,17 +62,17 @@
 
 //     const handleSubmit = async (e) => {
 //         e.preventDefault();
-//         console.log('Form submission started...');
+//         // console.log('Form submission started...');
 
 //         if (!validateForm()) {
-//             console.log('Form validation failed');
+//             // console.log('Form validation failed');
 //             return;
 //         }
 
 //         setIsLoading(true);
 //         setErrors({});
 //         try {
-//             console.log('Creating user with email:', formData.email);
+//             // console.log('Creating user with email:', formData.email);
 
 //             // 1️⃣ Create user with email & password
 //             await createUser(formData.email, formData.password);
@@ -93,7 +93,7 @@
 //                 }
 //             );
 //             const data = await res.json();
-//             console.log("Server response:", data?.Data);
+//             // console.log("Server response:", data?.Data);
 
 //             // login success হলে
 //             localStorage.setItem("accessToken", data?.Data?.token);
@@ -148,7 +148,7 @@
 
 //         try {
 //             const result = await googleSignInUser();
-//             console.log('Google sign-in successful:', result.user);
+//             // console.log('Google sign-in successful:', result.user);
 
 //             // Success - you can redirect here
 //             navigate('/');
@@ -175,7 +175,7 @@
 
 //         try {
 //             const result = await githubSignInUser();
-//             console.log('GitHub sign-in successful:', result.user);
+//             // console.log('GitHub sign-in successful:', result.user);
 
 //             // Success - redirect
 //             navigate('/');

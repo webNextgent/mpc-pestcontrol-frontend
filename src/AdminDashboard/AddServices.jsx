@@ -51,7 +51,7 @@ const AddServices = () => {
             }
         } catch (error) {
             toast.error(`Something wrong: ${error?.message || error}`);
-            // console.log(error);
+            // // console.log(error);
 
         } finally {
             setLoading(false);

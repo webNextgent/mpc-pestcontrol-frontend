@@ -53,7 +53,7 @@ export const SummaryProvider = ({ children }) => {
     const handleApply = async (promoCode) => {
         try {
             const res = await axiosSecure.post(`/promo-code/use-promo-code/${user?.id}`, { code: promoCode });
-            // console.log(res);
+            // // console.log(res);
             if (!res?.data?.success) {
                 toast.error(res?.date?.message || "Invalid promo code");
                 return;

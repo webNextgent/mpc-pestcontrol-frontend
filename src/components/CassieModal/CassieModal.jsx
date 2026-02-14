@@ -26,7 +26,7 @@ const CassieModal = ({ open, onClose }) => {
             lastName: data.lastName,
             email: data.email,
         }
-        console.log(data)
+        // console.log(data)
         try {
             const res = await axiosSecure.patch(`/auth/update/profile`, updateData);
             if (res?.data?.success) {

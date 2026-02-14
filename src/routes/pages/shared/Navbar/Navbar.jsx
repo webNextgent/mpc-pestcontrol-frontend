@@ -12,7 +12,7 @@ const Navbar = () => {
     const { loginModalOpen, setLoginModalOpen } = useSummary();
     const { user, logOut } = useAuth();
     const isMobile = window.innerWidth < 768;
-    console.log(user);
+    // console.log(user);
     // 🔹 Click outside / backdrop handler
     useEffect(() => {
         const handleClickOutside = (e) => {

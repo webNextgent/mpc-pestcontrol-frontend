@@ -379,12 +379,10 @@ const AdminBooking = () => {
                                 className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                             >
                                 <option value="all">All Status</option>
-                                <option value="Pending">Pending</option>
                                 <option value="Upcoming">Upcoming</option>
-                                <option value="Completed">Completed</option>
+                                <option value="Pending">Pending</option>
                                 <option value="Cancelled">Cancelled</option>
                                 <option value="Unpaid">Unpaid</option>
-                                <option value="OnHold">On Hold</option>
                             </select>
                         </div>
                         <div className="w-full sm:w-40">
@@ -750,177 +748,7 @@ const AdminBooking = () => {
                 </>
             )}
 
-            {/* Edit Booking Modal */}
-            {/* ol booking ui  */}
-            {/* {selectedBooking && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-fadeIn">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
-                        <div className="flex items-center justify-between p-7 border-b border-gray-200">
-                            <div>
-                                <h3 className="text-2xl font-semibold text-gray-900">Edit Booking</h3>
-                                <div className="flex items-center gap-4 mt-2">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedBooking.status)}`}>
-                                        {selectedBooking.status}
-                                    </span>
-                                    <p className="text-sm text-gray-600">ID: {selectedBooking.id}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setSelectedBooking(null)}
-                                className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                            >
-                                <IoClose className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        <div className="p-7 space-y-7 overflow-y-auto flex-1">
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                        Service Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="serviceName"
-                                        value={selectedBooking.serviceName || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                        placeholder="Enter service name"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                        Total Amount
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600">$</span>
-                                        <input
-                                            type="number"
-                                            name="totalPay"
-                                            value={selectedBooking.totalPay || ""}
-                                            onChange={handleInputChange}
-                                            className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                            step="0.01"
-                                            min="0"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                        Status
-                                    </label>
-                                    <select
-                                        name="status"
-                                        value={selectedBooking.status || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                    >
-                                        <option value="Pending">⏳ Pending</option>
-                                        <option value="Upcoming">📅 Upcoming</option>
-                                        <option value="Completed">✅ Completed</option>
-                                        <option value="Cancelled">❌ Cancelled</option>
-                                        <option value="Unpaid">💰 Unpaid</option>
-                                        <option value="OnHold">⏸️ On Hold</option>
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                            Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            name="date"
-                                            value={selectedBooking.date || ""}
-                                            onChange={handleInputChange}
-                                            className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                            Time
-                                        </label>
-                                        <input
-                                            type="time"
-                                            name="time"
-                                            value={selectedBooking.time || ""}
-                                            onChange={handleInputChange}
-                                            className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-semibold text-gray-800">
-                                        Address
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        {selectedBooking.latitude && selectedBooking.longitude && (
-                                            <span className="text-xs text-green-600">
-                                                📍 {selectedBooking.latitude}, {selectedBooking.longitude}
-                                            </span>
-                                        )}
-                                        <a
-                                            href={getGoogleMapsUrl(selectedBooking)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
-                                        >
-                                            <FaExternalLinkAlt className="w-3 h-3" />
-                                            Open in Maps
-                                        </a>
-                                    </div>
-                                </div>
-                                <textarea
-                                    name="address"
-                                    value={selectedBooking.address || ""}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
-                                    rows="3"
-                                    placeholder="Enter full address including city, state, and zip code..."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                    Additional Notes
-                                </label>
-                                <textarea
-                                    name="additionalInfo"
-                                    value={selectedBooking.additionalInfo || ""}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
-                                    rows="3"
-                                    placeholder="Any special instructions, requirements, or notes..."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-4 p-7 border-t border-gray-200">
-                            <button
-                                onClick={() => setSelectedBooking(null)}
-                                className="px-6 py-3.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleUpdateBooking}
-                                className="px-6 py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold shadow-sm hover:shadow"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )} */}
-
+        
             {selectedBooking && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -987,12 +815,10 @@ const AdminBooking = () => {
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
                                     >
-                                        <option value="Pending">Pending</option>
                                         <option value="Upcoming">Upcoming</option>
-                                        <option value="Completed">Completed</option>
+                                        <option value="Pending">Pending</option>
                                         <option value="Cancelled">Cancelled</option>
                                         <option value="Unpaid">Unpaid</option>
-                                        <option value="OnHold">On Hold</option>
                                     </select>
                                 </div>
 
@@ -1071,7 +897,7 @@ const AdminBooking = () => {
                             </button>
                             <button
                                 onClick={handleUpdateBooking}
-                                className="flex-[2] sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95"
+                                className="flex-2 sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95"
                             >
                                 Update Booking
                             </button>
@@ -1080,220 +906,6 @@ const AdminBooking = () => {
                 </div>
             )}
 
-            {/* Booking Details Modal - WITH REAL MAP */}
-            {/* {bookingDetails && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-fadeIn">
-                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-   
-                        <div className="flex items-center justify-between p-7 border-b border-gray-200">
-                            <div>
-                                <h3 className="text-2xl font-semibold text-gray-900">Booking Details</h3>
-                                <div className="flex items-center gap-4 mt-2">
-                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(bookingDetails.status)}`}>
-                                        {bookingDetails.status}
-                                    </span>
-                                    <p className="text-sm text-gray-600">ID: {bookingDetails.id}</p>
-                                    <p className="text-sm text-gray-600">•</p>
-                                    <p className="text-sm text-gray-600">
-                                        <span className="block md:inline">{bookingDetails.date}</span>
-                                        <span className="block md:inline"> {bookingDetails.time}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setBookingDetails(null)}
-                                className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                            >
-                                <IoClose className="w-6 h-6" />
-                            </button>
-                        </div>
-
-        
-                        <div className="p-7 space-y-8 overflow-y-auto flex-1">
-                            <div className="grid lg:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                            <FaCalendarAlt className="w-4 h-4" />
-                                            Service Information
-                                        </h4>
-                                        <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                                            <p className="text-2xl font-semibold text-gray-900 mb-3">{bookingDetails.serviceName}</p>
-                                            <div className="space-y-3">
-                                                {bookingDetails.customerName && (
-                                                    <div className="flex items-center gap-3">
-                                                        <FaUser className="w-4 h-4 text-gray-400" />
-                                                        <div>
-                                                            <p className="font-medium text-gray-900">{bookingDetails.customerName}</p>
-                                                            {bookingDetails.phone && (
-                                                                <p className="text-sm text-gray-600 mt-1">{bookingDetails.phone}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center gap-3">
-                                                    <FaCalendarAlt className="w-4 h-4" />
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">{bookingDetails.date}</p>
-                                                        <p className="text-sm text-gray-600 mt-1">{bookingDetails.time}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                            <FaDollarSign className="w-4 h-4" />
-                                            Payment Information
-                                        </h4>
-                                        <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <p className="text-gray-600">Total Amount</p>
-                                                <p className="text-3xl font-semibold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-gray-600">Payment Status</p>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${bookingDetails.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
-                                                    {bookingDetails.paymentStatus || 'Pending'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                                <FaMapMarkerAlt className="w-4 h-4" />
-                                                Location
-                                            </h4>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={handleCopyMapLink}
-                                                    className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                                                >
-                                                    <IoCopyOutline className="w-4 h-4" />
-                                                    {mapLinkCopied ? 'Copied!' : 'Copy Link'}
-                                                </button>
-                                                <a
-                                                    href={getGoogleMapsUrl(bookingDetails)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-                                                >
-                                                    <FaExternalLinkAlt className="w-4 h-4" />
-                                                    Open Map
-                                                </a>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-5 bg-gray-50 rounded-xl border border-gray-200 mb-4">
-                                            <p className="text-gray-700 whitespace-pre-wrap">{bookingDetails.address}</p>
-
-                                        </div>
-
-                                        <div className="relative rounded-xl overflow-hidden border border-gray-300">
-                                            {bookingDetails.latitude && bookingDetails.longitude ? (
-                                                <iframe
-                                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${bookingDetails.longitude - 0.01},${bookingDetails.latitude - 0.01},${bookingDetails.longitude + 0.01},${bookingDetails.latitude + 0.01}&layer=mapnik&marker=${bookingDetails.latitude},${bookingDetails.longitude}`}
-                                                    width="100%"
-                                                    height="200"
-                                                    style={{ border: 0 }}
-                                                    allowFullScreen=""
-                                                    loading="lazy"
-                                                    referrerPolicy="no-referrer-when-downgrade"
-                                                    title="Location Map"
-                                                ></iframe>
-                                            ) : (
-                                                <div className="h-48 bg-gray-100 flex items-center justify-center">
-                                                    <p className="text-gray-500">No coordinates available for map</p>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {bookingDetails.additionalInfo && (
-                                <div>
-                                    <h4 className="text-sm font-semibold text-gray-800 mb-4">Additional Information</h4>
-                                    <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                                        <p className="text-gray-700 whitespace-pre-wrap">
-                                            {bookingDetails.additionalInfo}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-between gap-4 p-7 border-t border-gray-200">
-                            <div className="relative" ref={shareRef}>
-                                <button
-                                    onClick={() => setShowShareOptions(!showShareOptions)}
-                                    className="flex items-center gap-3 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
-                                >
-                                    <FaShare className="w-4 h-4" />
-                                    Share Booking
-                                    {copied && (
-                                        <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg shadow">
-                                            Copied!
-                                        </span>
-                                    )}
-                                </button>
-
-                                {showShareOptions && (
-                                    <div className="absolute bottom-full left-0 mb-3 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-10">
-                                        <div className="p-2">
-                                            <button
-                                                onClick={() => handleShare('copy')}
-                                                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <FaCopy className="text-gray-600" />
-                                                <div>
-                                                    <p className="font-semibold">Copy Details</p>
-                                                    <p className="text-xs text-gray-500">Text to clipboard</p>
-                                                </div>
-                                            </button>
-                                            <button
-                                                onClick={() => handleShare('whatsapp')}
-                                                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <FaWhatsapp className="text-green-500" />
-                                                <div>
-                                                    <p className="font-semibold">WhatsApp</p>
-                                                    <p className="text-xs text-gray-500">Share via WhatsApp</p>
-                                                </div>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setBookingDetails(null)}
-                                    className="px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold"
-                                >
-                                    Close
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setSelectedBooking(bookingDetails);
-                                        setBookingDetails(null);
-                                    }}
-                                    className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold shadow-sm hover:shadow"
-                                >
-                                    Edit Booking
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )} */}
 
             {bookingDetails && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -1483,7 +1095,7 @@ const AdminBooking = () => {
                                         setSelectedBooking(bookingDetails);
                                         setBookingDetails(null);
                                     }}
-                                    className="flex-[2] sm:flex-none px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all font-bold text-sm shadow-md shadow-blue-100 active:scale-95"
+                                    className="flex-2 sm:flex-none px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all font-bold text-sm shadow-md shadow-blue-100 active:scale-95"
                                 >
                                     Edit Booking
                                 </button>

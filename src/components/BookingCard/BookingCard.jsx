@@ -16,7 +16,7 @@ const BookingCard = ({ item }) => {
     const navigate = useNavigate();
 
     const handelManagebooking = item => {
-        console.log(item.id);
+        // console.log(item.id);
         navigate(`/booking-details/${item.id}`);
     }
 

@@ -570,11 +570,11 @@ export default function SavedLocations() {
 //     };
 
 //     const handleEdit = (address) => {
-//         console.log("Editing address:", address);
+//         // console.log("Editing address:", address);
 //     };
 
 //     const handleAddNew = () => {
-//         console.log("Add new address clicked");
+//         // console.log("Add new address clicked");
 //     };
 
 //     return (

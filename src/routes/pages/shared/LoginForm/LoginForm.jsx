@@ -45,11 +45,11 @@
 
 //         try {
 //             const result = await githubSignInUser();
-//             console.log('GitHub sign-in successful:', result.user);
+//             // console.log('GitHub sign-in successful:', result.user);
 
 //             // GitHub user info
 //             const user = result.user;
-//             console.log('GitHub User Details:', {
+//             // console.log('GitHub User Details:', {
 //                 displayName: user.displayName,
 //                 email: user.email,
 //                 photoURL: user.photoURL,
@@ -106,8 +106,8 @@
 //                 }
 //             );
 //             const data = await res.json();
-//             console.log("login response:", data?.Data);
-//             // console.log('Login successful:', result.user);
+//             // console.log("login response:", data?.Data);
+//             // // console.log('Login successful:', result.user);
 //     // login success হলে
 //             localStorage.setItem("accessToken", data?.Data[1]);
 //             localStorage.setItem("user", JSON.stringify(data?.Data[0]));
@@ -140,7 +140,7 @@
 
 //         try {
 //             const result = await googleSignInUser();
-//             console.log('Google sign-in successful:', result.user);
+//             // console.log('Google sign-in successful:', result.user);
 
 //             // Success - you can redirect here
 //             // navigate('/dashboard');

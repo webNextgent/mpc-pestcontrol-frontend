@@ -21,7 +21,7 @@ export default function Summary({ itemSummary, showInput, setShowInput, address,
             promoInputRefDesktop.current?.value ||
             promoInputRefMobile.current?.value;
 
-        console.log(promoCode);
+        // console.log(promoCode);
 
         if (!promoCode) {
             toast.error("No promo code entered");

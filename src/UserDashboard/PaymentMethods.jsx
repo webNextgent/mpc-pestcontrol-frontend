@@ -12,7 +12,7 @@ export default function PaymentMethods() {
   } = useForm();
 
   const onSubmit = (data) => {
-    // console.log(data);
+    // // console.log(data);
   };
 
   return (
@@ -150,7 +150,7 @@ export default function PaymentMethods() {
 //   const expiry = watch("expiry") || "••/••";
 
 //   const onSubmit = (data) => {
-//     console.log("CARD SUBMITTED:", data);
+//     // console.log("CARD SUBMITTED:", data);
 //   };
 
 //   return (

@@ -41,22 +41,22 @@ export default function BookingDetails() {
         setModalRescudle(true);
     }
 
-    console.log(item.Data);
+    // console.log(item.Data);
 
     // const handleAddInstructions = () => {
-    //     console.log("Instructions saved:", instructions);
+    //     // console.log("Instructions saved:", instructions);
     //     setOpenInstructionsModal(false);
     //     setInstructions("");
     // }
 
     const handelAddressDetails = item => {
         setModalAddress(true);
-        console.log(item);
+        // console.log(item);
     }
 
     const handelTotalPay = item => {
         setModalPrice(true);
-        console.log(item);
+        // console.log(item);
     }
 
     const handleChangePaymentMethod = () => {
@@ -92,7 +92,7 @@ export default function BookingDetails() {
         queryKey: ['date-time-user'],
         queryFn: async () => {
             const res = await axiosSecure.get(`/date-time`);
-            console.log(res?.data?.success);
+            // console.log(res?.data?.success);
 
             if (!res?.data?.success) {
                 throw new Error("Failed to fetch date-time");
@@ -242,7 +242,7 @@ export default function BookingDetails() {
             address: formattedAddress
         };
 
-        console.log("Updating address with data:", updateData);
+        // console.log("Updating address with data:", updateData);
         setIsUpdatingAddress(true);
 
         try {
@@ -263,6 +263,46 @@ export default function BookingDetails() {
         return true;
     };
 
+    // Handle payment method update - Updated to work with your backend
+    const handlePaymentMethodUpdate = async () => {
+        const bookingId = item?.Data?.id;
+
+        if (!bookingId) {
+            toast.error("Booking ID not found!");
+            return;
+        }
+
+        setIsUpdatingPayment(true);
+
+        try {
+            // Format the payment method to match your backend expectation
+            // 'Cash' for Cash On Delivery, 'Online' for Ziina/Card payment
+            const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
+
+            const updateData = {
+                paymentMethod: paymentMethodValue
+            };
+
+            // Make the API call using axiosSecure
+            const response = await axiosSecure.patch(`/booking/update/${bookingId}`, updateData);
+
+            if (response?.data?.success) {
+                toast.success(`Payment method updated to ${selectedPaymentMethod === "Cash" ? "Cash On Delivery" : "Online Payment"} successfully!`);
+                setModalPaymentMethod(false);
+
+                // Optional: Refresh the booking data or update local state
+                // You might want to refetch the booking data here
+            } else {
+                toast.error(response?.data?.message || "Failed to update payment method");
+            }
+        } catch (error) {
+            console.error("Error updating payment method:", error);
+            toast.error(error?.response?.data?.message || "Network error. Please try again.");
+        } finally {
+            setIsUpdatingPayment(false);
+        }
+    };
+
     // Handle payment method update
     // const handlePaymentMethodUpdate = async () => {
     //     const bookingId = item?.Data?.id;
@@ -272,7 +312,7 @@ export default function BookingDetails() {
     //         return false;
     //     }
 
-    //     console.log("Updating payment method to:", selectedPaymentMethod);
+    //     // console.log("Updating payment method to:", selectedPaymentMethod);
     //     setIsUpdatingPayment(true);
 
     //     try {
@@ -288,7 +328,7 @@ export default function BookingDetails() {
 
     //         for (const endpoint of endpoints) {
     //             try {
-    //                 console.log("Trying endpoint:", endpoint);
+    //                 // console.log("Trying endpoint:", endpoint);
     //                 response = await fetch(endpoint, {
     //                     method: "PATCH",
     //                     headers: {
@@ -304,13 +344,13 @@ export default function BookingDetails() {
     //                     break;
     //                 }
     //             } catch (err) {
-    //                 console.log("Failed with endpoint:", endpoint, err);
+    //                 // console.log("Failed with endpoint:", endpoint, err);
     //             }
     //         }
 
     //         if (success && response) {
     //             const result = await response.json();
-    //             console.log("Payment method updated successfully:", result);
+    //             // console.log("Payment method updated successfully:", result);
     //             alert(`Payment method changed to ${selectedPaymentMethod} successfully!`);
     //             setModalPaymentMethod(false);
     //         } else {
@@ -1187,63 +1227,80 @@ export default function BookingDetails() {
                                         </p>
                                     </div>
 
-                                    {/* Payment Method Options */}
+                                    {/* Payment Method Options - Updated to match Confirmation component */}
                                     <div className="space-y-3">
-                                        {["Cash", "Credit Card", "Debit Card", "Online Payment", "Wallet"].map((method) => (
-                                            <div
-                                                key={method}
-                                                onClick={() => setSelectedPaymentMethod(method)}
-                                                className={`p-4 border rounded-xl cursor-pointer transition-all duration-200 ${selectedPaymentMethod === method
-                                                    ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-300 shadow-md"
-                                                    : "bg-white border-gray-200 hover:bg-gray-50 hover:shadow-sm"
-                                                    }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPaymentMethod === method
-                                                            ? "border-blue-600 bg-blue-600"
-                                                            : "border-gray-300"
-                                                            }`}>
-                                                            {selectedPaymentMethod === method && (
-                                                                <div className="w-2 h-2 rounded-full bg-white"></div>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold text-gray-900">{method}</span>
-                                                            <p className="text-sm text-gray-600 mt-1">
-                                                                {method === "Cash" && "Pay with cash on delivery"}
-                                                                {method === "Credit Card" && "Pay with your credit card"}
-                                                                {method === "Debit Card" && "Pay with your debit card"}
-                                                                {method === "Online Payment" && "Pay online via secure payment gateway"}
-                                                                {method === "Wallet" && "Pay using your digital wallet"}
-                                                            </p>
-                                                        </div>
+                                        {/* Card (Online Payment) - Ziina */}
+                                        <div
+                                            onClick={() => setSelectedPaymentMethod("Online")}
+                                            className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+                                ${selectedPaymentMethod === "Online" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3">
+                                                    {/* Custom Radio Button */}
+                                                    <div className="relative flex items-center justify-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="paymentMethod"
+                                                            checked={selectedPaymentMethod === "Online"}
+                                                            readOnly
+                                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                                        />
+                                                        <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                                                     </div>
-                                                    <div className="text-gray-400">
-                                                        {method === "Credit Card" && (
-                                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                                            </svg>
-                                                        )}
-                                                        {method === "Cash" && (
-                                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                            </svg>
-                                                        )}
-                                                        {method === "Online Payment" && (
-                                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                            </svg>
-                                                        )}
-                                                        {method === "Wallet" && (
-                                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                                                            </svg>
-                                                        )}
+
+                                                    <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                                        Pay by card with Ziina
+                                                    </span>
+                                                </div>
+
+                                                {/* Card Logos */}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3" />
+                                                    </div>
+                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+                                                    </div>
+                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
+                                                        <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+
+                                        {/* Cash On Delivery */}
+                                        <div
+                                            onClick={() => setSelectedPaymentMethod("Cash")}
+                                            className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+                                ${selectedPaymentMethod === "Cash" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3">
+                                                    {/* Custom Radio Button */}
+                                                    <div className="relative flex items-center justify-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="paymentMethod"
+                                                            checked={selectedPaymentMethod === "Cash"}
+                                                            readOnly
+                                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                                        />
+                                                        <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                                    </div>
+
+                                                    <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                                        Cash On Delivery
+                                                    </span>
+                                                </div>
+
+                                                {/* Fee Badge */}
+                                                <div className="bg-[#FFEDD5] text-[#C6724D] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#FDBA74]">
+                                                    +5% FEE
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Important Note */}
@@ -1263,11 +1320,11 @@ export default function BookingDetails() {
                                                     </li>
                                                     <li className="flex items-start gap-2">
                                                         <span className="text-amber-600">•</span>
-                                                        Some payment methods may have additional processing fees
+                                                        Cash on Delivery includes an additional 5% fee
                                                     </li>
                                                     <li className="flex items-start gap-2">
                                                         <span className="text-amber-600">•</span>
-                                                        Online payments are processed securely
+                                                        Online payments are processed securely via Ziina
                                                     </li>
                                                 </ul>
                                             </div>
@@ -1289,14 +1346,14 @@ export default function BookingDetails() {
                                     </button>
                                     <button
                                         type="button"
-                                        // onClick={handlePaymentMethodUpdate}
-                                        className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={handlePaymentMethodUpdate}
+                                        className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={isUpdatingPayment}
                                     >
                                         {isUpdatingPayment ? (
                                             <span className="flex items-center justify-center">
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                                Updating Payment Method...
+                                                Updating...
                                             </span>
                                         ) : "Update Payment Method"}
                                     </button>

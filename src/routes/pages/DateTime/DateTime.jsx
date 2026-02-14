@@ -25,7 +25,7 @@ const DateTime = () => {
     const navigate = useNavigate()
     const { user } = useAuth();
 
-    console.log(user?.email);
+    // console.log(user?.email);
 
     const { data: dateTime, isLoading } = useQuery({
         queryKey: ['date-time-user'],
@@ -633,7 +633,7 @@ export default DateTime;
 //     const navigate = useNavigate()
 //     const { user } = useAuth();
 
-//     console.log(user?.email);
+//     // console.log(user?.email);
 
 
 //     const { data: dateTime, isLoading } = useQuery({
@@ -765,7 +765,7 @@ export default DateTime;
 //     const availableTimes = getAvailableTimes();
 
 //     // Debug log to check merged data
-//     // console.log("Merged days data:", availableDays);
+//     // // console.log("Merged days data:", availableDays);
 
 //     if (isLoading) {
 //         return (
