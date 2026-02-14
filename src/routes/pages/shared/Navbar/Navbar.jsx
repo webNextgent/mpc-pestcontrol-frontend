@@ -12,8 +12,8 @@ const Navbar = () => {
     const { loginModalOpen, setLoginModalOpen } = useSummary();
     const { user, logOut } = useAuth();
     const isMobile = window.innerWidth < 768;
-    // console.log(user);
-    // 🔹 Click outside / backdrop handler
+
+    
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (
@@ -67,7 +67,7 @@ const Navbar = () => {
                                     setDropdownOpen(!dropdownOpen)
                                 }
                             >
-                                {user?.firstName + user?.lastName || user?.role}
+                                {user?.firstName || user?.role}
                             </button>
 
                             {/* Dropdown */}

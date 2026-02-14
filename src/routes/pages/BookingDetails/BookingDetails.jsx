@@ -14,6 +14,7 @@ import { BsClock, BsTag } from "react-icons/bs";
 import { TbReceipt } from "react-icons/tb";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
+import useAuth from "../../../hooks/useAuth";
 
 export default function BookingDetails() {
     const item = useLoaderData();
@@ -30,6 +31,8 @@ export default function BookingDetails() {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
     const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
     const axiosSecure = useAxiosSecure();
+    const { user } = useAuth();
+    console.log(user);
 
     const { register, handleSubmit, formState: { errors }, setValue } = useForm({
         mode: "onChange"
