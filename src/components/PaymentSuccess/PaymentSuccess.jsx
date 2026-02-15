@@ -8,6 +8,7 @@ import useAxiosSecure from '../../hooks/useAxiosSecure';
 const PaymentSuccess = () => {
     const [orderId, setOrderId] = useState('');
     const axiosSecure = useAxiosSecure();
+    const [ziinaStatus, setZiinaStatus] = useState(null);
 
     const { data: paymentHistory, isLoading, error } = useQuery({
         queryKey: ['paymentDetails'],
@@ -27,7 +28,8 @@ const PaymentSuccess = () => {
                 const res = await axiosSecure.get(
                     `payments/ziina/status/${payment.paymentId}`
                 );
-                console.log('Payment History:', res.data);
+                setZiinaStatus(res.data.status);
+                console.log('Payment status:', res.data.status);
             } catch (err) {
                 console.error('Error in useEffect:', err);
             }
@@ -182,7 +184,7 @@ const PaymentSuccess = () => {
                                             <h3 className="font-medium text-gray-900">Status</h3>
                                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${payment.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
-                                                {payment.status || 'Pending'}
+                                                {ziinaStatus || payment.status || 'Pending'}
                                             </span>
                                         </div>
                                     </div>
