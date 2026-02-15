@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, Download, Home, Calendar, CreditCard, User, Mail, Phone, MapPin, Package, DollarSign } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -16,20 +17,27 @@ const PaymentSuccess = () => {
         }
     });
     console.log(paymentHistory);
+    const payment = paymentHistory?.Data?.[0];
 
-    // useEffect(() => {
-    //     try {
-    //         fetch('/api/payments/payment-history')
-    //             .then(res => res.json())
-    //             .then(data => console.log('Payment History:', data))
-    //             .catch(err => console.error('Error fetching payment history:', err));
-    //     } catch (err) {
-    //         console.error('Error in useEffect:', err);
-    //     }
-    // }, [])
+    useEffect(() => {
+        if (!payment?.paymentId) return;
+
+        const fetchPaymentStatus = async () => {
+            try {
+                const res = await axiosSecure.get(
+                    `payments/ziina/status/${payment.paymentId}`
+                );
+                console.log('Payment History:', res.data);
+            } catch (err) {
+                console.error('Error in useEffect:', err);
+            }
+        };
+
+        fetchPaymentStatus();
+    }, [payment?.paymentId]);
+
 
     // সর্বশেষ পেমেন্ট ডেটা বের করা
-    const payment = paymentHistory?.Data?.[0];
 
     // Generate a random order ID on component mount (if not available from API)
     useEffect(() => {
@@ -161,12 +169,6 @@ const PaymentSuccess = () => {
                                         <div>
                                             <h3 className="font-medium text-gray-900">Order ID</h3>
                                             <p className="text-sm text-gray-500 break-all">{payment.orderId || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                        <div>
-                                            <h3 className="font-medium text-gray-900">Booking ID</h3>
-                                            <p className="text-sm text-gray-500">{payment.bookingId || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
