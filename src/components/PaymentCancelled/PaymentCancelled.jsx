@@ -269,21 +269,6 @@ const PaymentCancelled = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Payment Methods Preview */}
-                <div className="mt-12 bg-white rounded-2xl shadow-lg p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Available Payment Methods</h3>
-                    <div className="flex flex-wrap justify-center gap-6">
-                        {['Visa', 'Mastercard', 'PayPal', 'Apple Pay', 'Google Pay', 'bKash', 'Nagad', 'Rocket'].map((method, index) => (
-                            <div key={index} className="flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all">
-                                <div className="h-12 w-16 bg-gray-100 rounded flex items-center justify-center mb-2">
-                                    <CreditCard className="h-6 w-6 text-gray-600" />
-                                </div>
-                                <span className="text-sm font-medium text-gray-700">{method}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </div>
         </div>
     );

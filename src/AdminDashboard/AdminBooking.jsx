@@ -23,7 +23,7 @@ const AdminBooking = () => {
     const [demoMode,] = useState(true);
     const shareRef = useRef(null);
     const axiosSecure = useAxiosSecure();
-    const {user} = useAuth();
+    const { user } = useAuth();
     console.log(user);
 
     // ================== ইউজারের তথ্য বের করার ফাংশন ==================
@@ -175,11 +175,9 @@ const AdminBooking = () => {
     // Get status color class
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
-            case 'completed': return 'bg-green-50 text-green-700 border border-green-200';
+            case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
             case 'pending': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
             case 'cancelled': return 'bg-red-50 text-red-700 border border-red-200';
-            case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
-            case 'unpaid': return 'bg-orange-50 text-orange-700 border border-orange-200';
             case 'onhold': return 'bg-gray-50 text-gray-700 border border-gray-200';
             default: return 'bg-gray-50 text-gray-700 border border-gray-200';
         }
@@ -410,9 +408,9 @@ const AdminBooking = () => {
                             >
                                 <option value="all">All Status</option>
                                 <option value="Upcoming">Upcoming</option>
-                                <option value="Pending">Pending</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Panding">Panding</option>
                                 <option value="Cancelled">Cancelled</option>
-                                <option value="Unpaid">Unpaid</option>
                             </select>
                         </div>
                         <div className="w-full sm:w-40">
@@ -852,9 +850,9 @@ const AdminBooking = () => {
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
                                     >
                                         <option value="Upcoming">Upcoming</option>
-                                        <option value="Pending">Pending</option>
+                                        <option value="Delivered">Delivered</option>
                                         <option value="Cancelled">Cancelled</option>
-                                        <option value="Unpaid">Unpaid</option>
+                                        <option value="Pending">Pending</option>
                                     </select>
                                 </div>
 

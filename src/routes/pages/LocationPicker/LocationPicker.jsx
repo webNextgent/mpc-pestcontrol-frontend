@@ -9,6 +9,7 @@ import { useSummary } from "../../../provider/SummaryProvider";
 import ServiceDetails from "../../../components/ServiceDetails/ServiceDetails";
 import { useNavigate } from "react-router-dom";
 import dirhum from '../../../assets/icon/dirhum.png';
+import toast from "react-hot-toast";
 
 const containerStyle = { width: "100%", height: "500px" };
 const defaultCenter = { lat: 25.2048, lng: 55.2708 };
@@ -197,7 +198,7 @@ export default function LocationPicker() {
             return currentAddr;
         } catch (error) {
             console.error("Error getting current address:", error);
-            alert("Could not get your current location. Please check your location permissions.");
+            toast.error("Could not get your current location. Please check your location permissions.");
             return null;
         } finally {
             setIsGettingCurrentAddress(false);

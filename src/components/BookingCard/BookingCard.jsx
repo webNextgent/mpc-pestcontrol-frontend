@@ -3,12 +3,10 @@ import dirhum from "../../assets/icon/dirhum.png";
 import { useNavigate } from "react-router-dom";
 
 const statusColors = {
-    Pending: "bg-yellow-500",
     Upcoming: "bg-blue-500",
     Delivered: "bg-green-600",
     Cancelled: "bg-red-500",
-    Unpaid: "bg-orange-500",
-    OnHold: "bg-purple-500",
+    Pending: "bg-yellow-500"
 };
 
 const BookingCard = ({ item }) => {

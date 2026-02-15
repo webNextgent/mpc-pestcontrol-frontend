@@ -143,7 +143,8 @@ export default function Confirmation() {
             const payload = {
                 amount: totalAfterDiscount,
                 currency: "AED",
-                order_id: `booking_${bookingId}_${Date.now()}`,
+                // order_id: `booking_${bookingId}_${Date.now()}`,
+                order_id: `${bookingId}`,
                 booking_id: bookingId,
                 return_url: `${window.location.origin}/dashboard/payment-success`,
                 cancel_url: `${window.location.origin}/dashboard/payment-cancel`,
