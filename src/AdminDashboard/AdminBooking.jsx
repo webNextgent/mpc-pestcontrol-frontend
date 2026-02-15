@@ -26,11 +26,9 @@ const AdminBooking = () => {
     const { user } = useAuth();
     console.log(user);
 
-    // ================== ইউজারের তথ্য বের করার ফাংশন ==================
     const getUserInfo = (booking) => {
         if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
 
-        // প্রথমে nested user অবজেক্ট চেক করি
         if (booking.user) {
             const firstName = booking.user.firstName || '';
             const lastName = booking.user.lastName || '';
@@ -434,7 +432,7 @@ console.log(res);
                 <>
                     {/* Table View */}
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
+                        {/* <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50">
                                     <tr>
@@ -560,7 +558,127 @@ console.log(res);
                                     )}
                                 </tbody>
                             </table>
+                        </div> */}
+
+<div className="overflow-x-auto">
+    <table className="w-full">
+        <thead className="bg-gray-50">
+            <tr>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                    No
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                    Service & Amount
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                    Schedule
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                    Payment Status
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+            {currentBookings.length === 0 ? (
+                <tr>
+                    <td colSpan="5" className="py-12 text-center">
+                        <div className="text-gray-300 mb-3">
+                            <FaCalendarAlt className="w-14 h-14 mx-auto" />
                         </div>
+                        <p className="text-gray-500 font-medium text-base">No bookings found</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                            {searchTerm ? 'Try adjusting your search' : 'No bookings available'}
+                        </p>
+                    </td>
+                </tr>
+            ) : (
+                currentBookings.map((book, idx) => {
+                    const userInfo = getUserInfo(book);
+                    // পেমেন্ট স্ট্যাটাসের জন্য ব্যাজ স্টাইল
+                    const paymentStatus = book.paymentStatus || 'Pending';
+                    const statusColor = 
+                        paymentStatus.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
+                        paymentStatus.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        paymentStatus.toLowerCase() === 'unpaid' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800';
+                    return (
+                        <tr
+                            key={book.id}
+                            className="hover:bg-gray-50/80 transition-colors duration-200 group"
+                        >
+                            <td className="py-3 px-4">
+                                <div className="font-mono text-sm font-semibold text-gray-900">
+                                    #{idx + 1}
+                                </div>
+                            </td>
+                            <td className="py-3 px-4">
+                                <div>
+                                    <div className="font-semibold text-gray-900 text-sm mb-1">
+                                        {book.serviceName}
+                                    </div>
+                                    <div className="font-semibold text-gray-900 text-sm">
+                                        {formatCurrency(book.totalPay)}
+                                    </div>
+                                    {userInfo.fullName !== 'N/A' && (
+                                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                            <FaUser className="w-3 h-3" />
+                                            <span className="truncate max-w-[120px]">{userInfo.fullName}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </td>
+                            <td className="py-3 px-4">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-gray-900 text-sm">
+                                        <FaCalendarAlt className="w-3.5 h-3.5" />
+                                        <span className="font-medium">{book.date}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600 pl-5">
+                                        {book.time}
+                                    </div>
+                                </div>
+                            </td>
+                            <td className="py-3 px-4">
+                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                                    {paymentStatus}
+                                </span>
+                            </td>
+                            <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setBookingDetails(book)}
+                                        className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                        title="View Details"
+                                    >
+                                        <FaRegEye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedBooking(book)}
+                                        className="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+                                        title="Edit"
+                                    >
+                                        <FaRegEdit className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteBooking(book.id)}
+                                        className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+                                        title="Delete"
+                                    >
+                                        <FaRegTrashAlt className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    );
+                })
+            )}
+        </tbody>
+    </table>
+</div>
+
 
                         {/* Pagination */}
                         {filteredBookings.length > 0 && (
@@ -1019,9 +1137,11 @@ console.log(res);
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <p className="text-sm sm:text-base text-gray-600">Status</p>
+
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${bookingDetails.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                                                     {bookingDetails.paymentStatus || 'Pending'}
                                                 </span>
+
                                             </div>
                                         </div>
                                     </div>

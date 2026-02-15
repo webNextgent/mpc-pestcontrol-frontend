@@ -172,7 +172,7 @@ export default function Confirmation() {
     };
 
     // ===============================
-    // MAIN BOOKING CONFIRMATION HANDLER
+    // MAIN BOOKINGa CONFIRMATION HANDLER
     // ===============================
     const handleBookingConfirmation = async () => {
         if (!paymentMethod) {
