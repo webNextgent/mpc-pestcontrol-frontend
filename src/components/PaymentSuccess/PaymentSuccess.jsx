@@ -8,14 +8,14 @@ const PaymentSuccess = () => {
     const [countdown, setCountdown] = useState(10);
     const axiosSecure = useAxiosSecure();
 
-    const { data: paymentHistory} = useQuery({
+    const { data: paymentHistory } = useQuery({
         queryKey: ['paymentDetails'],
         queryFn: async () => {
             const res = await axiosSecure.get('/payments/payment-history');
             return res.data;
         }
     });
-console.log(paymentHistory);
+    console.log(paymentHistory);
 
     // Generate a random order ID on component mount
     useEffect(() => {
