@@ -120,7 +120,7 @@ const AdminBooking = () => {
 
         try {
             const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, updateData);
-
+console.log(res);
             if (res?.data?.success) {
                 queryClient.invalidateQueries(["bookingAdmin"]);
                 setSelectedBooking(null);
