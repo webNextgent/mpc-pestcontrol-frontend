@@ -19,7 +19,8 @@ export default function UserBooking() {
     { id: "Upcoming", label: "Upcoming", icon: <MdOutlineWatchLater /> },
     { id: "Delivered", label: "Delivered", icon: <MdOutlineWatchLater /> },
     { id: "Cancelled", label: "Cancelled", icon: <MdOutlineWatchLater /> },
-    { id: "Pending", label: "Pending", icon: <PiBookThin /> }
+    { id: "Pending", label: "Pending", icon: <PiBookThin /> },
+    { id: "Requested", label: "Requested", icon: <PiBookThin /> }
   ];
 
   const { data: booking = {}, isLoading } = useQuery({

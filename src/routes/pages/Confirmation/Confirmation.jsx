@@ -70,7 +70,7 @@ export default function Confirmation() {
                 totalPay: totalAfterDiscount + 5,
                 longitude: mapLongitude,
                 latitude: mapLatitude,
-                status: "Upcoming",
+                status: "Requested",
                 userId: user?.id,
                 paymentStatus: "pending",
             };
@@ -577,6 +577,13 @@ export default function Confirmation() {
         </div>
     );
 };
+
+
+
+
+
+
+
 
 // import { useRef, useState } from "react";
 // import NextBtn from "../../../components/NextBtn/NextBtn";
