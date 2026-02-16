@@ -43,8 +43,26 @@ const AdminBooking = () => {
         };
     };
 
-    // Helper to display service name as "propertyItems.title - propertyType.title"
+    // Updated helper to display service name based on new data structure (bookingItems)
     const getServiceDisplay = (booking) => {
+        if (booking.bookingItems && booking.bookingItems.length > 0) {
+            return booking.bookingItems.map(item => {
+                const propertyItem = item.propertyItem;
+                if (propertyItem) {
+                    const itemTitle = propertyItem.title || '';
+                    const typeTitle = propertyItem.propertyType?.title || '';
+                    if (itemTitle && typeTitle) {
+                        return `${itemTitle} - ${typeTitle}`;
+                    } else if (itemTitle) {
+                        return itemTitle;
+                    } else if (typeTitle) {
+                        return typeTitle;
+                    }
+                }
+                return '';
+            }).filter(Boolean).join(', ');
+        }
+        // Fallback to old propertyItems if exists (for backward compatibility)
         if (booking.propertyItems && booking.propertyItems.length > 0) {
             return booking.propertyItems.map(item => {
                 const itemTitle = item.title || '';
@@ -1208,7 +1226,6 @@ const AdminBooking = () => {
 };
 
 export default AdminBooking;
-
 
 
 
