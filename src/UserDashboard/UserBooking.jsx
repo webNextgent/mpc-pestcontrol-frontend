@@ -31,7 +31,7 @@ export default function UserBooking() {
     },
   });
   const bookingData = booking?.Data || [];
-
+console.log(booking);
   // Filter when tab changes
   useEffect(() => {
     setTabLoading(true);
