@@ -1152,7 +1152,7 @@ const AdminBooking = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-xs text-gray-500 mb-1">Email</p>
-                                                            <p className="font-medium text-gray-900 break-words">{userInfo.email}</p>
+                                                            <p className="font-medium text-gray-900 wrap-break-word">{userInfo.email}</p>
                                                         </div>
                                                     </>
                                                 );
