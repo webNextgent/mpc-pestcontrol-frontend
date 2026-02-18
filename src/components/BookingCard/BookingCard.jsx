@@ -50,7 +50,7 @@ const getServiceDisplay = (booking) => {
 const BookingCard = ({ item }) => {
     const { status, date, time, totalPay, propertyItems = [] } = item;
     const navigate = useNavigate();
-
+    console.log(item.Data);
     const handelManagebooking = item => {
         navigate(`/booking-details/${item.id}`);
     };
