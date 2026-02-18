@@ -484,18 +484,10 @@ export default function BookingDetails() {
                                             <FaUser className="text-gray-700" />
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">Supreme P.</p>
+                                            <p className="font-medium text-gray-900">Al Mandhar Pest Control</p>
                                             <p className="text-sm text-gray-600">Service Provider</p>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition shadow-sm">
-                                        <FiMessageCircle className="text-xl text-gray-700" />
-                                    </button>
-                                    <button className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition shadow-sm">
-                                        <FiPhone className="text-xl text-gray-700" />
-                                    </button>
                                 </div>
                             </div>
                         </div>

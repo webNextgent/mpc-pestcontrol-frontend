@@ -4,12 +4,9 @@ import { useNavigate } from "react-router-dom";
 
 const statusColors = {
     Requested: "bg-purple-500",
-    Upcoming: "bg-blue-500",
     Pending: "bg-yellow-500",
     Delivered: "bg-green-600",
     Cancelled: "bg-red-500",
-    Completed: "bg-green-600",
-    Rejected: "bg-red-500"
 };
 
 // Helper to display service name as "propertyItem.title - propertyType.title"
@@ -22,7 +19,7 @@ const getServiceDisplay = (booking) => {
                 const itemTitle = propertyItem.title || '';
                 const typeTitle = propertyItem.propertyType?.title || '';
                 if (itemTitle && typeTitle) {
-                    return `${itemTitle} - ${typeTitle}`;
+                    return `${itemTitle} - ${typeTitle} `;
                 } else if (itemTitle) {
                     return itemTitle;
                 } else if (typeTitle) {
@@ -53,7 +50,7 @@ const getServiceDisplay = (booking) => {
 const BookingCard = ({ item }) => {
     const { status, date, time, totalPay, propertyItems = [] } = item;
     const navigate = useNavigate();
-    
+
     const handleManageBooking = () => {
         navigate(`/booking-details/${item.id || item._id}`);
     };

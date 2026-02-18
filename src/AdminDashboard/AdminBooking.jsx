@@ -6,6 +6,7 @@ import { IoClose, IoCopyOutline } from "react-icons/io5";
 import useAxiosSecure from "../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
+import dirhum from '../assets/icon/dirhum.png'
 
 const AdminBooking = () => {
     const queryClient = useQueryClient();
@@ -22,6 +23,7 @@ const AdminBooking = () => {
     const [demoMode,] = useState(true);
     const shareRef = useRef(null);
     const axiosSecure = useAxiosSecure();
+    const [lodaing, setLoading] = useState(false);
 
     const getUserInfo = (booking) => {
         if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
@@ -141,7 +143,10 @@ const AdminBooking = () => {
     }, [searchTerm, statusFilter]);
 
     const handleUpdateBooking = async () => {
+        setLoading(true);
         if (!selectedBooking) return;
+
+
         const updateData = {
             status: selectedBooking.status,
             address: selectedBooking.address,
@@ -163,6 +168,8 @@ const AdminBooking = () => {
         } catch (error) {
             console.error("Update error:", error);
             toast.error("Something went wrong!");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -210,7 +217,6 @@ const AdminBooking = () => {
             case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
             case 'pending': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
             case 'cancelled': return 'bg-red-50 text-red-700 border border-red-200';
-            case 'onhold': return 'bg-gray-50 text-gray-700 border border-gray-200';
             default: return 'bg-gray-50 text-gray-700 border border-gray-200';
         }
     };
@@ -283,7 +289,7 @@ const AdminBooking = () => {
             `📧 *Email:* ${userInfo.email}`,
             "",
             `🔹 *ID:* ${booking.id}`,
-            `🔹 *Service:* ${getServiceDisplay(booking)}`,  // Updated to use combined name
+            `🔹 *Service:* ${getServiceDisplay(booking)}`,
             `🔹 *Date & Time:* ${booking.date} at ${booking.time}`,
             `🔹 *Amount:* $${booking.totalPay}`,
             `🔹 *Status:* ${booking.status}`,
@@ -859,6 +865,7 @@ const AdminBooking = () => {
                                     <input
                                         type="text"
                                         name="serviceName"
+                                        readOnly
                                         value={selectedBooking.serviceName || ""}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
@@ -870,13 +877,14 @@ const AdminBooking = () => {
                                         Total Amount
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"><img src={dirhum} alt="" className="w-4 h-4" /></span>
                                         <input
                                             type="number"
                                             name="totalPay"
+                                            readOnly
                                             value={selectedBooking.totalPay || ""}
                                             onChange={handleInputChange}
-                                            className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
+                                            className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30 ml-1"
                                         />
                                     </div>
                                 </div>
@@ -893,11 +901,10 @@ const AdminBooking = () => {
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
                                     >
-                                        <option value="Upcoming">Upcoming</option>
+                                        <option value="Requested">Requested</option>
+                                        <option value="Pending">Pending</option>
                                         <option value="Delivered">Delivered</option>
                                         <option value="Cancelled">Cancelled</option>
-                                        <option value="Pending">Pending</option>
-                                        <option value="Requested">Requested</option>
                                     </select>
                                 </div>
 
@@ -952,19 +959,6 @@ const AdminBooking = () => {
                                     rows="2"
                                 />
                             </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                    Additional Notes
-                                </label>
-                                <textarea
-                                    name="additionalInfo"
-                                    value={selectedBooking.additionalInfo || ""}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none bg-gray-50/30"
-                                    rows="2"
-                                />
-                            </div>
                         </div>
 
                         <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80">
@@ -975,10 +969,11 @@ const AdminBooking = () => {
                                 Cancel
                             </button>
                             <button
+                                disabled={lodaing}
                                 onClick={handleUpdateBooking}
                                 className="flex-2 sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95"
                             >
-                                Update Booking
+                                {lodaing ? 'Updating...' : 'Update Booking'}
                             </button>
                         </div>
                     </div>
@@ -1065,13 +1060,19 @@ const AdminBooking = () => {
                                                 <p className="text-sm sm:text-base text-gray-600">Total Amount</p>
                                                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</p>
                                             </div>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <p className="text-sm sm:text-base text-gray-600">Payment Mathod</p>
+
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold`}>
+                                                    {bookingDetails.paymentMethod}
+                                                </span>
+                                            </div>
                                             <div className="flex items-center justify-between">
                                                 <p className="text-sm sm:text-base text-gray-600">Status</p>
 
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${bookingDetails.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                                                     {bookingDetails.paymentStatus || 'Pending'}
                                                 </span>
-
                                             </div>
                                         </div>
                                     </div>
@@ -1208,6 +1209,7 @@ const AdminBooking = () => {
                                     Close
                                 </button>
                                 <button
+                                    disabled={lodaing}
                                     onClick={() => {
                                         setSelectedBooking(bookingDetails);
                                         setBookingDetails(null);

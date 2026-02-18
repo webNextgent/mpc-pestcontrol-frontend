@@ -9,7 +9,7 @@ import BookingCard from "../components/BookingCard/BookingCard";
 import useAxiosSecure from "../hooks/useAxiosSecure";
 
 export default function UserBooking() {
-  const [activeTab, setActiveTab] = useState("All"); // "All" as default
+  const [activeTab, setActiveTab] = useState("All");
   const [filteredData, setFilteredData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
   const axiosSecure = useAxiosSecure();
@@ -46,10 +46,8 @@ export default function UserBooking() {
       let result = [];
 
       if (activeTab === "All") {
-        // For "All" tab, show all bookings
         result = bookingData;
       } else {
-        // For other tabs, filter by status (case-insensitive)
         result = bookingData.filter(
           (b) => b.status?.toLowerCase() === activeTab.toLowerCase()
         );
@@ -62,7 +60,6 @@ export default function UserBooking() {
     return () => clearTimeout(timeout);
   }, [activeTab, bookingData]);
 
-  // Set initial filtered data when component mounts
   useEffect(() => {
     if (bookingData.length > 0) {
       setFilteredData(bookingData);
