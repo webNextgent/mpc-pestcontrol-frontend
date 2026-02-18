@@ -72,7 +72,7 @@ export default function Confirmation() {
                 latitude: mapLatitude,
                 status: "Requested",
                 userId: user?.id,
-                paymentStatus: "pending",
+                paymentStatus: "unpaid",
             };
 
             const response = await axiosSecure.post("/booking/create", bookingData);
@@ -123,9 +123,9 @@ export default function Confirmation() {
                 totalPay: totalAfterDiscount,
                 longitude: mapLongitude,
                 latitude: mapLatitude,
-                status: "Upcoming",
+                status: "Requested",
                 userId: user?.id,
-                paymentStatus: "pending",
+                paymentStatus: "unpaid",
             };
 
             const bookingResponse = await axiosSecure.post(

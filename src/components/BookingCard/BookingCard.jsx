@@ -3,10 +3,13 @@ import dirhum from "../../assets/icon/dirhum.png";
 import { useNavigate } from "react-router-dom";
 
 const statusColors = {
+    Requested: "bg-purple-500",
     Upcoming: "bg-blue-500",
+    Pending: "bg-yellow-500",
     Delivered: "bg-green-600",
     Cancelled: "bg-red-500",
-    Pending: "bg-yellow-500"
+    Completed: "bg-green-600",
+    Rejected: "bg-red-500"
 };
 
 // Helper to display service name as "propertyItem.title - propertyType.title"
@@ -50,16 +53,25 @@ const getServiceDisplay = (booking) => {
 const BookingCard = ({ item }) => {
     const { status, date, time, totalPay, propertyItems = [] } = item;
     const navigate = useNavigate();
-    console.log(item.Data);
-    const handelManagebooking = item => {
-        navigate(`/booking-details/${item.id}`);
+    
+    const handleManageBooking = () => {
+        navigate(`/booking-details/${item.id || item._id}`);
     };
 
     const displayService = getServiceDisplay(item);
 
-    return (
-        <div className="w-full max-w-xl border-[#01788E] rounded-2xl p-5 shadow-md hover:shadow-lg transition cursor-pointer">
+    // Format date if it exists
+    const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    }) : 'Date not set';
 
+    // Format time if it exists
+    const formattedTime = time || 'Time not set';
+
+    return (
+        <div className="w-full max-w-xl border border-[#01788E] rounded-2xl p-5 shadow-md hover:shadow-lg transition cursor-pointer">
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
@@ -80,7 +92,7 @@ const BookingCard = ({ item }) => {
                     )}
 
                     <p className="text-[14px] text-gray-500 mt-1">
-                        {date} • {time}
+                        {formattedDate} • {formattedTime}
                     </p>
                 </div>
 
@@ -88,7 +100,7 @@ const BookingCard = ({ item }) => {
                 <span
                     className={`text-[12px] px-3 py-1 rounded-full text-white font-medium ${statusColors[status] || "bg-gray-500"}`}
                 >
-                    {status}
+                    {status || 'Unknown'}
                 </span>
             </div>
 
@@ -97,16 +109,17 @@ const BookingCard = ({ item }) => {
 
             {/* Bottom */}
             <div className="flex justify-between items-center">
-
                 {/* Total Price */}
                 <div className="flex items-center gap-1">
                     <img src={dirhum} className="h-5 w-5" alt="currency" />
-                    <p className="text-[20px] font-bold text-gray-700">{totalPay}</p>
+                    <p className="text-[20px] font-bold text-gray-700">
+                        {totalPay?.toLocaleString?.() || totalPay || '0'}
+                    </p>
                 </div>
 
                 {/* Manage Button */}
                 <button
-                    onClick={() => handelManagebooking(item)}
+                    onClick={handleManageBooking}
                     className="flex items-center gap-2 text-[14px] font-semibold text-[#01788E] border border-[#01788E] px-4 py-2 rounded-lg hover:bg-[#F3FAFB] transition"
                 >
                     Manage
@@ -118,9 +131,6 @@ const BookingCard = ({ item }) => {
 };
 
 export default BookingCard;
-
-
-
 
 
 // import { FaArrowRight } from "react-icons/fa";
