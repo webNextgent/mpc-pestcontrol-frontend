@@ -326,60 +326,8 @@ export default function Confirmation() {
 
                 {/* Payment Method */}
                 <h2 className="text-lg font-semibold mt-6 mb-3">Pay with</h2>
-                {/* ond payment method selection  */}
-                {/* <div className="space-y-3">
-                    <div
-                        onClick={() => {
-                            setOpenModal(true);
-                            setPaymentMethod("Card");
-                        }}
-                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer
-                        ${paymentMethod === "Card" ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <GoCreditCard className="text-xl text-[#1f8bf0]" />
-                            <span className="font-medium">Online Payment</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <MdKeyboardArrowRight className="text-xl text-gray-400" />
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === "Card"}
-                                onChange={() => {
-                                    setPaymentMethod("Card");
-                                    setOpenModal(true);
-                                }}
-                                className="h-4 w-4 cursor-pointer"
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        onClick={() => setPaymentMethod("Cash")}
-                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer
-                        ${paymentMethod === "Cash" ? "border-orange-500 bg-orange-50" : "hover:bg-gray-50"}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <PiMoneyWavy className="text-xl text-green-600" />
-                            <span className="font-medium">Cash On Delivery</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="bg-orange-200 text-orange-600 text-xs px-2 py-1 rounded-md">
-                                +5%
-                            </span>
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === "Cash"}
-                                onChange={() => setPaymentMethod("Cash")}
-                                className="h-4 w-4 cursor-pointer"
-                            />
-                        </div>
-                    </div>
-                </div> */}
-
                 <div className="space-y-3">
+
                     {/* Card (Online Payment) */}
                     <div
                         onClick={() => {
@@ -387,8 +335,7 @@ export default function Confirmation() {
                             setPaymentMethod("Card");
                         }}
                         className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
-        ${paymentMethod === "Card" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
-                    >
+                                  ${paymentMethod === "Card" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`} >
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-3">
                                 {/* Custom Radio Button */}
@@ -411,13 +358,13 @@ export default function Confirmation() {
                             {/* Card Logos */}
                             <div className="flex items-center gap-2">
                                 <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3" />
+                                    <img src="https://i.postimg.cc/KYj6NrYX/visa.jpg" alt="Visa" className="h-3" />
                                 </div>
                                 <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
                                 </div>
                                 <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
+                                    <img src="https://i.postimg.cc/vmTJzLZC/images.jpg" alt="Visa" className="h-2" />
                                     <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
                                 </div>
                             </div>

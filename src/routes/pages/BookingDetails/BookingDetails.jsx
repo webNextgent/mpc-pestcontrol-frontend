@@ -1,3 +1,806 @@
+// /* eslint-disable no-unused-vars */
+// import { useEffect, useRef, useState } from "react";
+// import { FaUser } from "react-icons/fa";
+// import { FiMessageCircle, FiPhone } from "react-icons/fi";
+// import { useLoaderData } from "react-router-dom";
+// import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+// import dirhum from '../../../assets/icon/dirhum.png';
+// import { useQuery } from "@tanstack/react-query";
+// import { LuArrowLeft } from "react-icons/lu";
+// import { useForm } from "react-hook-form";
+// import { MdLocationOn, MdCalendarToday, MdPayment, MdInfo, MdClose } from "react-icons/md";
+// import { HiBuildingOffice } from "react-icons/hi2";
+// import { BsClock, BsTag, BsStar, BsStarFill } from "react-icons/bs";
+// import { TbReceipt } from "react-icons/tb";
+// import useAxiosSecure from "../../../hooks/useAxiosSecure";
+// import toast from "react-hot-toast";
+
+// // Modal Components for better organization
+// const Modal = ({ isOpen, onClose, title, subtitle, children }) => {
+//   if (!isOpen) return null;
+
+//   return (
+//     <div 
+//       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+//       onClick={onClose}
+//     >
+//       <div 
+//         className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
+//         onClick={(e) => e.stopPropagation()}
+//       >
+//         <div className="shrink-0 p-6 border-b border-gray-200">
+//           <div className="flex items-center justify-between">
+//             <div>
+//               <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+//               {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
+//             </div>
+//             <button
+//               onClick={onClose}
+//               className="p-2 hover:bg-gray-100 rounded-lg transition"
+//             >
+//               <MdClose className="w-6 h-6 text-gray-500" />
+//             </button>
+//           </div>
+//         </div>
+//         <div className="flex-1 overflow-y-auto p-6">
+//           {children}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Info Card Component
+// const InfoCard = ({ icon: Icon, title, value, bgColor = "bg-blue-50", iconColor = "text-blue-600" }) => (
+//   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+//     <div className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center shrink-0`}>
+//       <Icon className={iconColor} />
+//     </div>
+//     <div className="min-w-0 flex-1">
+//       <p className="text-sm text-gray-600">{title}</p>
+//       <p className="font-medium text-gray-900 truncate">{value}</p>
+//     </div>
+//   </div>
+// );
+
+// // Action Button Component
+// const ActionButton = ({ icon: Icon, label, onClick, color = "blue" }) => {
+//   const colorClasses = {
+//     blue: "bg-blue-50 hover:bg-blue-100 text-blue-700",
+//     green: "bg-green-50 hover:bg-green-100 text-green-700",
+//     purple: "bg-purple-50 hover:bg-purple-100 text-purple-700",
+//     amber: "bg-amber-50 hover:bg-amber-100 text-amber-700",
+//   };
+
+//   return (
+//     <button
+//       onClick={onClick}
+//       className={`p-3 ${colorClasses[color]} rounded-lg transition flex flex-col items-center gap-2 w-full`}
+//     >
+//       <Icon className="text-xl" />
+//       <span className="text-sm font-medium">{label}</span>
+//     </button>
+//   );
+// };
+
+// export default function BookingDetails() {
+//   const item = useLoaderData();
+//   const scrollerRef = useRef(null);
+//   const axiosSecure = useAxiosSecure();
+
+//   // Modal states
+//   const [modals, setModals] = useState({
+//     manage: false,
+//     address: false,
+//     price: false,
+//     reschedule: false,
+//     payment: false,
+//     addressUpdate: false
+//   });
+
+//   // Form states
+//   const [selectedDay, setSelectedDay] = useState(null);
+//   const [selectedTime, setSelectedTime] = useState(null);
+//   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
+//   const [isUpdating, setIsUpdating] = useState(false);
+//   const [selectedType, setSelectedType] = useState("Apartment");
+
+//   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
+//     mode: "onChange"
+//   });
+
+//   const propertyTypes = ["Apartment", "Villa", "Office", "Other"];
+
+//   // Fetch available dates
+//   const { data: dateTime, isLoading } = useQuery({
+//     queryKey: ['date-time-user'],
+//     queryFn: async () => {
+//       const res = await axiosSecure.get(`/date-time`);
+//       if (!res?.data?.success) {
+//         throw new Error("Failed to fetch date-time");
+//       }
+//       return res?.data;
+//     }
+//   });
+
+//   // Helper functions
+//   const formatDate = (dateString) => {
+//     if (!dateString) return "";
+//     try {
+//       const date = new Date(dateString);
+//       return date.toLocaleDateString('en-US', {
+//         weekday: 'short',
+//         month: 'short',
+//         day: 'numeric',
+//         year: 'numeric'
+//       });
+//     } catch {
+//       return dateString;
+//     }
+//   };
+
+//   const extractAddressParts = (addressString) => {
+//     if (!addressString) return { apartmentNo: "", buildingName: "", area: "", city: "", type: "Apartment" };
+//     const parts = addressString.split(" - ").map(part => part.trim());
+//     return {
+//       apartmentNo: parts[0] || "",
+//       buildingName: parts[1] || "",
+//       area: parts[2] || "",
+//       city: parts[3] || "",
+//       type: "Apartment"
+//     };
+//   };
+
+//   const getAvailableDays = () => {
+//     if (!dateTime?.Data || !Array.isArray(dateTime.Data)) return [];
+
+//     const dateMap = new Map();
+//     dateTime.Data.forEach(item => {
+//       const date = item.date;
+//       if (dateMap.has(date)) {
+//         const existing = dateMap.get(date);
+//         item.time.forEach(slot => {
+//           if (!existing.timeSlots.includes(slot)) existing.timeSlots.push(slot);
+//         });
+//       } else {
+//         dateMap.set(date, {
+//           date,
+//           short: formatDate(date).split(',').slice(0, 2).join(','),
+//           timeSlots: [...item.time]
+//         });
+//       }
+//     });
+
+//     return Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+//   };
+
+//   const availableDays = getAvailableDays();
+//   const availableTimes = selectedDay 
+//     ? availableDays.find(day => day.date === selectedDay)?.timeSlots.sort() || []
+//     : [];
+
+//   const addressParts = extractAddressParts(item?.Data?.address);
+
+//   // Handlers
+//   const toggleModal = (modalName, value) => {
+//     setModals(prev => ({ ...prev, [modalName]: value }));
+//   };
+
+//   const handleReschedule = async () => {
+//     if (!selectedDay || !selectedTime) {
+//       toast.error("Please select both date and time");
+//       return;
+//     }
+
+//     setIsUpdating(true);
+//     try {
+//       const res = await axiosSecure.patch(`/booking/userBooking/${item?.Data?.id}`, {
+//         date: selectedDay,
+//         time: selectedTime,
+//       });
+
+//       if (res?.data?.success) {
+//         toast.success("Booking rescheduled successfully!");
+//         toggleModal('reschedule', false);
+//       }
+//     } catch (error) {
+//       toast.error("Failed to reschedule booking");
+//     } finally {
+//       setIsUpdating(false);
+//     }
+//   };
+
+//   const handlePaymentUpdate = async () => {
+//     setIsUpdating(true);
+//     try {
+//       const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
+//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
+//         paymentMethod: paymentMethodValue
+//       });
+
+//       if (res?.data?.success) {
+//         toast.success("Payment method updated successfully!");
+//         toggleModal('payment', false);
+//       }
+//     } catch (error) {
+//       toast.error("Failed to update payment method");
+//     } finally {
+//       setIsUpdating(false);
+//     }
+//   };
+
+//   const handleAddressUpdate = async (data) => {
+//     setIsUpdating(true);
+//     try {
+//       const formattedAddress = `${data.apartmentNo || ''} - ${data.buildingName || ''} - ${data.area || ''} - ${data.city || ''}`;
+//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
+//         address: formattedAddress
+//       });
+
+//       if (res?.data?.success) {
+//         toast.success("Address updated successfully!");
+//         toggleModal('addressUpdate', false);
+//       }
+//     } catch (error) {
+//       toast.error("Failed to update address");
+//     } finally {
+//       setIsUpdating(false);
+//     }
+//   };
+
+//   const handleCancelBooking = async () => {
+//     if (!window.confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) return;
+
+//     try {
+//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
+//         status: 'Cancelled'
+//       });
+
+//       if (res?.data?.success) {
+//         toast.success("Booking cancelled successfully!");
+//         toggleModal('manage', false);
+//       }
+//     } catch (error) {
+//       toast.error("Failed to cancel booking");
+//     }
+//   };
+
+//   const scroll = (direction) => {
+//     if (!scrollerRef.current) return;
+//     const amount = 200;
+//     scrollerRef.current.scrollBy({
+//       left: direction === "left" ? -amount : amount,
+//       behavior: "smooth"
+//     });
+//   };
+
+//   // Auto-select first date
+//   useEffect(() => {
+//     if (availableDays.length > 0 && !selectedDay) {
+//       setSelectedDay(availableDays[0].date);
+//     }
+//   }, [availableDays, selectedDay]);
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-6 lg:px-8">
+//       <div className="max-w-7xl mx-auto">
+//         {/* Header */}
+//         <div className="mb-6 sm:mb-8">
+//           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Booking Details</h1>
+//           <p className="text-sm sm:text-base text-gray-600">Manage your booking and view all details</p>
+//         </div>
+
+//         {/* Main Grid */}
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+//           {/* Left Column */}
+//           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+//             {/* Confirmation Card */}
+//             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl sm:rounded-2xl shadow-sm border border-blue-100 p-4 sm:p-6">
+//               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+//                 <div className="flex items-start gap-3">
+//                   <div className="w-10 h-10 rounded-full bg-white border border-blue-200 flex items-center justify-center shrink-0">
+//                     <BsClock className="text-blue-600 text-lg" />
+//                   </div>
+//                   <div>
+//                     <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Booking Confirmed</h2>
+//                     <p className="text-xs sm:text-sm text-gray-600">Booking ID: {item?.Data?.id || "N/A"}</p>
+//                     <p className="text-sm sm:text-base text-gray-700 mt-2">
+//                       Your booking is confirmed for {formatDate(item?.Data?.date)} at {item?.Data?.time}
+//                     </p>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Rating */}
+//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+//                 <BsTag className="text-blue-600" />
+//                 Rate Your Experience
+//               </h3>
+//               <div className="flex gap-2">
+//                 {[1, 2, 3, 4, 5].map((star) => (
+//                   <button key={star} className="text-2xl sm:text-3xl text-orange-400 hover:scale-110 transition">
+//                     <BsStar />
+//                   </button>
+//                 ))}
+//               </div>
+//             </div>
+
+//             {/* Job Details */}
+//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+//                 <MdInfo className="text-blue-600" />
+//                 Job Details
+//               </h3>
+//               <div className="space-y-3">
+//                 <InfoCard 
+//                   icon={MdCalendarToday}
+//                   title="Date & Time"
+//                   value={`${formatDate(item?.Data?.date)} at ${item?.Data?.time}`}
+//                   bgColor="bg-blue-50"
+//                   iconColor="text-blue-600"
+//                 />
+//                 <div className="flex items-center justify-between gap-3">
+//                   <InfoCard 
+//                     icon={MdLocationOn}
+//                     title="Address"
+//                     value={item?.Data?.address || "No address provided"}
+//                     bgColor="bg-green-50"
+//                     iconColor="text-green-600"
+//                   />
+//                   <button
+//                     onClick={() => toggleModal('address', true)}
+//                     className="shrink-0 p-3 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+//                   >
+//                     <IoIosArrowForward className="text-xl" />
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Service Details */}
+//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+//                 <HiBuildingOffice className="text-blue-600" />
+//                 Service Details
+//               </h3>
+//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                 <div className="p-4 bg-gray-50 rounded-xl">
+//                   <p className="text-sm text-gray-600">Service Type</p>
+//                   <p className="font-medium text-gray-900">{item?.Data?.serviceName || "N/A"}</p>
+//                 </div>
+//                 <div className="p-4 bg-gray-50 rounded-xl">
+//                   <p className="text-sm text-gray-600">Quantity</p>
+//                   <p className="font-medium text-gray-900">1</p>
+//                 </div>
+//                 <div className="p-4 bg-gray-50 rounded-xl sm:col-span-2">
+//                   <div className="flex items-center justify-between">
+//                     <span className="text-gray-600">Service Fee</span>
+//                     <div className="flex items-center gap-1">
+//                       <img src={dirhum} alt="OMR" className="w-4 h-4" />
+//                       <span className="font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Right Column */}
+//           <div className="space-y-4 sm:space-y-6">
+//             {/* Payment Summary */}
+//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+//                 <TbReceipt className="text-blue-600" />
+//                 Payment Summary
+//               </h3>
+//               <div className="space-y-3">
+//                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+//                   <span className="text-gray-600">Payment Method</span>
+//                   <span className="font-medium text-gray-900">{item?.Data?.paymentMethod}</span>
+//                 </div>
+//                 <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
+//                   <div>
+//                     <p className="font-semibold text-gray-900">Total</p>
+//                     <p className="text-xs text-gray-600">All charges included</p>
+//                   </div>
+//                   <div className="flex items-center gap-1">
+//                     <img src={dirhum} alt="OMR" className="w-5 h-5" />
+//                     <span className="text-xl sm:text-2xl font-bold text-gray-900">{item.Data?.totalPay}</span>
+//                   </div>
+//                 </div>
+//                 <button
+//                   onClick={() => toggleModal('price', true)}
+//                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition text-sm"
+//                 >
+//                   View Breakdown
+//                 </button>
+//               </div>
+//             </div>
+
+//             {/* Quick Actions */}
+//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+//               <div className="grid grid-cols-2 gap-2 sm:gap-3">
+//                 <ActionButton 
+//                   icon={MdCalendarToday} 
+//                   label="Reschedule" 
+//                   onClick={() => toggleModal('reschedule', true)}
+//                   color="blue"
+//                 />
+//                 <ActionButton 
+//                   icon={MdLocationOn} 
+//                   label="Address" 
+//                   onClick={() => toggleModal('addressUpdate', true)}
+//                   color="purple"
+//                 />
+//                 <ActionButton 
+//                   icon={MdPayment} 
+//                   label="Payment" 
+//                   onClick={() => toggleModal('payment', true)}
+//                   color="amber"
+//                 />
+//                 <ActionButton 
+//                   icon={BsTag} 
+//                   label="Manage" 
+//                   onClick={() => toggleModal('manage', true)}
+//                   color="green"
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Modals */}
+
+//         {/* Address View Modal */}
+//         <Modal 
+//           isOpen={modals.address} 
+//           onClose={() => toggleModal('address', false)}
+//           title="Address Details"
+//         >
+//           <div className="space-y-4">
+//             <InfoCard icon={MdLocationOn} title="City" value={addressParts.city || "Not specified"} bgColor="bg-blue-50" />
+//             <InfoCard icon={MdLocationOn} title="Area" value={addressParts.area || "Not specified"} bgColor="bg-green-50" />
+//             <InfoCard icon={HiBuildingOffice} title="Building" value={addressParts.buildingName || "Not specified"} bgColor="bg-purple-50" />
+//             <InfoCard icon={HiBuildingOffice} title="Apartment" value={addressParts.apartmentNo || "Not specified"} bgColor="bg-amber-50" />
+//           </div>
+//         </Modal>
+
+//         {/* Price Breakdown Modal */}
+//         <Modal 
+//           isOpen={modals.price} 
+//           onClose={() => toggleModal('price', false)}
+//           title="Payment Breakdown"
+//           subtitle="Detailed breakdown of all charges"
+//         >
+//           <div className="space-y-3">
+//             {[
+//               { label: "Service Charge", value: item?.Data?.serviceCharge },
+//               { label: "Service Fee", value: item?.Data?.serviceFee },
+//               { label: "Discount", value: item?.Data?.discount },
+//               { label: "VAT (5%)", value: item?.Data?.vat },
+//               { label: "Cash on Delivery", value: item?.Data?.cashOnDelivery },
+//             ].map((item, index) => (
+//               <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                 <span className="text-gray-700">{item.label}</span>
+//                 <div className="flex items-center gap-1">
+//                   <img src={dirhum} alt="OMR" className="w-4 h-4" />
+//                   <span className="font-semibold">{item.value || 0}</span>
+//                 </div>
+//               </div>
+//             ))}
+//             <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl mt-4">
+//               <span className="font-semibold text-gray-900">Total to Pay</span>
+//               <div className="flex items-center gap-1">
+//                 <img src={dirhum} alt="OMR" className="w-5 h-5" />
+//                 <span className="text-2xl font-bold text-gray-900">{item?.Data?.totalPay}</span>
+//               </div>
+//             </div>
+//           </div>
+//         </Modal>
+
+//         {/* Reschedule Modal */}
+//         <Modal 
+//           isOpen={modals.reschedule} 
+//           onClose={() => toggleModal('reschedule', false)}
+//           title="Reschedule Booking"
+//           subtitle="Select a new date and time"
+//         >
+//           <div className="space-y-6">
+//             {/* Date Selector */}
+//             <div>
+//               <h3 className="font-medium text-gray-900 mb-3">Select Date</h3>
+//               {isLoading ? (
+//                 <div className="flex justify-center py-8">
+//                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+//                 </div>
+//               ) : (
+//                 <div className="relative">
+//                   <button
+//                     onClick={() => scroll("left")}
+//                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
+//                   >
+//                     <IoIosArrowBack className="text-2xl text-gray-600" />
+//                   </button>
+//                   <div
+//                     ref={scrollerRef}
+//                     className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-0 md:px-8"
+//                   >
+//                     {availableDays.map((day, index) => (
+//                       <button
+//                         key={index}
+//                         onClick={() => setSelectedDay(day.date)}
+//                         className={`snap-start min-w-[90px] p-3 rounded-lg border transition ${
+//                           selectedDay === day.date 
+//                             ? "bg-blue-600 text-white border-blue-600" 
+//                             : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
+//                         }`}
+//                       >
+//                         <div className="text-sm">{day.short}</div>
+//                       </button>
+//                     ))}
+//                   </div>
+//                   <button
+//                     onClick={() => scroll("right")}
+//                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
+//                   >
+//                     <IoIosArrowForward className="text-2xl text-gray-600" />
+//                   </button>
+//                 </div>
+//               )}
+//             </div>
+
+//             {/* Time Selector */}
+//             {selectedDay && (
+//               <div>
+//                 <h3 className="font-medium text-gray-900 mb-3">Select Time</h3>
+//                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+//                   {availableTimes.map((time, index) => (
+//                     <button
+//                       key={index}
+//                       onClick={() => setSelectedTime(time)}
+//                       className={`p-3 rounded-lg border text-center transition ${
+//                         selectedTime === time
+//                           ? "bg-blue-600 text-white border-blue-600"
+//                           : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
+//                       }`}
+//                     >
+//                       {time}
+//                     </button>
+//                   ))}
+//                 </div>
+//               </div>
+//             )}
+
+//             <button
+//               onClick={handleReschedule}
+//               disabled={!selectedDay || !selectedTime || isUpdating}
+//               className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+//             >
+//               {isUpdating ? "Updating..." : "Confirm Reschedule"}
+//             </button>
+//           </div>
+//         </Modal>
+
+//         {/* Payment Method Modal */}
+//         <Modal 
+//           isOpen={modals.payment} 
+//           onClose={() => toggleModal('payment', false)}
+//           title="Update Payment Method"
+//           subtitle="Select your preferred payment method"
+//         >
+//           <div className="space-y-4">
+//             <div className="p-4 bg-blue-50 rounded-lg">
+//               <p className="text-sm text-gray-700">
+//                 Current: <span className="font-semibold">{item?.Data?.paymentMethod}</span>
+//               </p>
+//             </div>
+
+//             <div className="space-y-3">
+//               {/* Online Payment */}
+//               <div
+//                 onClick={() => setSelectedPaymentMethod("Online")}
+//                 className={`border rounded-xl p-4 cursor-pointer transition ${
+//                   selectedPaymentMethod === "Online" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
+//                 }`}
+//               >
+//                 <div className="flex items-center justify-between">
+//                   <div className="flex items-center gap-3">
+//                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+//                       selectedPaymentMethod === "Online" ? "border-blue-600" : "border-gray-400"
+//                     }`}>
+//                       {selectedPaymentMethod === "Online" && <div className="w-3 h-3 rounded-full bg-blue-600"></div>}
+//                     </div>
+//                     <span className="font-medium">Pay Online (Ziina)</span>
+//                   </div>
+//                   <div className="flex gap-1">
+//                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
+//                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-4" />
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Cash on Delivery */}
+//               <div
+//                 onClick={() => setSelectedPaymentMethod("Cash")}
+//                 className={`border rounded-xl p-4 cursor-pointer transition ${
+//                   selectedPaymentMethod === "Cash" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
+//                 }`}
+//               >
+//                 <div className="flex items-center justify-between">
+//                   <div className="flex items-center gap-3">
+//                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+//                       selectedPaymentMethod === "Cash" ? "border-blue-600" : "border-gray-400"
+//                     }`}>
+//                       {selectedPaymentMethod === "Cash" && <div className="w-3 h-3 rounded-full bg-blue-600"></div>}
+//                     </div>
+//                     <span className="font-medium">Cash on Delivery</span>
+//                   </div>
+//                   <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">+5% fee</span>
+//                 </div>
+//               </div>
+//             </div>
+
+//             <button
+//               onClick={handlePaymentUpdate}
+//               disabled={isUpdating}
+//               className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
+//             >
+//               {isUpdating ? "Updating..." : "Update Payment Method"}
+//             </button>
+//           </div>
+//         </Modal>
+
+//         {/* Address Update Modal */}
+//         <Modal 
+//           isOpen={modals.addressUpdate} 
+//           onClose={() => toggleModal('addressUpdate', false)}
+//           title="Update Address"
+//           subtitle="Update your service location"
+//         >
+//           <form onSubmit={handleSubmit(handleAddressUpdate)} className="space-y-4">
+//             <div className="flex gap-2 overflow-x-auto pb-2">
+//               {propertyTypes.map(type => (
+//                 <button
+//                   key={type}
+//                   type="button"
+//                   onClick={() => setSelectedType(type)}
+//                   className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${
+//                     selectedType === type 
+//                       ? "bg-blue-600 text-white" 
+//                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+//                   }`}
+//                 >
+//                   {type}
+//                 </button>
+//               ))}
+//             </div>
+
+//             <div className="space-y-4">
+//               <input
+//                 {...register("city", { required: "City is required" })}
+//                 placeholder="City"
+//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+//               />
+//               {errors.city && <p className="text-red-500 text-sm">{errors.city.message}</p>}
+
+//               <input
+//                 {...register("area", { required: "Area is required" })}
+//                 placeholder="Area"
+//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+//               />
+//               {errors.area && <p className="text-red-500 text-sm">{errors.area.message}</p>}
+
+//               <input
+//                 {...register("buildingName")}
+//                 placeholder="Building Name"
+//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+//               />
+
+//               <input
+//                 {...register("apartmentNo")}
+//                 placeholder="Apartment/Villa No"
+//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+//               />
+//             </div>
+
+//             <div className="flex gap-3 pt-4">
+//               <button
+//                 type="button"
+//                 onClick={() => toggleModal('addressUpdate', false)}
+//                 className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+//               >
+//                 Cancel
+//               </button>
+//               <button
+//                 type="submit"
+//                 disabled={isUpdating}
+//                 className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
+//               >
+//                 {isUpdating ? "Updating..." : "Update Address"}
+//               </button>
+//             </div>
+//           </form>
+//         </Modal>
+
+//         {/* Manage Booking Modal */}
+//         <Modal 
+//           isOpen={modals.manage} 
+//           onClose={() => toggleModal('manage', false)}
+//           title="Manage Booking"
+//           subtitle="Choose an option to manage your booking"
+//         >
+//           <div className="divide-y divide-gray-100">
+//             <button
+//               onClick={() => { toggleModal('manage', false); toggleModal('reschedule', true); }}
+//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
+//             >
+//               <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+//                 <MdCalendarToday className="text-blue-600" />
+//               </div>
+//               <div className="text-left">
+//                 <p className="font-medium text-gray-900">Reschedule</p>
+//                 <p className="text-sm text-gray-600">Change date or time</p>
+//               </div>
+//             </button>
+
+//             <button
+//               onClick={() => { toggleModal('manage', false); toggleModal('addressUpdate', true); }}
+//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
+//             >
+//               <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+//                 <MdLocationOn className="text-purple-600" />
+//               </div>
+//               <div className="text-left">
+//                 <p className="font-medium text-gray-900">Change Address</p>
+//                 <p className="text-sm text-gray-600">Update location</p>
+//               </div>
+//             </button>
+
+//             <button
+//               onClick={() => { toggleModal('manage', false); toggleModal('payment', true); }}
+//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
+//             >
+//               <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+//                 <MdPayment className="text-amber-600" />
+//               </div>
+//               <div className="text-left">
+//                 <p className="font-medium text-gray-900">Payment Method</p>
+//                 <p className="text-sm text-gray-600">Update payment details</p>
+//               </div>
+//             </button>
+
+//             <button
+//               onClick={handleCancelBooking}
+//               className="w-full py-4 flex items-center gap-4 hover:bg-red-50 transition px-2 text-red-600"
+//             >
+//               <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+//                 <MdClose className="text-red-600" />
+//               </div>
+//               <div className="text-left">
+//                 <p className="font-medium">Cancel Booking</p>
+//                 <p className="text-sm text-red-500">This action cannot be undone</p>
+//               </div>
+//             </button>
+//           </div>
+//         </Modal>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
 /* eslint-disable no-unused-vars */
 import { useEffect, useRef, useState } from "react";
 import { FaUser } from "react-icons/fa";

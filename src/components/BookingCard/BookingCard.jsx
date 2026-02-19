@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { FaArrowRight } from "react-icons/fa";
 import dirhum from "../../assets/icon/dirhum.png";
 import { useNavigate } from "react-router-dom";
@@ -9,37 +10,45 @@ const statusColors = {
     Cancelled: "bg-red-500",
 };
 
-// Helper to display service name as "propertyItem.title - propertyType.title"
+const paymentStatusColors = {
+    paid: "bg-green-100 text-green-800 border border-green-300",
+    unpaid: "bg-red-100 text-red-800 border border-red-300",
+    pending: "bg-yellow-100 text-yellow-800 border border-yellow-300",
+    failed: "bg-gray-100 text-gray-800 border border-gray-300",
+    refunded: "bg-blue-100 text-blue-800 border border-blue-300",
+};
+
 const getServiceDisplay = (booking) => {
-    // First try using bookingItems (new structure)
     if (booking.bookingItems && booking.bookingItems.length > 0) {
         return booking.bookingItems.map(item => {
             const propertyItem = item.propertyItem;
             if (propertyItem) {
                 const itemTitle = propertyItem.title || '';
-                const typeTitle = propertyItem.propertyType?.title || '';
-                if (itemTitle && typeTitle) {
-                    return `${itemTitle} - ${typeTitle} `;
+                const serviceTypeTitle = propertyItem.propertyType?.serviceType?.title || '';
+
+                if (itemTitle && serviceTypeTitle) {
+                    return `${itemTitle} - ${serviceTypeTitle}`;
                 } else if (itemTitle) {
                     return itemTitle;
-                } else if (typeTitle) {
-                    return typeTitle;
+                } else if (serviceTypeTitle) {
+                    return serviceTypeTitle;
                 }
             }
             return '';
         }).filter(Boolean).join(', ');
     }
-    // Fallback to old propertyItems
+
     if (booking.propertyItems && booking.propertyItems.length > 0) {
         return booking.propertyItems.map(item => {
             const itemTitle = item.title || '';
-            const typeTitle = item.propertyType?.title || '';
-            if (itemTitle && typeTitle) {
-                return `${itemTitle} - ${typeTitle}`;
+            const serviceTypeTitle = item.propertyType?.serviceType?.title || '';
+
+            if (itemTitle && serviceTypeTitle) {
+                return `${itemTitle} - ${serviceTypeTitle}`;
             } else if (itemTitle) {
                 return itemTitle;
-            } else if (typeTitle) {
-                return typeTitle;
+            } else if (serviceTypeTitle) {
+                return serviceTypeTitle;
             }
             return '';
         }).filter(Boolean).join(', ');
@@ -48,7 +57,7 @@ const getServiceDisplay = (booking) => {
 };
 
 const BookingCard = ({ item }) => {
-    const { status, date, time, totalPay, propertyItems = [] } = item;
+    const { status, date, time, totalPay, paymentStatus, propertyItems = [] } = item;
     const navigate = useNavigate();
 
     const handleManageBooking = () => {
@@ -56,7 +65,7 @@ const BookingCard = ({ item }) => {
     };
 
     const displayService = getServiceDisplay(item);
-
+    
     // Format date if it exists
     const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -67,6 +76,10 @@ const BookingCard = ({ item }) => {
     // Format time if it exists
     const formattedTime = time || 'Time not set';
 
+    // Format payment status for display
+    const formattedPaymentStatus = paymentStatus?.toLowerCase() || 'unknown';
+    const paymentStatusText = paymentStatus || 'Unknown';
+
     return (
         <div className="w-full max-w-xl border border-[#01788E] rounded-2xl p-5 shadow-md hover:shadow-lg transition cursor-pointer">
             {/* Header */}
@@ -76,24 +89,12 @@ const BookingCard = ({ item }) => {
                         {displayService}
                     </h2>
 
-                    {/* Optional: still show individual item titles if needed */}
-                    {propertyItems.length > 0 && (
-                        <p className="text-[14px] text-gray-600 mt-1">
-                            {propertyItems.map((p, index) => (
-                                <span key={index}>
-                                    {p.title}
-                                    {index !== propertyItems.length - 1 && ", "}
-                                </span>
-                            ))}
-                        </p>
-                    )}
-
                     <p className="text-[14px] text-gray-500 mt-1">
                         {formattedDate} • {formattedTime}
                     </p>
                 </div>
 
-                {/* Status Badge */}
+                {/* Status Badge - Booking Status */}
                 <span
                     className={`text-[12px] px-3 py-1 rounded-full text-white font-medium ${statusColors[status] || "bg-gray-500"}`}
                 >
@@ -106,12 +107,21 @@ const BookingCard = ({ item }) => {
 
             {/* Bottom */}
             <div className="flex justify-between items-center">
-                {/* Total Price */}
-                <div className="flex items-center gap-1">
-                    <img src={dirhum} className="h-5 w-5" alt="currency" />
-                    <p className="text-[20px] font-bold text-gray-700">
-                        {totalPay?.toLocaleString?.() || totalPay || '0'}
-                    </p>
+                {/* Total Price with Payment Status */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                        <img src={dirhum} className="h-5 w-5" alt="currency" />
+                        <p className="text-[20px] font-bold text-gray-700">
+                            {totalPay?.toLocaleString?.() || totalPay || '0'}
+                        </p>
+                    </div>
+                    
+                    {/* Payment Status Badge - Small & Short */}
+                    <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${paymentStatusColors[formattedPaymentStatus] || "bg-gray-100 text-gray-800"}`}
+                    >
+                        {paymentStatusText}
+                    </span>
                 </div>
 
                 {/* Manage Button */}
@@ -128,85 +138,3 @@ const BookingCard = ({ item }) => {
 };
 
 export default BookingCard;
-
-
-// import { FaArrowRight } from "react-icons/fa";
-// import dirhum from "../../assets/icon/dirhum.png";
-// import { useNavigate } from "react-router-dom";
-
-// const statusColors = {
-//     Upcoming: "bg-blue-500",
-//     Delivered: "bg-green-600",
-//     Cancelled: "bg-red-500",
-//     Pending: "bg-yellow-500"
-// };
-
-// const BookingCard = ({ item }) => {
-//     const { serviceName, status, date, time, totalPay, propertyItems = [] } = item;
-//     const navigate = useNavigate();
-
-//     const handelManagebooking = item => {
-//         // console.log(item.id);
-//         navigate(`/booking-details/${item.id}`);
-//     }
-
-//     return (
-//         <div className="w-full max-w-xl border-[#01788E] rounded-2xl p-5 shadow-md hover:shadow-lg transition cursor-pointer">
-
-//             {/* Header */}
-//             <div className="flex justify-between items-start">
-//                 <div>
-//                     <h2 className="text-[20px] font-semibold text-gray-900">
-//                         {serviceName}
-//                     </h2>
-
-//                     {propertyItems.length > 0 && (
-//                         <p className="text-[14px] text-gray-600 mt-1">
-//                             {propertyItems.map((p, index) => (
-//                                 <span key={index}>
-//                                     {p.title}
-//                                     {index !== propertyItems.length - 1 && ", "}
-//                                 </span>
-//                             ))}
-//                         </p>
-//                     )}
-
-//                     <p className="text-[14px] text-gray-500 mt-1">
-//                         {date} • {time}
-//                     </p>
-//                 </div>
-
-//                 {/* Status Badge */}
-//                 <span
-//                     className={`text-[12px] px-3 py-1 rounded-full text-white font-medium ${statusColors[status] || "bg-gray-500"}`}
-//                 >
-//                     {status}
-//                 </span>
-//             </div>
-
-//             {/* Line */}
-//             <div className="w-full border-b my-4"></div>
-
-//             {/* Bottom */}
-//             <div className="flex justify-between items-center">
-
-//                 {/* Total Price */}
-//                 <div className="flex items-center gap-1">
-//                     <img src={dirhum} className="h-5 w-5" alt="currency" />
-//                     <p className="text-[20px] font-bold text-gray-700">{totalPay}</p>
-//                 </div>
-
-//                 {/* Manage Button */}
-//                 <button
-//                     onClick={() => handelManagebooking(item)}
-//                     className="flex items-center gap-2 text-[14px] font-semibold text-[#01788E] border border-[#01788E] px-4 py-2 rounded-lg hover:bg-[#F3FAFB] transition"
-//                 >
-//                     Manage
-//                     <FaArrowRight className="text-[12px]" />
-//                 </button>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default BookingCard;

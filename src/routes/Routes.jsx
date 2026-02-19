@@ -8,10 +8,9 @@ import UserBooking from "../UserDashboard/UserBooking";
 import UserProfile from "../UserDashboard/UserProfile";
 import BookingSuccess from "./pages/BookingSuccess/BookingSuccess";
 import SavedLocations from "../UserDashboard/SaveLocations";
-import PaymentMethods from "../UserDashboard/PaymentMethods";
 import MyWallet from "../UserDashboard/MyWallet";
 import DeleteAccount from "../UserDashboard/DeleteAccount";
-import InviteFriend from "../UserDashboard/InviteFriend";
+// import InviteFriend from "../UserDashboard/InviteFriend";
 import BookingDetails from "./pages/BookingDetails/BookingDetails";
 import AddServices from "../AdminDashboard/AddServices";
 import AdminBooking from "../AdminDashboard/AdminBooking";
@@ -63,10 +62,10 @@ export const router = createBrowserRouter([
             { path: 'booking', element: <ProtectedRouteUser> <UserBooking /></ProtectedRouteUser> },
             { path: 'profile', element: <ProtectedRouteUser> <UserProfile /></ProtectedRouteUser> },
             { path: 'saved-locations', element: <ProtectedRouteUser> <SavedLocations /></ProtectedRouteUser> },
-            { path: 'payment-methods', element: <ProtectedRouteUser> <PaymentMethods /></ProtectedRouteUser> },
+            // { path: 'payment-methods', element: <ProtectedRouteUser> <PaymentMethods /></ProtectedRouteUser> },
             { path: 'wallet', element: <ProtectedRouteUser><MyWallet /> </ProtectedRouteUser> },
             { path: 'delete-account', element: <ProtectedRouteUser> <DeleteAccount /></ProtectedRouteUser> },
-            { path: 'invite-friend', element: <ProtectedRouteUser><InviteFriend /></ProtectedRouteUser> },
+            // { path: 'invite-friend', element: <ProtectedRouteUser><InviteFriend /></ProtectedRouteUser> },
             { path: 'payment-success', element: <ProtectedRouteUser><PaymentSuccess /></ProtectedRouteUser> },
             { path: 'payment-cancel', element: <ProtectedRouteUser><PaymentCancelled /></ProtectedRouteUser> },
 

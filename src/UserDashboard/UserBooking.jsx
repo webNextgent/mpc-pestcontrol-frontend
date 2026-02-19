@@ -7,19 +7,26 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import BookingCard from "../components/BookingCard/BookingCard";
 import useAxiosSecure from "../hooks/useAxiosSecure";
+import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 export default function UserBooking() {
   const [activeTab, setActiveTab] = useState("All");
   const [filteredData, setFilteredData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const [paginatedData, setPaginatedData] = useState([]);
+  
   const axiosSecure = useAxiosSecure();
 
   const tabs = [
     { id: "All", label: "All Booking", icon: <PiBookThin /> },
     { id: "Requested", label: "Requested", icon: <PiBookThin /> },
     { id: "Pending", label: "Pending", icon: <PiBookThin /> },
-    { id: "Delivered", label: "Delivered", icon: <MdOutlineWatchLater /> },
-    { id: "Cancelled", label: "Cancelled", icon: <MdOutlineWatchLater /> },
+    { id: "Delivered", label: "Delivered", icon: <PiBookThin /> },
+    { id: "Cancelled", label: "Cancelled", icon: <PiBookThin /> }
   ];
 
   const { data: booking = {}, isLoading } = useQuery({
@@ -37,6 +44,7 @@ export default function UserBooking() {
   useEffect(() => {
     if (!bookingData.length) {
       setFilteredData([]);
+      setCurrentPage(1); // রিসেট পেজ
       return;
     }
 
@@ -54,17 +62,95 @@ export default function UserBooking() {
       }
 
       setFilteredData(result);
+      setCurrentPage(1); // ট্যাব চেঞ্জ হলে প্রথম পৃষ্ঠায় ফিরে যান
       setTabLoading(false);
     }, 300);
 
     return () => clearTimeout(timeout);
   }, [activeTab, bookingData]);
 
+  // Pagination logic
   useEffect(() => {
-    if (bookingData.length > 0) {
-      setFilteredData(bookingData);
-    }
-  }, [bookingData]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedData(filteredData.slice(startIndex, endIndex));
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // স্ক্রলের উপরে নিয়ে যাওয়া
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Pagination component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-8 mb-4">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`p-2 rounded-lg border ${
+            currentPage === 1
+              ? "border-gray-200 text-gray-400 cursor-not-allowed"
+              : "border-[#01788E] text-[#01788E] hover:bg-[#01788E] hover:text-white"
+          } transition`}
+        >
+          <IoChevronBack />
+        </button>
+
+        {/* পৃষ্ঠা সংখ্যা দেখানো */}
+        {[...Array(totalPages)].map((_, index) => {
+          const pageNumber = index + 1;
+          
+          // শুধু ৫টি পৃষ্ঠা দেখাবে (বর্তমান পৃষ্ঠাকে কেন্দ্র করে)
+          if (
+            pageNumber === 1 ||
+            pageNumber === totalPages ||
+            (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2)
+          ) {
+            return (
+              <button
+                key={pageNumber}
+                onClick={() => handlePageChange(pageNumber)}
+                className={`w-10 h-10 rounded-lg border ${
+                  currentPage === pageNumber
+                    ? "bg-[#01788E] text-white border-[#01788E]"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                } transition`}
+              >
+                {pageNumber}
+              </button>
+            );
+          }
+          
+          // এলিপসিস দেখানো
+          if (pageNumber === currentPage - 3 || pageNumber === currentPage + 3) {
+            return <span key={pageNumber} className="text-gray-500">...</span>;
+          }
+          
+          return null;
+        })}
+
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`p-2 rounded-lg border ${
+            currentPage === totalPages
+              ? "border-gray-200 text-gray-400 cursor-not-allowed"
+              : "border-[#01788E] text-[#01788E] hover:bg-[#01788E] hover:text-white"
+          } transition`}
+        >
+          <IoChevronForward />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="border border-[#E5E7EB] px-2 md:px-6 py-4 rounded-lg bg-white w-full max-w-4xl mx-auto">
@@ -90,6 +176,13 @@ export default function UserBooking() {
             </button>
           ))}
         </nav>
+
+        {/* Results count */}
+        {!isLoading && !tabLoading && filteredData.length > 0 && (
+          <div className="w-full max-w-xl mt-4 text-sm text-gray-600">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} bookings
+          </div>
+        )}
 
         {/* Loading State */}
         {(isLoading || tabLoading) && (
@@ -118,11 +211,14 @@ export default function UserBooking() {
         <div className="mt-6 flex flex-col gap-4 w-full items-center">
           {!isLoading &&
             !tabLoading &&
-            filteredData.map((item) => (
+            paginatedData.map((item) => (
               <BookingCard key={item.id || item._id} item={item} />
             ))}
         </div>
+
+        {/* Pagination */}
+        {!isLoading && !tabLoading && filteredData.length > 0 && <Pagination />}
       </div>
     </div>
   );
-}
+};

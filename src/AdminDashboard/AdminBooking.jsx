@@ -52,35 +52,40 @@ const AdminBooking = () => {
                 const propertyItem = item.propertyItem;
                 if (propertyItem) {
                     const itemTitle = propertyItem.title || '';
-                    const typeTitle = propertyItem.propertyType?.title || '';
-                    if (itemTitle && typeTitle) {
-                        return `${itemTitle} - ${typeTitle}`;
+                    const serviceTypeTitle = propertyItem.propertyType?.serviceType?.title || '';
+
+                    if (itemTitle && serviceTypeTitle) {
+                        return `${itemTitle} - ${serviceTypeTitle}`;  // "2 Bedroom Apartment - Cockroaches"
                     } else if (itemTitle) {
                         return itemTitle;
-                    } else if (typeTitle) {
-                        return typeTitle;
+                    } else if (serviceTypeTitle) {
+                        return serviceTypeTitle;
                     }
                 }
                 return '';
             }).filter(Boolean).join(', ');
         }
-        // Fallback to old propertyItems if exists (for backward compatibility)
+
+        // Fallback to old propertyItems if exists
         if (booking.propertyItems && booking.propertyItems.length > 0) {
             return booking.propertyItems.map(item => {
                 const itemTitle = item.title || '';
-                const typeTitle = item.propertyType?.title || '';
-                if (itemTitle && typeTitle) {
-                    return `${itemTitle} - ${typeTitle}`;
+                const serviceTypeTitle = item.propertyType?.serviceType?.title || '';
+
+                if (itemTitle && serviceTypeTitle) {
+                    return `${itemTitle} - ${serviceTypeTitle}`;
                 } else if (itemTitle) {
                     return itemTitle;
-                } else if (typeTitle) {
-                    return typeTitle;
+                } else if (serviceTypeTitle) {
+                    return serviceTypeTitle;
                 }
                 return '';
             }).filter(Boolean).join(', ');
         }
+
         return booking.serviceName || 'N/A';
     };
+
 
     const { data: bookings = [], isLoading, error } = useQuery({
         queryKey: ["bookingAdmin"],
@@ -146,7 +151,6 @@ const AdminBooking = () => {
         setLoading(true);
         if (!selectedBooking) return;
 
-
         const updateData = {
             status: selectedBooking.status,
             address: selectedBooking.address,
@@ -157,9 +161,17 @@ const AdminBooking = () => {
 
         try {
             const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, updateData);
-            console.log(res);
+
             if (res?.data?.success) {
-                queryClient.invalidateQueries(["bookingAdmin"]);
+                await queryClient.invalidateQueries({
+                    queryKey: ["bookingAdmin"],
+                    exact: true,
+                    refetchType: 'active'
+                });
+                await queryClient.refetchQueries({
+                    queryKey: ["bookingAdmin"]
+                });
+
                 setSelectedBooking(null);
                 toast.success("Booking updated successfully!");
             } else {
@@ -275,8 +287,9 @@ const AdminBooking = () => {
         };
     }, []);
 
-    // WhatsApp/share-friendly version with better formatting (এখন ইউজারের তথ্যও যোগ হয়েছে)
+
     const generateShareText = (booking) => {
+        console.log(booking);
         const mapUrl = getGoogleMapsUrl(booking);
         const userInfo = getUserInfo(booking);
 
@@ -292,7 +305,9 @@ const AdminBooking = () => {
             `🔹 *Service:* ${getServiceDisplay(booking)}`,
             `🔹 *Date & Time:* ${booking.date} at ${booking.time}`,
             `🔹 *Amount:* $${booking.totalPay}`,
-            `🔹 *Status:* ${booking.status}`,
+            `🔹 *Booking Status:* ${booking.status}`,
+            `🔹 *Payment Status:* ${booking.paymentStatus}`,
+            `🔹 *Payment Mathod:* ${booking.paymentMethod}`,
             "",
             "📍 *LOCATION*",
             `Address: ${booking.address}`,
@@ -419,7 +434,7 @@ const AdminBooking = () => {
                         <div className="relative">
                             <input
                                 type="text"
-                                placeholder="Search bookings..."
+                                placeholder="Search by phone number..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full px-4 py-3.5 pl-12 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
@@ -445,11 +460,10 @@ const AdminBooking = () => {
                                 className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                             >
                                 <option value="all">All Status</option>
-                                <option value="Upcoming">Upcoming</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Pending">Panding</option>
-                                <option value="Cancelled">Cancelled</option>
                                 <option value="Requested">Requested</option>
+                                <option value="Pending">Panding</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
                             </select>
                         </div>
                         <div className="w-full sm:w-40">
@@ -545,7 +559,7 @@ const AdminBooking = () => {
                                                         <div>
                                                             {/* Updated service display */}
                                                             <div className="font-semibold text-gray-900 text-sm mb-1">
-                                                                {getServiceDisplay(book)}
+                                                                {getServiceDisplay(book)}  {/* এইটা自动 আপডেট হবে */}
                                                             </div>
                                                             <div className="font-semibold text-gray-900 text-sm">
                                                                 {formatCurrency(book.totalPay)}
@@ -707,7 +721,9 @@ const AdminBooking = () => {
                                             </div>
 
                                             {/* Updated service display */}
-                                            <h3 className="font-semibold text-gray-900 text-lg mb-4 line-clamp-1">{getServiceDisplay(book)}</h3>
+                                            <h3 className="font-semibold text-gray-900 text-lg mb-4 line-clamp-1">
+                                                {getServiceDisplay(book)}
+                                            </h3>
 
                                             {/* Customer Info if available */}
                                             {userInfo.fullName !== 'N/A' && (
@@ -867,6 +883,7 @@ const AdminBooking = () => {
                                         name="serviceName"
                                         readOnly
                                         value={selectedBooking.serviceName || ""}
+                                        // value={  {getServiceDisplay(bookingDetails)} || ""}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
                                     />

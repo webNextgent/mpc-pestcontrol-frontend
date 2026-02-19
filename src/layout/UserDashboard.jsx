@@ -85,7 +85,7 @@ const UserDashboard = () => {
                     </li>
 
                     {/* Payment Methods */}
-                    <li className="list-none border-b border-dashed hover:bg-gray-50">
+                    {/* <li className="list-none border-b border-dashed hover:bg-gray-50">
                         <NavLink
                             to="/dashboard/payment-methods"
                             onClick={handleNavClick}
@@ -95,7 +95,7 @@ const UserDashboard = () => {
                             }>
                             <MdOutlinePayments /> Payment Methods
                         </NavLink>
-                    </li>
+                    </li> */}
 
                     {/* My Wallet */}
                     <li className="list-none border-b border-dashed hover:bg-gray-50">
@@ -124,7 +124,7 @@ const UserDashboard = () => {
                     </li>
 
                     {/* Invite a Friend */}
-                    <li className="list-none border-b border-dashed hover:bg-gray-50 flex justify-between items-center px-3 py-2">
+                    {/* <li className="list-none border-b border-dashed hover:bg-gray-50 flex justify-between items-center px-3 py-2">
                         <NavLink
                             to="/dashboard/invite-friend"
                             onClick={handleNavClick}
@@ -138,7 +138,7 @@ const UserDashboard = () => {
                         <span className="bg-[#ED6329] text-white text-[11px] px-2 py-0.5 rounded">
                             Get 30 ৳ credit
                         </span>
-                    </li>
+                    </li> */}
 
                     {/* Logout */}
                     <li onClick={() => handleLogout()} className="list-none flex items-center gap-1.5 py-3 px-3 hover:underline cursor-pointer text-[#157D91]">

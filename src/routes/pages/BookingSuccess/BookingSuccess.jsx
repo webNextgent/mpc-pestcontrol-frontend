@@ -1,11 +1,11 @@
-import { useState } from "react";
+// import { useState } from "react";
 import { X } from "lucide-react";
 import logo from "../../../assets/logo/logo.png";
 import { Link } from "react-router-dom";
 
 const BookingSuccess = () => {
-    const [open, setOpen] = useState(false);
-    const handleClose = () => setOpen(false);
+    // const [open, setOpen] = useState(false);
+    // const handleClose = () => setOpen(false);
 
     return (
         <div className=" bg-white flex flex-col items-center md:my-12 px-4 my-12">
@@ -23,7 +23,7 @@ const BookingSuccess = () => {
             {/* CONFIRMATION CARD */}
             <div
                 className="w-full max-w-xl bg-white shadow-md rounded-xl p-5 mb-6 flex items-center justify-between cursor-pointer"
-                onClick={() => setOpen(true)}
+                // onClick={() => setOpen(true)}
             >
                 <div>
                     <h2 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -67,29 +67,23 @@ const BookingSuccess = () => {
             </div>
 
             {/* MODAL */}
-            {open && (
+            {/* {open && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-lg p-6 relative animate-fadeIn">
-
-                        {/* CLOSE BUTTON */}
                         <button
                             className="absolute top-4 left-4 p-1 rounded-full hover:bg-gray-200"
                             onClick={handleClose}
                         >
                             <X size={20} />
                         </button>
-
-                        {/* MODAL TITLE */}
                         <h2 className="text-center text-xl font-semibold mt-2 mb-6">
                             Booking Status
                         </h2>
 
                         <div className="relative pl-12">
 
-                            {/* VERTICAL LINE */}
                             <div className="absolute top-2 left-5 w-0.5 h-[88%] bg-gray-200"></div>
 
-                            {/* STEP 1 */}
                             <div className="relative mb-8">
                                 <div className="absolute -left-10 top-0 w-8 h-8 rounded-full bg-[#007C92] flex items-center justify-center text-white border-4 border-white">
                                     ✓
@@ -101,7 +95,6 @@ const BookingSuccess = () => {
                                 </p>
                             </div>
 
-                            {/* STEP 2 */}
                             <div className="relative mb-8">
                                 <div className="absolute -left-10 top-0 w-8 h-8 rounded-full bg-[#007C92] flex items-center justify-center text-white border-4 border-white">
                                     ✓
@@ -113,7 +106,6 @@ const BookingSuccess = () => {
                                 </p>
                             </div>
 
-                            {/* STEP 3 */}
                             <div className="relative mb-4">
                                 <div className="absolute -left-10 top-0 w-8 h-8 rounded-full bg-white border-2 border-[#007C92]"></div>
 
@@ -125,7 +117,7 @@ const BookingSuccess = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
         </div>
     );
 };
