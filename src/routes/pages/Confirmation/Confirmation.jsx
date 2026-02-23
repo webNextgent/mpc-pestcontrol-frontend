@@ -172,7 +172,7 @@ export default function Confirmation() {
     };
 
     // ===============================
-    // MAIN BOOKINGa CONFIRMATION HANDLER
+    // MAIN BOOKING CONFIRMATION HANDLER
     // ===============================
     const handleBookingConfirmation = async () => {
         if (!paymentMethod) {
@@ -228,40 +228,40 @@ export default function Confirmation() {
                 <ServiceDetails title="Review & Confirm" currentStep={4} />
             </div>
 
-            <div className="max-w-3xl mx-auto bg-white rounded-2xl mt-6 md:mt-0 shadow-lg p-5 md:p-7 text-[#4E4E4E]">
+            <div className="max-w-3xl mx-auto bg-white rounded-2xl mt-6 md:mt-0 shadow-lg p-4 md:p-7 text-[#4E4E4E]">
                 {/* User Info (for debugging) */}
                 {user && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Logged in as: {user.email}</p>
-                        <p className="text-sm text-gray-600">User ID: {user.id}</p>
+                    <div className="mb-3 md:mb-4 p-2 md:p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs md:text-sm text-gray-600">Logged in as: {user.email}</p>
+                        <p className="text-xs md:text-sm text-gray-600">User ID: {user.id}</p>
                     </div>
                 )}
 
                 {/* Booking Details */}
-                <h2 className="text-lg text-center md:text-start font-semibold mb-4">
+                <h2 className="text-base md:text-lg text-center md:text-start font-semibold mb-3 md:mb-4">
                     Booking Details
                 </h2>
 
-                <div className="flex items-start gap-3 mb-3">
-                    <IoBagRemoveSharp className="text-2xl" />
-                    <p className="font-medium">{services[0]?.title || "Service"}</p>
+                <div className="flex items-start gap-2 md:gap-3 mb-2 md:mb-3">
+                    <IoBagRemoveSharp className="text-xl md:text-2xl" />
+                    <p className="text-sm md:text-base font-medium">{services[0]?.title || "Service"}</p>
                 </div>
 
-                <div className="flex items-start gap-3 mb-3">
-                    <FaCalendar className="text-2xl" />
-                    <p className="font-medium">
+                <div className="flex items-start gap-2 md:gap-3 mb-2 md:mb-3">
+                    <FaCalendar className="text-xl md:text-2xl" />
+                    <p className="text-sm md:text-base font-medium">
                         {date || "Not selected"}, between {time || "Not selected"}
                     </p>
                 </div>
 
-                <div className="flex items-start gap-3 mb-3">
-                    <IoLocation className="text-2xl" />
-                    <p className="font-medium">
+                <div className="flex items-start gap-2 md:gap-3 mb-2 md:mb-3">
+                    <IoLocation className="text-xl md:text-2xl" />
+                    <p className="text-sm md:text-base font-medium">
                         {getDisplayAddress() || "No address provided"}
                     </p>
                 </div>
 
-                <div className="w-full h-64 rounded-lg overflow-hidden">
+                <div className="w-full h-48 md:h-64 rounded-lg overflow-hidden">
                     <iframe
                         width="100%"
                         height="100%"
@@ -275,33 +275,33 @@ export default function Confirmation() {
                 {/* Promo Code */}
                 {promoStatus ? (
                     <div>
-                        <h2 className="text-lg font-semibold mb-3">Offers</h2>
-                        <div className="flex items-center justify-between p-3 bg-[#FDFDFD]">
-                            <div className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                        <h2 className="text-base md:text-lg font-semibold mb-2 md:mb-3">Offers</h2>
+                        <div className="flex items-center justify-between p-2 md:p-3 bg-[#FDFDFD]">
+                            <div className="text-xs md:text-sm font-medium text-gray-600 flex items-center gap-2">
                                 Discount
                             </div>
                             <div className="flex items-center gap-2.5 text-[#ff7a00]">
-                                <div className="text-[15px] bg-[#FCDFD5] text-[#ED6329] px-3 py-1 rounded-lg font-semibold flex items-center gap-1">
+                                <div className="text-xs md:text-[15px] bg-[#FCDFD5] text-[#ED6329] px-2 md:px-3 py-1 rounded-lg font-semibold flex items-center gap-1">
                                     <img
-                                        className="h-4 w-4 filter invert sepia saturate-200 hue-rotate-20 text-red-700"
+                                        className="h-3 w-3 md:h-4 md:w-4 filter invert sepia saturate-200 hue-rotate-20 text-red-700"
                                         src={dirhum}
                                         alt="currency"
                                     />
                                     {useDiscount}% off
                                 </div>
                             </div>
-                            <SiTicktick className="text-xl" />
+                            <SiTicktick className="text-lg md:text-xl" />
                         </div>
                     </div>
                 ) : (
-                    <div className="mt-8">
-                        <h3 className="font-semibold text-gray-700 mb-2 text-lg uppercase tracking-wider">
+                    <div className="mt-6 md:mt-8">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm md:text-base uppercase tracking-wider">
                             Promo Code
                         </h3>
                         {!showInput ? (
                             <button
                                 onClick={() => setShowInput(true)}
-                                className="w-full py-3 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#01788E] hover:text-[#01788E] transition-colors text-sm"
+                                className="w-full py-2 md:py-3 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#01788E] hover:text-[#01788E] transition-colors text-xs md:text-sm"
                             >
                                 + Add Promo Code
                             </button>
@@ -311,11 +311,11 @@ export default function Confirmation() {
                                     type="text"
                                     ref={promoInputRef}
                                     placeholder="Enter promo code"
-                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-3 text-sm focus:ring-1 focus:ring-[#01788E] focus:border-transparent outline-none"
+                                    className="flex-1 border border-gray-300 rounded-lg px-2 md:px-3 py-2 md:py-3 text-xs md:text-sm focus:ring-1 focus:ring-[#01788E] focus:border-transparent outline-none"
                                 />
                                 <button
                                     onClick={handleApplyPromo}
-                                    className="bg-[#01788E] text-white px-4 py-2 rounded-lg hover:bg-[#016a7a] transition-colors text-sm"
+                                    className="bg-[#01788E] text-white px-3 md:px-4 py-2 rounded-lg hover:bg-[#016a7a] transition-colors text-xs md:text-sm"
                                 >
                                     Apply
                                 </button>
@@ -325,8 +325,8 @@ export default function Confirmation() {
                 )}
 
                 {/* Payment Method */}
-                <h2 className="text-lg font-semibold mt-6 mb-3">Pay with</h2>
-                <div className="space-y-3">
+                <h2 className="text-base md:text-lg font-semibold mt-5 md:mt-6 mb-2 md:mb-3">Pay with</h2>
+                <div className="space-y-2 md:space-y-3">
 
                     {/* Card (Online Payment) */}
                     <div
@@ -334,7 +334,7 @@ export default function Confirmation() {
                             setOpenModal(true);
                             setPaymentMethod("Card");
                         }}
-                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+                        className={`border rounded-xl p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
                                   ${paymentMethod === "Card" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`} >
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-3">
@@ -345,27 +345,27 @@ export default function Confirmation() {
                                         name="payment"
                                         checked={paymentMethod === "Card"}
                                         readOnly
-                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
                                     />
-                                    <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                                 </div>
 
-                                <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                <span className="text-[#1A1A1A] text-sm md:text-base font-medium">
                                     Pay by card with Ziina
                                 </span>
                             </div>
 
                             {/* Card Logos */}
                             <div className="flex items-center gap-2">
-                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
-                                    <img src="https://i.postimg.cc/KYj6NrYX/visa.jpg" alt="Visa" className="h-3" />
+                                <div className="bg-white border border-gray-200 rounded px-1 py-0.5 md:px-1.5 md:py-1 h-6 md:h-8 flex items-center">
+                                    <img src="https://i.postimg.cc/KYj6NrYX/visa.jpg" alt="Visa" className="h-2 md:h-3" />
                                 </div>
-                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+                                <div className="bg-white border border-gray-200 rounded px-1 py-0.5 md:px-1.5 md:py-1 h-6 md:h-8 flex items-center">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-3 md:h-5" />
                                 </div>
-                                <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
-                                    <img src="https://i.postimg.cc/vmTJzLZC/images.jpg" alt="Visa" className="h-2" />
-                                    <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
+                                <div className="bg-white border border-gray-200 rounded px-1 py-0.5 md:px-1.5 md:py-1 h-6 md:h-8 flex items-center flex-col justify-center leading-none">
+                                    <img src="https://i.postimg.cc/vmTJzLZC/images.jpg" alt="Visa" className="h-1.5 md:h-2" />
+                                    <span className="text-[4px] md:text-[6px] font-bold italic text-blue-900">DEBIT</span>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +374,7 @@ export default function Confirmation() {
                     {/* Cash On Delivery */}
                     <div
                         onClick={() => setPaymentMethod("Cash")}
-                        className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+                        className={`border rounded-xl p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
         ${paymentMethod === "Cash" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
                     >
                         <div className="flex items-center justify-between w-full">
@@ -386,18 +386,18 @@ export default function Confirmation() {
                                         name="payment"
                                         checked={paymentMethod === "Cash"}
                                         readOnly
-                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
                                     />
-                                    <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                                 </div>
 
-                                <span className="text-[#1A1A1A] font-medium md:text-lg">
+                                <span className="text-[#1A1A1A] text-sm md:text-base font-medium">
                                     Cash On Delivery
                                 </span>
                             </div>
 
                             {/* Fee Badge */}
-                            <div className="bg-[#FFEDD5] text-[#C6724D] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#FDBA74]">
+                            <div className="bg-[#FFEDD5] text-[#C6724D] text-[10px] md:text-xs font-bold px-2 md:px-2.5 py-1 rounded-lg border border-[#FDBA74]">
                                 +5% FEE
                             </div>
                         </div>
@@ -405,12 +405,12 @@ export default function Confirmation() {
                 </div>
 
                 {/* Payment Summary */}
-                <h2 className="text-lg font-semibold mt-6 mb-3">Payment Summary</h2>
-                <div className="space-y-2 text-sm">
+                <h2 className="text-base md:text-lg font-semibold mt-5 md:mt-6 mb-2 md:mb-3">Payment Summary</h2>
+                <div className="space-y-2 text-xs md:text-sm">
                     <div className="flex justify-between">
                         <span className="font-medium">Service Charges</span>
                         <span className="font-medium flex items-center gap-1">
-                            <img className="h-3 w-3" src={dirhum} alt="currency" />{" "}
+                            <img className="h-2 w-2 md:h-3 md:w-3" src={dirhum} alt="currency" />{" "}
                             {servicePrice}
                         </span>
                     </div>
@@ -419,7 +419,7 @@ export default function Confirmation() {
                         <div className="flex justify-between">
                             <span className="font-medium">Cash On Delivery Charge</span>
                             <span className="font-medium flex items-center gap-1">
-                                <img className="h-3 w-3" src={dirhum} alt="currency" /> 5.00
+                                <img className="h-2 w-2 md:h-3 md:w-3" src={dirhum} alt="currency" /> 5.00
                             </span>
                         </div>
                     )}
@@ -427,7 +427,7 @@ export default function Confirmation() {
                     <div className="flex justify-between">
                         <span className="font-medium">Service Fee</span>
                         <span className="font-medium flex items-center gap-1">
-                            <img className="h-3 w-3" src={dirhum} alt="currency" />{" "}
+                            <img className="h-2 w-2 md:h-3 md:w-3" src={dirhum} alt="currency" />{" "}
                             {serviceCharge}
                         </span>
                     </div>
@@ -435,7 +435,7 @@ export default function Confirmation() {
                     <div className="flex justify-between items-center">
                         <span className="font-medium">Sub Total</span>
                         <span className="font-medium flex items-center gap-1">
-                            <img className="h-3 w-3" src={dirhum} alt="currency" />{" "}
+                            <img className="h-2 w-2 md:h-3 md:w-3" src={dirhum} alt="currency" />{" "}
                             {subTotalWithCOD.toFixed(2)}
                         </span>
                     </div>
@@ -443,26 +443,26 @@ export default function Confirmation() {
                     <div className="flex justify-between items-center">
                         <span className="font-medium">VAT (5%)</span>
                         <span className="font-medium flex items-center gap-1">
-                            <img className="h-3 w-3" src={dirhum} alt="currency" />{" "}
+                            <img className="h-2 w-2 md:h-3 md:w-3" src={dirhum} alt="currency" />{" "}
                             {vatAmount}
                         </span>
                     </div>
 
                     {useDiscount > 0 && (
                         <div className="flex justify-between items-center text-green-600">
-                            <span className="text-sm">Discount</span>
-                            <span className="flex items-center gap-1 font-medium text-sm">
-                                <img src={dirhum} className="w-3.5 h-3.5" alt="currency" />-
+                            <span className="text-xs md:text-sm">Discount</span>
+                            <span className="flex items-center gap-1 font-medium text-xs md:text-sm">
+                                <img src={dirhum} className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" alt="currency" />-
                                 {discountAmount.toFixed(2)}
                             </span>
                         </div>
                     )}
 
-                    <hr className="my-3" />
-                    <div className="flex justify-between text-lg font-bold">
+                    <hr className="my-2 md:my-3" />
+                    <div className="flex justify-between text-base md:text-lg font-bold">
                         <span>Total to pay</span>
                         <span className="flex items-center gap-1">
-                            <img className="h-4 w-4 mt-[3px]" src={dirhum} alt="currency" />{" "}
+                            <img className="h-3 w-3 md:h-4 md:w-4 mt-[2px] md:mt-[3px]" src={dirhum} alt="currency" />{" "}
                             {finalTotal}
                         </span>
                     </div>
@@ -524,9 +524,6 @@ export default function Confirmation() {
         </div>
     );
 };
-
-
-
 
 
 

@@ -550,12 +550,12 @@ const AdminBooking = () => {
                                                     key={book.id}
                                                     className="hover:bg-gray-50/80 transition-colors duration-200 group"
                                                 >
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <div className="font-mono text-sm font-semibold text-gray-900">
                                                             #{idx + 1}
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <div>
                                                             {/* Updated service display */}
                                                             <div className="font-semibold text-gray-900 text-sm mb-1">
@@ -572,7 +572,7 @@ const AdminBooking = () => {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-2 text-gray-900 text-sm">
                                                                 <FaCalendarAlt className="w-3.5 h-3.5" />
@@ -583,17 +583,17 @@ const AdminBooking = () => {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${paymentStatusColor}`}>
                                                             {paymentStatus}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${bookingStatusColor}`}>
                                                             {bookingStatus}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <div className="flex items-center gap-2">
                                                             <button
                                                                 onClick={() => setBookingDetails(book)}

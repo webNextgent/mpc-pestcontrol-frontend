@@ -400,7 +400,7 @@ const Services = () => {
                                                                     isManualClick.current = false;
                                                                 }, 500);
                                                             }}
-                                                            className={`snap-start shrink-0 min-w-[140px] px-4 py-1 rounded-full border flex items-center gap-2 transition
+                                                            className={`snap-start shrink-0 min-w-[140px] px-2 md:px-4 py-0.5 md:py-1 rounded-full border flex items-center gap-2 transition
                                                                 ${activeId === b.id
                                                                     ? "text-[#ED6329] border-[#ED6329] border-2 bg-[#FFF2EE]"
                                                                     : "text-[#01788E] border-[#01788E] bg-white"}`}
@@ -431,7 +431,7 @@ const Services = () => {
                                     `}</style>
 
                                     {/* CONTENT */}
-                                    <div className="px-5 md:px-9 mt-3 space-y-6">
+                                    <div className="px-6 md:px-9 mt-3 space-y-6">
                                         {content
                                             ?.filter((c) => c.serviceId === service.id)
                                             .map((c) => (
