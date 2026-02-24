@@ -68,8 +68,8 @@ export default function Confirmation() {
                 subTotal: subTotal + 5,
                 vat,
                 totalPay: totalAfterDiscount + 5,
-                longitude: mapLongitude,
-                latitude: mapLatitude,
+                longitude: mapLongitude || 55.2708,
+                latitude: mapLatitude || 25.2048,
                 status: "Requested",
                 userId: user?.id,
                 paymentStatus: "unpaid",
@@ -121,8 +121,8 @@ export default function Confirmation() {
                 subTotal,
                 vat,
                 totalPay: totalAfterDiscount,
-                longitude: mapLongitude,
-                latitude: mapLatitude,
+                longitude: mapLongitude || 55.2708,
+                latitude: mapLatitude || 25.2048,
                 status: "Requested",
                 userId: user?.id,
                 paymentStatus: "unpaid",
@@ -523,7 +523,7 @@ export default function Confirmation() {
             )}
         </div>
     );
-}; 
+};
 
 
 
