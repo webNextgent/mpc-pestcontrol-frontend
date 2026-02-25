@@ -24,12 +24,6 @@ export default function LocationPicker() {
         libraries,
     });
 
-
-    // const { isLoaded } = useJsApiLoader({
-    //     // googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    //     googleMapsApiKey: 'AIzaSyChV6HvM26g5ody3998g9rQnQ9DxeIl5q0',
-    //     libraries: ["places"],
-    // });
     const [showMapOverlay, setShowMapOverlay] = useState(false);
     const [isLocationLoading, setIsLocationLoading] = useState(false);
 
@@ -202,10 +196,14 @@ export default function LocationPicker() {
 
             setCurrentAddress(currentAddr);
 
+            // ✅ ADD THESE 2 LINES
+            setLiveAddress(currentAddr);
+            setSelectedAddressId(currentAddr.id);
+ 
             // Update map position
             setSelectedPos(pos);
             map?.panTo(pos);
-        map?.setZoom(16); 
+             map?.setZoom(16); 
             setMapLatitude(pos.lat);
             setMapLongitude(pos.lng);
             setAddressLocation(result);
