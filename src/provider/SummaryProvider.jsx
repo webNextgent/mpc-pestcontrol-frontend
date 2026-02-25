@@ -50,24 +50,54 @@ export const SummaryProvider = ({ children }) => {
     });
 
     // for promo code
+    // old fun 
+    // const handleApply = async (promoCode) => {
+    //     try {
+    //         const res = await axiosSecure.post(`/promo-code/use-promo-code/${user?.id}`, { code: promoCode });
+    //         console.log('niru', res);
+
+    //         if (!res?.data?.success) {
+    //             toast.error(res?.date?.message || "Invalid promo code");
+    //             return;
+    //         }
+    //         setPromo(promoCode);
+    //         setPromoStatus(true);
+    //         setUseDiscount(Number(res?.data?.Data?.discount || 0));
+    //         toast.success(res.data.message || "Promo applied successfully");
+    //     } catch {
+    //         toast.error("Something went wrong");
+    //         // toast.error(res.data.message);
+    //     }
+    // };
+
+    // Saved addresses functions
+
     const handleApply = async (promoCode) => {
         try {
-            const res = await axiosSecure.post(`/promo-code/use-promo-code/${user?.id}`, { code: promoCode });
-            // // console.log(res);
+            const res = await axiosSecure.post(
+                `/promo-code/use-promo-code/${user?.id}`,
+                { code: promoCode }
+            );
+
             if (!res?.data?.success) {
-                toast.error(res?.date?.message || "Invalid promo code");
+                toast.error(res?.data?.message || "Invalid promo code");
                 return;
             }
+
             setPromo(promoCode);
             setPromoStatus(true);
             setUseDiscount(Number(res?.data?.Data?.discount || 0));
-            toast.success("Promo applied successfully");
-        } catch {
-            toast.error("Something went wrong");
+
+            toast.success(res?.data?.message || "Promo applied successfully");
+
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message || "Something went wrong"
+            );
         }
     };
 
-    // Saved addresses functions
+
     const addAddress = (newAddress) => {
         const addressWithId = {
             ...newAddress,
