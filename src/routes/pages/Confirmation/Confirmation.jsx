@@ -96,9 +96,8 @@ export default function Confirmation() {
         }
     };
 
-    // ===============================
-    // ONLINE PAYMENT FUNCTION
-    // ===============================
+
+    
     const handleOnlinePayment = async () => {
         try {
             setLoading(true);

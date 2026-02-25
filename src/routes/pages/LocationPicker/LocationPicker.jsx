@@ -14,12 +14,22 @@ import toast from "react-hot-toast";
 const containerStyle = { width: "100%", height: "500px" };
 const defaultCenter = { lat: 25.2048, lng: 55.2708 };
 
+const libraries = ["places"];
+
 export default function LocationPicker() {
     const navigate = useNavigate();
-    const { isLoaded } = useJsApiLoader({
+
+    const { isLoaded, loadError } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-        libraries: ["places"],
+        libraries,
     });
+
+
+    // const { isLoaded } = useJsApiLoader({
+    //     // googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    //     googleMapsApiKey: 'AIzaSyChV6HvM26g5ody3998g9rQnQ9DxeIl5q0',
+    //     libraries: ["places"],
+    // });
     const [showMapOverlay, setShowMapOverlay] = useState(false);
     const [isLocationLoading, setIsLocationLoading] = useState(false);
 
@@ -77,15 +87,23 @@ export default function LocationPicker() {
         });
     };
 
-    const handleLocation = async (pos) => {
+    const handleLocation = useCallback(async (pos) => {
+        if (!map) return;
+
         setSelectedPos(pos);
-        map?.panTo(pos);
-        const addressText = await getAddressFromLatLng(pos.lat, pos.lng);
-        setAddressLocation(addressText);
+        map.panTo(pos);
+
+        try {
+            const addressText = await getAddressFromLatLng(pos.lat, pos.lng);
+            setAddressLocation(addressText);
+        } catch (err) {
+            console.error("Geocode error:", err);
+        }
+
         setMapLatitude(pos.lat);
         setMapLongitude(pos.lng);
-        return addressText;
-    };
+
+    }, [map]);
 
     const onLoadAutocomplete = (auto) => {
         setAutocomplete(auto);
@@ -118,17 +136,23 @@ export default function LocationPicker() {
 
     const handleMapClick = useCallback(
         async (event) => {
+            if (!event.latLng) return;
+
             const pos = {
                 lat: event.latLng.lat(),
                 lng: event.latLng.lng(),
             };
+
+            console.log("Map Clicked:", pos); // debug
+
             await handleLocation(pos);
+
             setIsNextDisabled(false);
             setMapAddressSelected(true);
             setFromListSelection(false);
             setShowCurrentAddressOption(false);
         },
-        [map]
+        [handleLocation]
     );
 
     // Get current address function
@@ -216,17 +240,32 @@ export default function LocationPicker() {
 
     // GPS Button - for map view
     const gotoMyLocation = () => {
-        navigator.geolocation.getCurrentPosition((position) => {
-            const pos = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-            };
-            handleLocation(pos);
-            setIsNextDisabled(false);
-            setMapAddressSelected(true);
-            setFromListSelection(false);
-            setShowCurrentAddressOption(false);
-        });
+        if (!navigator.geolocation) {
+            alert("Geolocation not supported");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+
+                console.log("GPS:", pos);
+
+                await handleLocation(pos);
+
+                setIsNextDisabled(false);
+                setMapAddressSelected(true);
+                setFromListSelection(false);
+                setShowCurrentAddressOption(false);
+            },
+            (error) => {
+                console.error(error);
+                alert("Location permission denied");
+            }
+        );
     };
 
     const handleNextClick = async () => {
