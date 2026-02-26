@@ -107,7 +107,7 @@ const AdminBooking = () => {
         staleTime: 1000 * 60 * 5,
     });
 
-    console.log(bookings);
+    // console.log(bookings);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -289,7 +289,7 @@ const AdminBooking = () => {
 
 
     const generateShareText = (booking) => {
-        console.log(booking);
+        // console.log(booking);
         const mapUrl = getGoogleMapsUrl(booking);
         const userInfo = getUserInfo(booking);
 

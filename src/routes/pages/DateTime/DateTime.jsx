@@ -351,7 +351,7 @@ const DateTime = () => {
                                             >
                                                 {availableDays.map((day, index) => {
                                                     const isActive = selectedDay === day.date;
-                                                    console.log(day);
+                                                    // console.log(day);
                                                     return (
                                                         <div
                                                             key={`${day.date}-${index}`}

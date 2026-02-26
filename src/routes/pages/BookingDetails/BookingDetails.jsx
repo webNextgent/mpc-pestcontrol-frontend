@@ -32,7 +32,7 @@ export default function BookingDetails() {
     const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
     const axiosSecure = useAxiosSecure();
     const { user } = useAuth();
-    console.log(user);
+    // console.log(user);
 
     const { register, handleSubmit, formState: { errors }, setValue } = useForm({
         mode: "onChange"

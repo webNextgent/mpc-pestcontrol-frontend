@@ -17,7 +17,7 @@ const PaymentSuccess = () => {
             return res.data;
         }
     });
-    console.log(paymentHistory);
+    // console.log(paymentHistory);
     const payment = paymentHistory?.Data?.[0];
 
     useEffect(() => {
@@ -29,7 +29,7 @@ const PaymentSuccess = () => {
                     `payments/ziina/status/${payment.paymentId}`
                 );
                 setZiinaStatus(res.data.status);
-                console.log('Payment status:', res.data.status);
+                // console.log('Payment status:', res.data.status);
             } catch (err) {
                 console.error('Error in useEffect:', err);
             }

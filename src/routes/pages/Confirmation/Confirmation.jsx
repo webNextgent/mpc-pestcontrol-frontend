@@ -76,7 +76,6 @@ export default function Confirmation() {
             };
 
             const response = await axiosSecure.post("/booking/create", bookingData);
-
             if (response.data.success) {
                 toast.success("Booking confirmed! Pay with Cash on Delivery.");
                 navigate("/booking-success", {
