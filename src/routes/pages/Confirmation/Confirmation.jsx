@@ -68,8 +68,8 @@ export default function Confirmation() {
                 subTotal: subTotal + 5,
                 vat,
                 totalPay: totalAfterDiscount + 5,
-                longitude: mapLongitude || 55.2708,
-                latitude: mapLatitude || 25.2048,
+                longitude: mapLongitude,
+                latitude: mapLatitude,
                 status: "Requested",
                 userId: user?.id,
                 paymentStatus: "unpaid",
@@ -97,7 +97,7 @@ export default function Confirmation() {
     };
 
 
-    
+
     const handleOnlinePayment = async () => {
         try {
             setLoading(true);
@@ -120,8 +120,8 @@ export default function Confirmation() {
                 subTotal,
                 vat,
                 totalPay: totalAfterDiscount,
-                longitude: mapLongitude || 55.2708,
-                latitude: mapLatitude || 25.2048,
+                longitude: mapLongitude,
+                latitude: mapLatitude,
                 status: "Requested",
                 userId: user?.id,
                 paymentStatus: "unpaid",
