@@ -160,9 +160,9 @@ const AdminBooking = () => {
             // অটোমেটিক পেমেন্ট স্ট্যাটাস আপডেট
             if (name === 'status') {
                 if (value === 'Delivered') {
-                    updatedBooking.paymentStatus = 'Paid';
+                    updatedBooking.paymentStatus = 'paid';
                 } else if (value === 'Cancelled' || value === 'Requested' || value === 'Pending') {
-                    updatedBooking.paymentStatus = 'Unpaid';
+                    updatedBooking.paymentStatus = 'unpaid';
                 }
             }
             
