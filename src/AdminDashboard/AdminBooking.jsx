@@ -23,7 +23,7 @@ const AdminBooking = () => {
     const [demoMode,] = useState(true);
     const shareRef = useRef(null);
     const axiosSecure = useAxiosSecure();
-    const [lodaing, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);  // [lodaing] থেকে [loading] ঠিক করলাম
 
     const getUserInfo = (booking) => {
         if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
@@ -147,16 +147,65 @@ const AdminBooking = () => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
 
+    // ✅ আপডেটেড: handleInputChange ফাংশন - Booking Status Delivered হলে Payment Status Paid হবে
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        setSelectedBooking(prev => {
+            const updatedBooking = {
+                ...prev,
+                [name]: value
+            };
+            
+            // অটোমেটিক পেমেন্ট স্ট্যাটাস আপডেট
+            if (name === 'status') {
+                if (value === 'Delivered') {
+                    updatedBooking.paymentStatus = 'Paid';
+                } else if (value === 'Cancelled' || value === 'Requested' || value === 'Pending') {
+                    updatedBooking.paymentStatus = 'Unpaid';
+                }
+            }
+            
+            return updatedBooking;
+        });
+    };
+
     const handleUpdateBooking = async () => {
         setLoading(true);
         if (!selectedBooking) return;
 
+        // কনফার্মেশন ডায়ালগ - যদি Delivered status সিলেক্ট করা হয়
+        if (selectedBooking.status === 'Delivered' && selectedBooking.paymentStatus !== 'Paid') {
+            const result = await Swal.fire({
+                title: 'Auto-payment update',
+                text: 'Setting status to Delivered will automatically mark payment as Paid. Continue?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, proceed'
+            });
+            
+            if (!result.isConfirmed) {
+                setLoading(false);
+                return;
+            }
+            
+            // কনফার্ম হলে paymentStatus আপডেট করে দিই
+            setSelectedBooking(prev => ({
+                ...prev,
+                paymentStatus: 'Paid'
+            }));
+        }
+
+        // পেমেন্ট স্ট্যাটাস সহ আপডেট ডাটা তৈরি
         const updateData = {
             status: selectedBooking.status,
             address: selectedBooking.address,
             date: selectedBooking.date,
             time: selectedBooking.time,
-            totalPay: Number(selectedBooking.totalPay)
+            totalPay: Number(selectedBooking.totalPay),
+            paymentStatus: selectedBooking.paymentStatus
         }
 
         try {
@@ -214,21 +263,13 @@ const AdminBooking = () => {
         }
     };
 
-    // Handle input changes in edit modal
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setSelectedBooking(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
     // Get status color class
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
             case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
             case 'pending': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
             case 'cancelled': return 'bg-red-50 text-red-700 border border-red-200';
+            case 'delivered': return 'bg-green-50 text-green-700 border border-green-200'; // Delivered এর জন্য color যোগ করলাম
             default: return 'bg-gray-50 text-gray-700 border border-gray-200';
         }
     };
@@ -363,7 +404,7 @@ const AdminBooking = () => {
 
     // Calculate statistics
     const totalRevenue = bookings.reduce((sum, booking) => sum + (parseFloat(booking.totalPay) || 0), 0);
-    const completedBookings = bookings.filter(b => b.status === 'Completed').length;
+    const completedBookings = bookings.filter(b => b.status === 'Completed' || b.status === 'Delivered').length;
 
     // Pagination handlers
     const goToPage = (page) => {
@@ -461,7 +502,7 @@ const AdminBooking = () => {
                             >
                                 <option value="all">All Status</option>
                                 <option value="Requested">Requested</option>
-                                <option value="Pending">Panding</option>
+                                <option value="Pending">Pending</option>
                                 <option value="Delivered">Delivered</option>
                                 <option value="Cancelled">Cancelled</option>
                             </select>
@@ -552,7 +593,7 @@ const AdminBooking = () => {
                                                 >
                                                     <td className="py-2 px-1 md:py-3 md:px-2">
                                                         <div className="font-mono text-sm font-semibold text-gray-900">
-                                                            #{idx + 1}
+                                                            #{idx + 1 + startIndex}
                                                         </div>
                                                     </td>
                                                     <td className="py-2 px-1 md:py-3 md:px-2">
@@ -848,7 +889,7 @@ const AdminBooking = () => {
                 </>
             )}
 
-            {/* Edit Modal */}
+            {/* ✅ আপডেটেড Edit Modal - Payment Status Field যোগ করা হয়েছে */}
             {selectedBooking && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -883,7 +924,6 @@ const AdminBooking = () => {
                                         name="serviceName"
                                         readOnly
                                         value={selectedBooking.serviceName || ""}
-                                        // value={  {getServiceDisplay(bookingDetails)} || ""}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
                                     />
@@ -898,7 +938,6 @@ const AdminBooking = () => {
                                         <input
                                             type="number"
                                             name="totalPay"
-                                            readOnly
                                             value={selectedBooking.totalPay || ""}
                                             onChange={handleInputChange}
                                             className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30 ml-1"
@@ -910,7 +949,7 @@ const AdminBooking = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                                 <div className="space-y-1.5">
                                     <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                        Status
+                                        Booking Status
                                     </label>
                                     <select
                                         name="status"
@@ -925,31 +964,49 @@ const AdminBooking = () => {
                                     </select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                            Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            name="date"
-                                            value={selectedBooking.date || ""}
-                                            onChange={handleInputChange}
-                                            className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                            Time
-                                        </label>
-                                        <input
-                                            type="time"
-                                            name="time"
-                                            value={selectedBooking.time || ""}
-                                            onChange={handleInputChange}
-                                            className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                        />
-                                    </div>
+                                {/* ✅ নতুন যোগ করা Payment Status Field - Read-only */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
+                                        Payment Status
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedBooking.paymentStatus || 'Pending'}
+                                        readOnly
+                                        className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed"
+                                    />
+                                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                                        {selectedBooking.status === 'Delivered' 
+                                            ? '✅ Auto-updated to Paid for delivered bookings' 
+                                            : 'ℹ️ Auto-updates based on booking status'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
+                                        Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="date"
+                                        value={selectedBooking.date || ""}
+                                        onChange={handleInputChange}
+                                        className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
+                                        Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        name="time"
+                                        value={selectedBooking.time || ""}
+                                        onChange={handleInputChange}
+                                        className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
+                                    />
                                 </div>
                             </div>
 
@@ -986,11 +1043,11 @@ const AdminBooking = () => {
                                 Cancel
                             </button>
                             <button
-                                disabled={lodaing}
+                                disabled={loading}
                                 onClick={handleUpdateBooking}
                                 className="flex-2 sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95"
                             >
-                                {lodaing ? 'Updating...' : 'Update Booking'}
+                                {loading ? 'Updating...' : 'Update Booking'}
                             </button>
                         </div>
                     </div>
@@ -1078,7 +1135,7 @@ const AdminBooking = () => {
                                                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</p>
                                             </div>
                                             <div className="flex items-center justify-between mb-3">
-                                                <p className="text-sm sm:text-base text-gray-600">Payment Mathod</p>
+                                                <p className="text-sm sm:text-base text-gray-600">Payment Method</p>
 
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold`}>
                                                     {bookingDetails.paymentMethod}
@@ -1226,7 +1283,6 @@ const AdminBooking = () => {
                                     Close
                                 </button>
                                 <button
-                                    disabled={lodaing}
                                     onClick={() => {
                                         setSelectedBooking(bookingDetails);
                                         setBookingDetails(null);
@@ -1249,7 +1305,6 @@ export default AdminBooking;
 
 
 
-
 // /* eslint-disable no-unused-vars */
 // import { useQuery, useQueryClient } from "@tanstack/react-query";
 // import { useState, useEffect, useRef, useCallback } from "react";
@@ -1258,6 +1313,7 @@ export default AdminBooking;
 // import useAxiosSecure from "../hooks/useAxiosSecure";
 // import toast from "react-hot-toast";
 // import Swal from "sweetalert2";
+// import dirhum from '../assets/icon/dirhum.png'
 
 // const AdminBooking = () => {
 //     const queryClient = useQueryClient();
@@ -1274,6 +1330,7 @@ export default AdminBooking;
 //     const [demoMode,] = useState(true);
 //     const shareRef = useRef(null);
 //     const axiosSecure = useAxiosSecure();
+//     const [lodaing, setLoading] = useState(false);
 
 //     const getUserInfo = (booking) => {
 //         if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
@@ -1295,6 +1352,48 @@ export default AdminBooking;
 //         };
 //     };
 
+//     // Updated helper to display service name based on new data structure (bookingItems)
+//     const getServiceDisplay = (booking) => {
+//         if (booking.bookingItems && booking.bookingItems.length > 0) {
+//             return booking.bookingItems.map(item => {
+//                 const propertyItem = item.propertyItem;
+//                 if (propertyItem) {
+//                     const itemTitle = propertyItem.title || '';
+//                     const serviceTypeTitle = propertyItem.propertyType?.serviceType?.title || '';
+
+//                     if (itemTitle && serviceTypeTitle) {
+//                         return `${itemTitle} - ${serviceTypeTitle}`;  // "2 Bedroom Apartment - Cockroaches"
+//                     } else if (itemTitle) {
+//                         return itemTitle;
+//                     } else if (serviceTypeTitle) {
+//                         return serviceTypeTitle;
+//                     }
+//                 }
+//                 return '';
+//             }).filter(Boolean).join(', ');
+//         }
+
+//         // Fallback to old propertyItems if exists
+//         if (booking.propertyItems && booking.propertyItems.length > 0) {
+//             return booking.propertyItems.map(item => {
+//                 const itemTitle = item.title || '';
+//                 const serviceTypeTitle = item.propertyType?.serviceType?.title || '';
+
+//                 if (itemTitle && serviceTypeTitle) {
+//                     return `${itemTitle} - ${serviceTypeTitle}`;
+//                 } else if (itemTitle) {
+//                     return itemTitle;
+//                 } else if (serviceTypeTitle) {
+//                     return serviceTypeTitle;
+//                 }
+//                 return '';
+//             }).filter(Boolean).join(', ');
+//         }
+
+//         return booking.serviceName || 'N/A';
+//     };
+
+
 //     const { data: bookings = [], isLoading, error } = useQuery({
 //         queryKey: ["bookingAdmin"],
 //         queryFn: async () => {
@@ -1315,7 +1414,7 @@ export default AdminBooking;
 //         staleTime: 1000 * 60 * 5,
 //     });
 
-//     console.log(bookings);
+//     // console.log(bookings);
 
 //     // Close dropdowns when clicking outside
 //     useEffect(() => {
@@ -1356,7 +1455,9 @@ export default AdminBooking;
 //     }, [searchTerm, statusFilter]);
 
 //     const handleUpdateBooking = async () => {
+//         setLoading(true);
 //         if (!selectedBooking) return;
+
 //         const updateData = {
 //             status: selectedBooking.status,
 //             address: selectedBooking.address,
@@ -1367,9 +1468,17 @@ export default AdminBooking;
 
 //         try {
 //             const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, updateData);
-//             console.log(res);
+
 //             if (res?.data?.success) {
-//                 queryClient.invalidateQueries(["bookingAdmin"]);
+//                 await queryClient.invalidateQueries({
+//                     queryKey: ["bookingAdmin"],
+//                     exact: true,
+//                     refetchType: 'active'
+//                 });
+//                 await queryClient.refetchQueries({
+//                     queryKey: ["bookingAdmin"]
+//                 });
+
 //                 setSelectedBooking(null);
 //                 toast.success("Booking updated successfully!");
 //             } else {
@@ -1378,6 +1487,8 @@ export default AdminBooking;
 //         } catch (error) {
 //             console.error("Update error:", error);
 //             toast.error("Something went wrong!");
+//         } finally {
+//             setLoading(false);
 //         }
 //     };
 
@@ -1425,7 +1536,6 @@ export default AdminBooking;
 //             case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
 //             case 'pending': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
 //             case 'cancelled': return 'bg-red-50 text-red-700 border border-red-200';
-//             case 'onhold': return 'bg-gray-50 text-gray-700 border border-gray-200';
 //             default: return 'bg-gray-50 text-gray-700 border border-gray-200';
 //         }
 //     };
@@ -1484,8 +1594,9 @@ export default AdminBooking;
 //         };
 //     }, []);
 
-//     // WhatsApp/share-friendly version with better formatting (এখন ইউজারের তথ্যও যোগ হয়েছে)
+
 //     const generateShareText = (booking) => {
+//         // console.log(booking);
 //         const mapUrl = getGoogleMapsUrl(booking);
 //         const userInfo = getUserInfo(booking);
 
@@ -1498,10 +1609,12 @@ export default AdminBooking;
 //             `📧 *Email:* ${userInfo.email}`,
 //             "",
 //             `🔹 *ID:* ${booking.id}`,
-//             `🔹 *Service:* ${booking.serviceName}`,
+//             `🔹 *Service:* ${getServiceDisplay(booking)}`,
 //             `🔹 *Date & Time:* ${booking.date} at ${booking.time}`,
 //             `🔹 *Amount:* $${booking.totalPay}`,
-//             `🔹 *Status:* ${booking.status}`,
+//             `🔹 *Booking Status:* ${booking.status}`,
+//             `🔹 *Payment Status:* ${booking.paymentStatus}`,
+//             `🔹 *Payment Mathod:* ${booking.paymentMethod}`,
 //             "",
 //             "📍 *LOCATION*",
 //             `Address: ${booking.address}`,
@@ -1628,7 +1741,7 @@ export default AdminBooking;
 //                         <div className="relative">
 //                             <input
 //                                 type="text"
-//                                 placeholder="Search bookings..."
+//                                 placeholder="Search by phone number..."
 //                                 value={searchTerm}
 //                                 onChange={(e) => setSearchTerm(e.target.value)}
 //                                 className="w-full px-4 py-3.5 pl-12 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
@@ -1654,11 +1767,10 @@ export default AdminBooking;
 //                                 className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
 //                             >
 //                                 <option value="all">All Status</option>
-//                                 <option value="Upcoming">Upcoming</option>
-//                                 <option value="Delivered">Delivered</option>
-//                                 <option value="Pending">Panding</option>
-//                                 <option value="Cancelled">Cancelled</option>
 //                                 <option value="Requested">Requested</option>
+//                                 <option value="Pending">Panding</option>
+//                                 <option value="Delivered">Delivered</option>
+//                                 <option value="Cancelled">Cancelled</option>
 //                             </select>
 //                         </div>
 //                         <div className="w-full sm:w-40">
@@ -1682,134 +1794,6 @@ export default AdminBooking;
 //                 <>
 //                     {/* Table View */}
 //                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-//                         {/* <div className="overflow-x-auto">
-//                             <table className="w-full">
-//                                 <thead className="bg-gray-50">
-//                                     <tr>
-//                                         <th className="py-5 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-//                                             No
-//                                         </th>
-//                                         <th className="py-5 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-//                                             Service & Amount
-//                                         </th>
-//                                         <th className="py-5 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-//                                             Schedule
-//                                         </th>
-//                                         <th className="py-5 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-//                                             Location
-//                                         </th>
-//                                         <th className="py-5 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-//                                             Actions
-//                                         </th>
-//                                     </tr>
-//                                 </thead>
-//                                 <tbody className="divide-y divide-gray-100">
-//                                     {currentBookings.length === 0 ? (
-//                                         <tr>
-//                                             <td colSpan="5" className="py-16 text-center">
-//                                                 <div className="text-gray-300 mb-4">
-//                                                     <FaCalendarAlt className="w-16 h-16 mx-auto" />
-//                                                 </div>
-//                                                 <p className="text-gray-500 font-medium text-lg">No bookings found</p>
-//                                                 <p className="mt-2">
-//                                                     {searchTerm ? 'Try adjusting your search' : 'No bookings available'}
-//                                                 </p>
-//                                             </td>
-//                                         </tr>
-//                                     ) : (
-//                                         currentBookings.map((book, idx) => {
-//                                             const userInfo = getUserInfo(book);
-//                                             return (
-//                                                 <tr
-//                                                     key={book.id}
-//                                                     className="hover:bg-gray-50/80 transition-colors duration-200 group"
-//                                                 >
-//                                                     <td className="px-6">
-//                                                         <div className="flex items-center gap-4">
-//                                                             <div>
-//                                                                 <div className="font-mono text-sm font-semibold text-gray-900">
-//                                                                     #{idx + 1}
-//                                                                 </div>
-//                                                             </div>
-//                                                         </div>
-//                                                     </td>
-//                                                     <td className="py-3 px-2">
-//                                                         <div>
-//                                                             <div className="font-semibold text-gray-900 mb-1">
-//                                                                 {book.serviceName}
-//                                                             </div>
-//                                                             <div className="font-semibold text-gray-900">
-//                                                                 {formatCurrency(book.totalPay)}
-//                                                             </div>
-//                                                             {userInfo.fullName !== 'N/A' && (
-//                                                                 <div className="text-sm text-gray-500 mt-2 flex items-center gap-2">
-//                                                                     <FaUser className="w-3 h-3" />
-//                                                                     {userInfo.fullName}
-//                                                                 </div>
-//                                                             )}
-//                                                         </div>
-//                                                     </td>
-//                                                     <td className="">
-//                                                         <div className="space-y-2">
-//                                                             <div className="flex items-center gap-3 text-gray-900">
-//                                                                 <FaCalendarAlt className="w-4 h-4 " />
-//                                                                 <span className="font-medium">{book.date}</span>
-//                                                             </div>
-//                                                             <div className="text-sm text-gray-600 pl-7">
-//                                                                 {book.time}
-//                                                             </div>
-//                                                         </div>
-//                                                     </td>
-//                                                     <td className="py-5 px-6">
-//                                                         <div className="max-w-[250px]">
-//                                                             <div className="flex items-start gap-2 text-gray-700">
-//                                                                 <FaMapMarkerAlt className="w-4 h-4 mt-1 shrink-0 text-gray-400" />
-//                                                                 <span className="line-clamp-2">{book.address}</span>
-//                                                             </div>
-//                                                             <div className="mt-2 flex items-center gap-2">
-//                                                                 <button
-//                                                                     onClick={() => setBookingDetails(book)}
-//                                                                     className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-//                                                                 >
-//                                                                     <FaMap className="w-3 h-3" />
-//                                                                     View on Map
-//                                                                 </button>
-//                                                             </div>
-//                                                         </div>
-//                                                     </td>
-//                                                     <td className="py-5 px-6">
-//                                                         <div className="flex items-center gap-3">
-//                                                             <button
-//                                                                 onClick={() => setBookingDetails(book)}
-//                                                                 className="p-3 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors border border-blue-200"
-//                                                                 title="View Details"
-//                                                             >
-//                                                                 <FaRegEye className="w-4 h-4" />
-//                                                             </button>
-//                                                             <button
-//                                                                 onClick={() => setSelectedBooking(book)}
-//                                                                 className="p-3 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-colors border border-green-200"
-//                                                                 title="Edit"
-//                                                             >
-//                                                                 <FaRegEdit className="w-4 h-4" />
-//                                                             </button>
-//                                                             <button
-//                                                                 onClick={() => handleDeleteBooking(book.id)}
-//                                                                 className="p-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
-//                                                                 title="Delete"
-//                                                             >
-//                                                                 <FaRegTrashAlt className="w-4 h-4" />
-//                                                             </button>
-//                                                         </div>
-//                                                     </td>
-//                                                 </tr>
-//                                             );
-//                                         })
-//                                     )}
-//                                 </tbody>
-//                             </table>
-//                         </div> */}
-
 //                         <div className="overflow-x-auto">
 //                             <table className="w-full">
 //                                 <thead className="bg-gray-50">
@@ -1873,15 +1857,16 @@ export default AdminBooking;
 //                                                     key={book.id}
 //                                                     className="hover:bg-gray-50/80 transition-colors duration-200 group"
 //                                                 >
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <div className="font-mono text-sm font-semibold text-gray-900">
 //                                                             #{idx + 1}
 //                                                         </div>
 //                                                     </td>
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <div>
+//                                                             {/* Updated service display */}
 //                                                             <div className="font-semibold text-gray-900 text-sm mb-1">
-//                                                                 {book.serviceName}
+//                                                                 {getServiceDisplay(book)}  {/* এইটা自动 আপডেট হবে */}
 //                                                             </div>
 //                                                             <div className="font-semibold text-gray-900 text-sm">
 //                                                                 {formatCurrency(book.totalPay)}
@@ -1894,7 +1879,7 @@ export default AdminBooking;
 //                                                             )}
 //                                                         </div>
 //                                                     </td>
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <div className="space-y-1">
 //                                                             <div className="flex items-center gap-2 text-gray-900 text-sm">
 //                                                                 <FaCalendarAlt className="w-3.5 h-3.5" />
@@ -1905,17 +1890,17 @@ export default AdminBooking;
 //                                                             </div>
 //                                                         </div>
 //                                                     </td>
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${paymentStatusColor}`}>
 //                                                             {paymentStatus}
 //                                                         </span>
 //                                                     </td>
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${bookingStatusColor}`}>
 //                                                             {bookingStatus}
 //                                                         </span>
 //                                                     </td>
-//                                                     <td className="py-3 px-4">
+//                                                     <td className="py-2 px-1 md:py-3 md:px-2">
 //                                                         <div className="flex items-center gap-2">
 //                                                             <button
 //                                                                 onClick={() => setBookingDetails(book)}
@@ -2042,8 +2027,10 @@ export default AdminBooking;
 //                                                 </div>
 //                                             </div>
 
-//                                             {/* Service Name */}
-//                                             <h3 className="font-semibold text-gray-900 text-lg mb-4 line-clamp-1">{book.serviceName}</h3>
+//                                             {/* Updated service display */}
+//                                             <h3 className="font-semibold text-gray-900 text-lg mb-4 line-clamp-1">
+//                                                 {getServiceDisplay(book)}
+//                                             </h3>
 
 //                                             {/* Customer Info if available */}
 //                                             {userInfo.fullName !== 'N/A' && (
@@ -2168,7 +2155,7 @@ export default AdminBooking;
 //                 </>
 //             )}
 
-
+//             {/* Edit Modal */}
 //             {selectedBooking && (
 //                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
 //                     <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -2201,7 +2188,9 @@ export default AdminBooking;
 //                                     <input
 //                                         type="text"
 //                                         name="serviceName"
+//                                         readOnly
 //                                         value={selectedBooking.serviceName || ""}
+//                                         // value={  {getServiceDisplay(bookingDetails)} || ""}
 //                                         onChange={handleInputChange}
 //                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
 //                                     />
@@ -2212,13 +2201,14 @@ export default AdminBooking;
 //                                         Total Amount
 //                                     </label>
 //                                     <div className="relative">
-//                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+//                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"><img src={dirhum} alt="" className="w-4 h-4" /></span>
 //                                         <input
 //                                             type="number"
 //                                             name="totalPay"
+//                                             readOnly
 //                                             value={selectedBooking.totalPay || ""}
 //                                             onChange={handleInputChange}
-//                                             className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
+//                                             className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30 ml-1"
 //                                         />
 //                                     </div>
 //                                 </div>
@@ -2235,11 +2225,10 @@ export default AdminBooking;
 //                                         onChange={handleInputChange}
 //                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
 //                                     >
-//                                         <option value="Upcoming">Upcoming</option>
+//                                         <option value="Requested">Requested</option>
+//                                         <option value="Pending">Pending</option>
 //                                         <option value="Delivered">Delivered</option>
 //                                         <option value="Cancelled">Cancelled</option>
-//                                         <option value="Pending">Pending</option>
-//                                         <option value="Requested">Requested</option>
 //                                     </select>
 //                                 </div>
 
@@ -2294,19 +2283,6 @@ export default AdminBooking;
 //                                     rows="2"
 //                                 />
 //                             </div>
-
-//                             <div className="space-y-1.5">
-//                                 <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-//                                     Additional Notes
-//                                 </label>
-//                                 <textarea
-//                                     name="additionalInfo"
-//                                     value={selectedBooking.additionalInfo || ""}
-//                                     onChange={handleInputChange}
-//                                     className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none bg-gray-50/30"
-//                                     rows="2"
-//                                 />
-//                             </div>
 //                         </div>
 
 //                         <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80">
@@ -2317,17 +2293,18 @@ export default AdminBooking;
 //                                 Cancel
 //                             </button>
 //                             <button
+//                                 disabled={lodaing}
 //                                 onClick={handleUpdateBooking}
 //                                 className="flex-2 sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95"
 //                             >
-//                                 Update Booking
+//                                 {lodaing ? 'Updating...' : 'Update Booking'}
 //                             </button>
 //                         </div>
 //                     </div>
 //                 </div>
 //             )}
 
-
+//             {/* Details Modal */}
 //             {bookingDetails && (
 //                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
 //                     <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -2369,7 +2346,10 @@ export default AdminBooking;
 //                                             Service Info
 //                                         </h4>
 //                                         <div className="p-4 sm:p-5 bg-gray-50 rounded-xl border border-gray-100">
-//                                             <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">{bookingDetails.serviceName}</p>
+//                                             {/* Updated service display using getServiceDisplay */}
+//                                             <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+//                                                 {getServiceDisplay(bookingDetails)}
+//                                             </p>
 //                                             <div className="space-y-3">
 //                                                 {bookingDetails.customerName && (
 //                                                     <div className="flex items-start gap-3">
@@ -2404,13 +2384,19 @@ export default AdminBooking;
 //                                                 <p className="text-sm sm:text-base text-gray-600">Total Amount</p>
 //                                                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</p>
 //                                             </div>
+//                                             <div className="flex items-center justify-between mb-3">
+//                                                 <p className="text-sm sm:text-base text-gray-600">Payment Mathod</p>
+
+//                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold`}>
+//                                                     {bookingDetails.paymentMethod}
+//                                                 </span>
+//                                             </div>
 //                                             <div className="flex items-center justify-between">
 //                                                 <p className="text-sm sm:text-base text-gray-600">Status</p>
 
 //                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${bookingDetails.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
 //                                                     {bookingDetails.paymentStatus || 'Pending'}
 //                                                 </span>
-
 //                                             </div>
 //                                         </div>
 //                                     </div>
@@ -2468,7 +2454,7 @@ export default AdminBooking;
 //                                 </div>
 //                             </div>
 
-//                             {/* ========== নতুন সেকশন: ইউজারের তথ্য ========== */}
+//                             {/* User Information */}
 //                             {bookingDetails && (
 //                                 <div>
 //                                     <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -2491,7 +2477,7 @@ export default AdminBooking;
 //                                                         </div>
 //                                                         <div>
 //                                                             <p className="text-xs text-gray-500 mb-1">Email</p>
-//                                                             <p className="font-medium text-gray-900 break-words">{userInfo.email}</p>
+//                                                             <p className="font-medium text-gray-900 wrap-break-word">{userInfo.email}</p>
 //                                                         </div>
 //                                                     </>
 //                                                 );
@@ -2547,6 +2533,7 @@ export default AdminBooking;
 //                                     Close
 //                                 </button>
 //                                 <button
+//                                     disabled={lodaing}
 //                                     onClick={() => {
 //                                         setSelectedBooking(bookingDetails);
 //                                         setBookingDetails(null);
