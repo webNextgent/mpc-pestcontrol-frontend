@@ -72,7 +72,7 @@ export default function Confirmation() {
                 latitude: mapLatitude,
                 status: "Requested",
                 userId: user?.id,
-                paymentStatus: "unpaid",
+                paymentStatus: "Unpaid",
             };
 
             const response = await axiosSecure.post("/booking/create", bookingData);
@@ -123,7 +123,7 @@ export default function Confirmation() {
                 latitude: mapLatitude,
                 status: "Requested",
                 userId: user?.id,
-                paymentStatus: "unpaid",
+                paymentStatus: "Unpaid",
             };
 
             const bookingResponse = await axiosSecure.post(
