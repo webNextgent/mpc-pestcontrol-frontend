@@ -129,8 +129,8 @@ const AdminBooking = () => {
             book.serviceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             book.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             book.id?.toString().includes(searchTerm) ||
-            userInfo.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||   // নাম দিয়ে সার্চ
-            userInfo.phone.includes(searchTerm);                                   // ফোন দিয়ে সার্চ
+            userInfo.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            userInfo.phone.includes(searchTerm);
 
         const matchesStatus = statusFilter === "all" || book.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -147,25 +147,23 @@ const AdminBooking = () => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
 
-    // ✅ আপডেটেড: handleInputChange ফাংশন - Booking Status Delivered হলে Payment Status Paid হবে
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
+
         setSelectedBooking(prev => {
             const updatedBooking = {
                 ...prev,
                 [name]: value
             };
-            
-            // অটোমেটিক পেমেন্ট স্ট্যাটাস আপডেট
+
             if (name === 'status') {
                 if (value === 'Delivered') {
-                    updatedBooking.paymentStatus = 'paid';
+                    updatedBooking.paymentStatus = 'Paid';
                 } else if (value === 'Cancelled' || value === 'Requested' || value === 'Pending') {
-                    updatedBooking.paymentStatus = 'unpaid';
+                    updatedBooking.paymentStatus = 'Unpaid';
                 }
             }
-            
+
             return updatedBooking;
         });
     };
@@ -185,12 +183,12 @@ const AdminBooking = () => {
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Yes, proceed'
             });
-            
+
             if (!result.isConfirmed) {
                 setLoading(false);
                 return;
             }
-            
+
             // কনফার্ম হলে paymentStatus আপডেট করে দিই
             setSelectedBooking(prev => ({
                 ...prev,
@@ -976,8 +974,8 @@ const AdminBooking = () => {
                                         className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed"
                                     />
                                     <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
-                                        {selectedBooking.status === 'Delivered' 
-                                            ? '✅ Auto-updated to Paid for delivered bookings' 
+                                        {selectedBooking.status === 'Delivered'
+                                            ? '✅ Auto-updated to Paid for delivered bookings'
                                             : 'ℹ️ Auto-updates based on booking status'}
                                     </p>
                                 </div>
