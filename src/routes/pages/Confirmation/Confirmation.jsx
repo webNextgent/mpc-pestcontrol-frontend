@@ -131,6 +131,8 @@ export default function Confirmation() {
                 bookingData,
             );
 
+            console.log(bookingResponse);
+
             if (!bookingResponse.data.success) {
                 throw new Error("Booking creation failed");
             }
