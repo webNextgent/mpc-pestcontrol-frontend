@@ -111,7 +111,7 @@ export default function Confirmation() {
                 userName: `${user?.firstName || ""} ${user?.lastName || ""}`,
                 userEmail: user?.email,
                 propertyItemIds: itemSummary.map((item) => item.id),
-                paymentMethod: "Online",
+                paymentMethod: "Ziina Payment",
                 serviceFee: servicePrice,
                 serviceCharge,
                 cashOnDelivery: 0,
