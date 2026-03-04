@@ -28,7 +28,7 @@ const LoginModal = ({ open, onClose }) => {
         iso: 'ae'
     });
     const [tabIndex, setTabIndex] = useState(0);
-    const [otpMethod, setOtpMethod] = useState('sms'); // 'sms' or 'whatsapp'
+    const [otpMethod, setOtpMethod] = useState('whatsapp');
 
     // Country validation rules
     const countryValidationRules = {
@@ -58,7 +58,8 @@ const LoginModal = ({ open, onClose }) => {
                 code: '+971',
                 iso: 'ae'
             });
-            setOtpMethod('sms');
+            setOtpMethod('whatsapp');
+            setTabIndex(0);
         }
     }, [open]);
 
@@ -120,19 +121,6 @@ const LoginModal = ({ open, onClose }) => {
         }
     };
 
-    // Format phone number based on country
-    const formatPhoneNumber = (value, countryCode) => {
-        // Remove all non-digits
-        let digits = value.replace(/\D/g, '');
-
-        // Remove leading zero if country is Bangladesh, Pakistan, India etc.
-        if (['bd', 'pk', 'in'].includes(countryCode) && digits.startsWith('0')) {
-            digits = digits.substring(1);
-        }
-
-        return digits;
-    };
-
     // Validate phone number with country-specific rules
     const validatePhoneNumber = () => {
         if (!phoneNumber.trim()) {
@@ -168,6 +156,7 @@ const LoginModal = ({ open, onClose }) => {
         if (!validatePhoneNumber()) {
             return;
         }
+
         setLoading(true);
 
         // Format phone number properly
@@ -198,12 +187,12 @@ const LoginModal = ({ open, onClose }) => {
             const data = await response.json();
 
             if (data?.success === false) {
-                toast.error(data?.message || `Failed to send OTP via ${otpMethod}. Please try again.`);
+                toast.error(data?.message || `Failed to send OTP via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}. Please try again.`);
             } else {
                 setOtpSuccessModal(true);
                 setTimer(30);
                 setResendDisabled(true);
-                toast.success(`OTP sent successfully via ${otpMethod}!`);
+                toast.success(`OTP sent successfully via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
 
                 setTimeout(() => {
                     if (inputRefs.current[0]) {
@@ -288,10 +277,10 @@ const LoginModal = ({ open, onClose }) => {
             const data = await response.json();
 
             if (data?.success === false) {
-                toast.error(data?.message || `Failed to resend OTP via ${otpMethod}`);
+                toast.error(data?.message || `Failed to resend OTP via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}`);
                 setResendDisabled(false);
             } else {
-                toast.success(`OTP resent successfully via ${otpMethod}!`);
+                toast.success(`OTP resent successfully via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
                 if (inputRefs.current[0]) {
                     inputRefs.current[0].focus();
                 }
@@ -329,11 +318,17 @@ const LoginModal = ({ open, onClose }) => {
 
     const handleTabSelect = (index) => {
         setTabIndex(index);
-        setOtpMethod(index === 0 ? 'sms' : 'whatsapp');
-        // Reset OTP success state when switching tabs
+
+        if (index === 0) {
+            setOtpMethod('whatsapp');
+        } else {
+            setOtpMethod('sms');
+        }
+
+        // optional reset when switching tab
         setOtpSuccessModal(false);
+        setPhoneNumber('');
         setOtp(['', '', '', '']);
-        setValidationError("");
     };
 
     const getPhoneNumberPlaceholder = () => {
@@ -544,30 +539,30 @@ const LoginModal = ({ open, onClose }) => {
                         <TabList className="flex border-b border-gray-200 mb-6">
                             <Tab className="flex-1 py-2 text-center cursor-pointer outline-none">
                                 <p className={`text-sm md:text-base font-medium ${tabIndex === 0 ? 'text-[#f16522] border-b-2 border-[#f16522] pb-2' : 'text-gray-500'}`}>
-                                    Phone OTP
+                                    WhatsApp OTP
                                 </p>
                             </Tab>
                             <Tab className="flex-1 py-2 text-center cursor-pointer outline-none">
                                 <p className={`text-sm md:text-base font-medium ${tabIndex === 1 ? 'text-[#f16522] border-b-2 border-[#f16522] pb-2' : 'text-gray-500'}`}>
-                                    WhatsApp OTP
+                                    Phone OTP
                                 </p>
                             </Tab>
                         </TabList>
 
-                        {/* Phone OTP Tab */}
+                        {/* whatsapp OTP Tab */}
                         <TabPanel>
                             {!otpSuccessModal ? (
                                 <>
                                     {/* Header */}
                                     <h2 className="text-[17px] md:text-[23px] font-bold md:mb-1 text-[#1a1a1a]">Log in or sign up</h2>
                                     <p className="text-[15px] text-[#333333] mb-3 md:mb-4">
-                                        Please enter your mobile number to proceed via SMS.
+                                        Please enter your mobile number to proceed via Whatsapp.
                                     </p>
 
                                     {/* Mobile Number Input */}
                                     <div className="mb-4">
                                         <label className="block text-[15px] font-semibold mb-1 md:mb-2 text-[#1a1a1a]">
-                                            Mobile Number
+                                            Whatsapp Number any
                                         </label>
 
                                         <div className={`flex items-center border ${validationError ? 'border-red-500' : 'border-[#008b9b]'} rounded h-12 px-4 focus-within:ring-1 ${validationError ? 'focus-within:ring-red-500' : 'focus-within:ring-[#008b9b]'} transition-all`}>
@@ -636,10 +631,10 @@ const LoginModal = ({ open, onClose }) => {
                                                 SENDING...
                                             </span>
                                         ) : (
-                                            'Continue'
+                                            'Continue with WhatsApp'
                                         )}
                                     </button>
-                                    <p className="text-center my-2 text-blue-500">use only whatsapp number</p>
+                                    <p className="text-center my-2 text-green-600">Get OTP via WhatsApp</p>
                                 </>
                             ) : (
                                 // OTP Verification Screen for Phone
@@ -717,31 +712,31 @@ const LoginModal = ({ open, onClose }) => {
                             )}
                         </TabPanel>
 
-                        {/* WhatsApp OTP Tab */}
+                        {/* phone OTP Tab */}
                         <TabPanel>
                             {!otpSuccessModal ? (
                                 <>
                                     {/* Header */}
                                     <h2 className="text-[17px] md:text-[23px] font-bold md:mb-1 text-[#1a1a1a]">Log in or sign up</h2>
                                     <p className="text-[15px] text-[#333333] mb-3 md:mb-4">
-                                        Please enter your mobile number to proceed via WhatsApp.
+                                        Please enter your mobile number to proceed via SMS.
                                     </p>
 
                                     {/* Mobile Number Input */}
                                     <div className="mb-4">
                                         <label className="block text-[15px] font-semibold mb-1 md:mb-2 text-[#1a1a1a]">
-                                            WhatsApp Number
+                                            Phone Number only UAE
                                         </label>
 
                                         <div className={`flex items-center border ${validationError ? 'border-red-500' : 'border-[#008b9b]'} rounded h-12 px-4 focus-within:ring-1 ${validationError ? 'focus-within:ring-red-500' : 'focus-within:ring-[#008b9b]'} transition-all`}>
                                             {/* Flag and Country Code */}
                                             <div
-                                                onClick={() => setOpenModal(true)}
+                                                // onClick={() => setOpenModal(true)}
                                                 className="flex items-center gap-2 pr-3 border-r border-gray-200 mr-4 cursor-pointer hover:bg-gray-50 px-2 -ml-2 rounded transition-colors"
                                             >
                                                 <div className="w-8 h-5 overflow-hidden rounded-sm shadow-sm">
                                                     <img
-                                                        src={`https://flagcdn.com/w40/${country.iso}.png`}
+                                                        src={`https://i.postimg.cc/bwy4Dhpp/download.png`}
                                                         alt={country.name}
                                                         className="w-full h-full object-cover"
                                                     />
@@ -789,7 +784,7 @@ const LoginModal = ({ open, onClose }) => {
                                     <button
                                         onClick={handleContinue}
                                         disabled={loading || !phoneNumber}
-                                        className={`w-full ${loading || !phoneNumber ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#25D366] hover:bg-[#128C7E]'} text-white text-[14px] md:text-[16px] font-bold py-[12px] md:py-[13px] rounded transition-colors`}>
+                                        className={`w-full ${loading || !phoneNumber ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f16522] hover:bg-[#d9561a]'} text-white text-[14px] md:text-[16px] font-bold py-[12px] md:py-[13px] rounded transition-colors`}>
                                         {loading ? (
                                             <span className="flex items-center justify-center">
                                                 <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -799,17 +794,17 @@ const LoginModal = ({ open, onClose }) => {
                                                 SENDING...
                                             </span>
                                         ) : (
-                                            'Continue with WhatsApp'
+                                            'Continue with Phone SMS'
                                         )}
                                     </button>
-                                    <p className="text-center my-2 text-green-600">Get OTP on WhatsApp</p>
+                                    <p className="text-center my-2 text-green-600">Get OTP via phone sms only UAE</p>
                                 </>
                             ) : (
                                 // OTP Verification Screen for WhatsApp
                                 <>
                                     <h2 className="text-[16px] md:text-[26px] font-bold mb-6 text-[#1a1a1a]">Verify WhatsApp number</h2>
                                     <p className="text-[15px] text-[#333333] mb-6">
-                                        We've sent an OTP via WhatsApp to <span className="font-bold">{fullPhoneNumber}</span>.
+                                        We've sent an OTP via SMS to <span className="font-bold">{fullPhoneNumber}</span>.
                                         Please enter the 4-digit code below.
                                     </p>
 
@@ -847,7 +842,7 @@ const LoginModal = ({ open, onClose }) => {
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                     </svg>
-                                                    Resend OTP via WhatsApp
+                                                    Resend OTP via SMS
                                                 </button>
                                             )}
                                         </div>
@@ -968,8 +963,6 @@ const LoginModal = ({ open, onClose }) => {
 };
 
 export default LoginModal;
-
-
 
 
 

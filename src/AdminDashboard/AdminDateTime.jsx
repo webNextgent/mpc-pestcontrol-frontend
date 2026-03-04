@@ -33,6 +33,11 @@ const AdminDateTime = () => {
     const [showTimePicker, setShowTimePicker] = useState({ index: null, type: null });
     const axiosSecure = useAxiosSecure();
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5);
+    const [totalItems, setTotalItems] = useState(0);
+
     const addSlot = () => {
         setTimeSlots([...timeSlots, { start: "", end: "" }]);
     };
@@ -123,8 +128,6 @@ const AdminDateTime = () => {
             timeSlots: formattedSlots,
         };
 
-        // console.log("Sending payload (12-hour format):", payload);
-
         setIsLoading(true);
         try {
             const res = await axiosSecure.post('/date-time/create', payload);
@@ -135,6 +138,8 @@ const AdminDateTime = () => {
                 setFromDate(null);
                 setToDate(null);
                 setTimeSlots([]);
+                // Reset to first page when new data is added
+                setCurrentPage(1);
                 // Refresh data
                 fetchDateTimeData();
             } else {
@@ -154,6 +159,7 @@ const AdminDateTime = () => {
 
             if (res?.data?.success) {
                 setAppliedRecords(res?.data?.Data || []);
+                setTotalItems(res?.data?.Data?.length || 0);
             }
         } catch (error) {
             console.error("GET Error:", error);
@@ -176,12 +182,17 @@ const AdminDateTime = () => {
                         const res = await axiosSecure.delete(`/date-time/delete/${id}`);
                         if (res?.data?.success) {
                             toast.success("Configuration deleted");
+                            // Adjust current page if needed after deletion
+                            const newTotal = totalItems - 1;
+                            const totalPages = Math.ceil(newTotal / itemsPerPage);
+                            if (currentPage > totalPages) {
+                                setCurrentPage(Math.max(1, totalPages));
+                            }
                             fetchDateTimeData();
                         } else {
                             toast.error(res?.message || "Failed to delete");
                         }
                     } catch (err) {
-                        // console.log(err);
                         toast.error('Something was wrong');
                     }
                 }
@@ -220,7 +231,6 @@ const AdminDateTime = () => {
                 year: 'numeric'
             });
         } catch (error) {
-            // console.log(error);
             return dateString;
         }
     };
@@ -248,19 +258,11 @@ const AdminDateTime = () => {
 
     // Function to group time slots by date for table display
     const getGroupedData = () => {
-        // console.log("Grouping data from appliedRecords:", appliedRecords);
-
         const grouped = {};
 
         appliedRecords.forEach((record, recordIndex) => {
-            // console.log(`Processing record ${recordIndex}:`, record);
-
-            // Handle different data structures
             if (record.timeSlots && Array.isArray(record.timeSlots)) {
                 record.timeSlots.forEach((slot, slotIndex) => {
-                    // console.log(`Slot ${slotIndex}:`, slot);
-
-                    // Check if slot has date property
                     const dateKey = slot.date || record.startDate || record.date;
 
                     if (!grouped[dateKey]) {
@@ -273,21 +275,16 @@ const AdminDateTime = () => {
                         };
                     }
 
-                    // Extract time slot info
                     let startTime, endTime;
 
                     if (typeof slot === 'string') {
-                        // Format: "10:00 AM - 12:00 PM"
                         const [start, end] = slot.split(' - ');
-                        // যেহেতু এখন 12-hour format এ আসবে, তাই convertTo12Hour দরকার নেই
                         startTime = start;
                         endTime = end;
                     } else if (slot.startTime && slot.endTime) {
-                        // Object format: {startTime: "10:00 AM", endTime: "12:00 PM"}
                         startTime = slot.startTime;
                         endTime = slot.endTime;
                     } else if (slot.start && slot.end) {
-                        // Object format: {start: "10:00 AM", end: "12:00 PM"}
                         startTime = slot.start;
                         endTime = slot.end;
                     }
@@ -301,10 +298,7 @@ const AdminDateTime = () => {
                     }
                 });
             } else if (record.time && Array.isArray(record.time)) {
-                // Alternative structure: record.time array
                 record.time.forEach((slot, slotIndex) => {
-                    // console.log(`Time slot ${slotIndex}:`, slot);
-
                     const dateKey = record.date || record.startDate;
 
                     if (!grouped[dateKey]) {
@@ -318,7 +312,6 @@ const AdminDateTime = () => {
                     }
 
                     if (typeof slot === 'string') {
-                        // এখন 12-hour format আসবে: "10:00 AM - 1:00 PM"
                         const [start, end] = slot.split(' - ');
                         grouped[dateKey].slots.push({
                             startTime: start,
@@ -330,21 +323,164 @@ const AdminDateTime = () => {
             }
         });
 
-        // console.log("Grouped result:", grouped);
-
         // Convert to array and sort by date
         return Object.values(grouped).sort((a, b) => {
             try {
                 return new Date(a.date) - new Date(b.date);
             } catch (error) {
-                // console.log(error);
                 return 0;
             }
         });
     };
 
     const groupedDates = getGroupedData();
-    // console.log("Final grouped dates for display:", groupedDates);
+    
+    // Pagination logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = groupedDates.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(groupedDates.length / itemsPerPage);
+
+    // Pagination component
+    const Pagination = () => {
+        const pageNumbers = [];
+        for (let i = 1; i <= totalPages; i++) {
+            pageNumbers.push(i);
+        }
+
+        const renderPageNumbers = () => {
+            const pageItems = [];
+            const maxVisiblePages = 5; // Show maximum 5 page numbers
+            
+            if (totalPages <= maxVisiblePages) {
+                // Show all pages if total pages is less than or equal to max visible
+                pageNumbers.forEach(number => {
+                    pageItems.push(
+                        <button
+                            key={number}
+                            onClick={() => setCurrentPage(number)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                                currentPage === number
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                        >
+                            {number}
+                        </button>
+                    );
+                });
+            } else {
+                // Show first page
+                pageItems.push(
+                    <button
+                        key={1}
+                        onClick={() => setCurrentPage(1)}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                            currentPage === 1
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                        }`}
+                    >
+                        1
+                    </button>
+                );
+
+                // Show dots if current page is > 3
+                if (currentPage > 3) {
+                    pageItems.push(
+                        <span key="dots1" className="px-2 py-2 text-gray-500">
+                            ...
+                        </span>
+                    );
+                }
+
+                // Show pages around current page
+                for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                    if (i > 1 && i < totalPages) {
+                        pageItems.push(
+                            <button
+                                key={i}
+                                onClick={() => setCurrentPage(i)}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                                    currentPage === i
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                }`}
+                            >
+                                {i}
+                            </button>
+                        );
+                    }
+                }
+
+                // Show dots if current page is < totalPages - 2
+                if (currentPage < totalPages - 2) {
+                    pageItems.push(
+                        <span key="dots2" className="px-2 py-2 text-gray-500">
+                            ...
+                        </span>
+                    );
+                }
+
+                // Show last page
+                if (totalPages > 1) {
+                    pageItems.push(
+                        <button
+                            key={totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                                currentPage === totalPages
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                        >
+                            {totalPages}
+                        </button>
+                    );
+                }
+            }
+
+            return pageItems;
+        };
+
+        if (groupedDates.length === 0) return null;
+
+        return (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="text-sm text-gray-600">
+                        Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
+                        <span className="font-medium">
+                            {Math.min(indexOfLastItem, groupedDates.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{groupedDates.length}</span> results
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                            Previous
+                        </button>
+                        
+                        <div className="flex items-center gap-1">
+                            {renderPageNumbers()}
+                        </div>
+                        
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -719,7 +855,7 @@ const AdminDateTime = () => {
                     </div>
                 </div>
 
-                {/* Applied Records Table */}
+                {/* Applied Records Table with Pagination */}
                 {groupedDates.length > 0 && (
                     <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
@@ -733,7 +869,7 @@ const AdminDateTime = () => {
                                     <h2 className="text-xl font-semifont-semibold text-gray-900">Configured Time Slots (12-hour format)</h2>
                                 </div>
                                 <div className="text-sm text-gray-600">
-                                    Showing {groupedDates.length} dates
+                                    Showing {currentItems.length} of {groupedDates.length} dates
                                 </div>
                             </div>
                         </div>
@@ -766,7 +902,7 @@ const AdminDateTime = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {groupedDates.map((item, index) => (
+                                    {currentItems.map((item, index) => (
                                         <tr key={index} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="py-4 px-6">
                                                 <div className="space-y-1">
@@ -817,17 +953,8 @@ const AdminDateTime = () => {
                             </table>
                         </div>
 
-                        {/* Table Footer */}
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
-                                    <span className="font-medium">{groupedDates.length}</span> date configurations loaded
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                    All times in 12-hour format (AM/PM)
-                                </div>
-                            </div>
-                        </div>
+                        {/* Pagination Component */}
+                        <Pagination />
                     </div>
                 )}
 
@@ -861,7 +988,6 @@ const AdminDateTime = () => {
                             Data is available from API but couldn't be displayed properly. Check the console for details.
                         </p>
                         <button
-                            // onClick={() => console.log("Applied Records:", appliedRecords)}
                             className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors text-sm font-medium"
                         >
                             Check Console for Data
