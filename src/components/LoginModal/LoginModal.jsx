@@ -208,6 +208,58 @@ const LoginModal = ({ open, onClose }) => {
         }
     };
 
+    const handleContinueBySms = async () => {
+        if (!validatePhoneNumber()) {
+            return;
+        }
+
+        setLoading(true);
+
+        // Format phone number properly
+        let formattedNumber = phoneNumber.replace(/\D/g, '');
+
+        const fullPhone = country.code + formattedNumber;
+        setFullPhoneNumber(fullPhone);
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp-by-sms`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phone: fullPhone,
+                    countryCode: country?.iso || 'ae',
+                    countryName: country?.name || 'United Arab Emirates',
+                    via: otpMethod // 'sms' or 'whatsapp'
+                })
+            });
+
+            const data = await response.json();
+            console.log('data', data);
+
+            if (data?.success === false) {
+                toast.error(data?.message || `Failed to send OTP via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}. Please try again.`);
+            } else {
+                setOtpSuccessModal(true);
+                setTimer(30);
+                setResendDisabled(true);
+                toast.success(`OTP sent successfully via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
+
+                setTimeout(() => {
+                    if (inputRefs.current[0]) {
+                        inputRefs.current[0].focus();
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error sending OTP:', error);
+            toast.error('Network error. Please check your connection.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleVerifyOtp = async () => {
         const otpString = otp.join('');
         if (otpString.length !== 4) {
@@ -264,6 +316,43 @@ const LoginModal = ({ open, onClose }) => {
 
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phone: fullPhoneNumber,
+                    via: otpMethod
+                })
+            });
+
+            const data = await response.json();
+
+            if (data?.success === false) {
+                toast.error(data?.message || `Failed to resend OTP via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}`);
+                setResendDisabled(false);
+            } else {
+                toast.success(`OTP resent successfully via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
+                if (inputRefs.current[0]) {
+                    inputRefs.current[0].focus();
+                }
+            }
+        } catch (error) {
+            console.error('Error resending OTP:', error);
+            toast.error('Failed to resend OTP');
+            setResendDisabled(false);
+        }
+    };
+
+    const handleResendOtpBySms = async () => {
+        if (resendDisabled) return;
+
+        setResendDisabled(true);
+        setTimer(30);
+        setOtp(['', '', '', '']);
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp-by-sms`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -782,7 +871,7 @@ const LoginModal = ({ open, onClose }) => {
 
                                     {/* Continue Button */}
                                     <button
-                                        onClick={handleContinue}
+                                        onClick={handleContinueBySms}
                                         disabled={loading || !phoneNumber}
                                         className={`w-full ${loading || !phoneNumber ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f16522] hover:bg-[#d9561a]'} text-white text-[14px] md:text-[16px] font-bold py-[12px] md:py-[13px] rounded transition-colors`}>
                                         {loading ? (
