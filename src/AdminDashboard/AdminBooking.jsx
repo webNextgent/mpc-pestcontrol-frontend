@@ -1136,7 +1136,9 @@ const AdminBooking = () => {
                                                 <p className="text-sm sm:text-base text-gray-600">Payment Method</p>
 
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold`}>
-                                                    {bookingDetails.paymentMethod}
+                                                    {bookingDetails.paymentMethod === 'Online'
+                                                        ? 'Ziina Payment'
+                                                        : 'Cash On Delivery'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
