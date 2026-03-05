@@ -1,11 +1,87 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { FaCalendarAlt, FaRegEye, FaRegEdit, FaRegTrashAlt, FaMapMarkerAlt, FaShare, FaExternalLinkAlt, FaCopy, FaWhatsapp, FaEnvelope, FaUser, FaPhone, FaDollarSign, FaChevronLeft, FaChevronRight, FaMap, FaLink } from "react-icons/fa";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+    FaCalendarAlt, FaRegEye, FaRegEdit, FaRegTrashAlt,
+    FaMapMarkerAlt, FaShare, FaExternalLinkAlt, FaCopy,
+    FaWhatsapp, FaUser, FaPhone, FaDollarSign,
+    FaChevronLeft, FaChevronRight,
+} from "react-icons/fa";
 import { IoClose, IoCopyOutline } from "react-icons/io5";
 import useAxiosSecure from "../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
-import dirhum from '../assets/icon/dirhum.png'
+import dirhum from '../assets/icon/dirhum.png';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const getUserInfo = (booking) => {
+    if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
+    if (booking.user) {
+        const fullName = `${booking.user.firstName || ''} ${booking.user.lastName || ''}`.trim() || booking.userName || 'N/A';
+        return { fullName, phone: booking.user.phone || 'N/A', email: booking.user.email || 'N/A' };
+    }
+    return {
+        fullName: booking.userName || booking.customerName || 'N/A',
+        phone: booking.phone || 'N/A',
+        email: booking.userEmail || 'N/A',
+    };
+};
+
+const getServiceDisplay = (booking) => {
+    const items = booking.bookingItems || booking.propertyItems || [];
+    if (items.length > 0) {
+        return items.map(item => {
+            const pi = item.propertyItem || item;
+            const title = pi.title || '';
+            const stype = pi.propertyType?.serviceType?.title || '';
+            return [title, stype].filter(Boolean).join(' - ');
+        }).filter(Boolean).join(', ');
+    }
+    return booking.serviceName || 'N/A';
+};
+
+const formatCurrency = (amount) => `AED ${parseFloat(amount || 0).toFixed(2)}`;
+
+const getCoordinates = (booking) => {
+    if (!booking) return { latitude: 25.2048, longitude: 55.2708 };
+    if (booking.latitude && booking.longitude) {
+        return { latitude: Number(booking.latitude), longitude: Number(booking.longitude) };
+    }
+    // deterministic seed from id — no Math.random()
+    const seed = booking.id ? parseInt(booking.id.toString().replace(/\D/g, '') || '0') % 100 : 0;
+    return {
+        latitude: parseFloat((25.2048 + seed * 0.005).toFixed(6)),
+        longitude: parseFloat((55.2708 + seed * 0.005).toFixed(6)),
+    };
+};
+
+const getGoogleMapsUrl = (booking) => {
+    if (booking?.latitude && booking?.longitude) {
+        return `https://www.google.com/maps?q=${booking.latitude},${booking.longitude}`;
+    }
+    const { latitude, longitude } = getCoordinates(booking);
+    if (booking?.id) return `https://www.google.com/maps?q=${latitude},${longitude}`;
+    if (booking?.address) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.address)}`;
+    return 'https://www.google.com/maps';
+};
+
+const STATUS_STYLES = {
+    upcoming: 'bg-blue-50 text-blue-700 border border-blue-200',
+    pending: 'bg-amber-50 text-amber-700 border border-amber-200',
+    cancelled: 'bg-red-50 text-red-700 border border-red-200',
+    delivered: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    requested: 'bg-violet-50 text-violet-700 border border-violet-200',
+};
+const getStatusStyle = (s) => STATUS_STYLES[s?.toLowerCase()] || 'bg-gray-50 text-gray-600 border border-gray-200';
+
+const PAYMENT_STYLES = {
+    paid: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    unpaid: 'bg-red-50 text-red-700 border border-red-200',
+    pending: 'bg-amber-50 text-amber-700 border border-amber-200',
+};
+const getPaymentStyle = (s) => PAYMENT_STYLES[s?.toLowerCase()] || 'bg-gray-50 text-gray-600 border border-gray-200';
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const AdminBooking = () => {
     const queryClient = useQueryClient();
@@ -19,204 +95,119 @@ const AdminBooking = () => {
     const [viewMode, setViewMode] = useState("table");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [demoMode,] = useState(true);
+    const [loading, setLoading] = useState(false);
     const shareRef = useRef(null);
     const axiosSecure = useAxiosSecure();
-    const [loading, setLoading] = useState(false);
-
-    const getUserInfo = (booking) => {
-        if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
-
-        if (booking.user) {
-            const firstName = booking.user.firstName || '';
-            const lastName = booking.user.lastName || '';
-            const fullName = `${firstName} ${lastName}`.trim() || booking.userName || 'N/A';
-            const phone = booking.user.phone || 'N/A';
-            const email = booking.user.email || 'N/A';
-            return { fullName, phone, email };
-        }
-
-        return {
-            fullName: booking.userName || booking.customerName || 'N/A',
-            phone: booking.phone || 'N/A',
-            email: booking.userEmail || 'N/A',
-        };
-    };
-
-    const getServiceDisplay = (booking) => {
-        if (booking.bookingItems && booking.bookingItems.length > 0) {
-            return booking.bookingItems.map(item => {
-                const propertyItem = item.propertyItem;
-                if (propertyItem) {
-                    const itemTitle = propertyItem.title || '';
-                    const serviceTypeTitle = propertyItem.propertyType?.serviceType?.title || '';
-
-                    if (itemTitle && serviceTypeTitle) {
-                        return `${itemTitle} - ${serviceTypeTitle}`;
-                    } else if (itemTitle) {
-                        return itemTitle;
-                    } else if (serviceTypeTitle) {
-                        return serviceTypeTitle;
-                    }
-                }
-                return '';
-            }).filter(Boolean).join(', ');
-        }
-
-        if (booking.propertyItems && booking.propertyItems.length > 0) {
-            return booking.propertyItems.map(item => {
-                const itemTitle = item.title || '';
-                const serviceTypeTitle = item.propertyType?.serviceType?.title || '';
-
-                if (itemTitle && serviceTypeTitle) {
-                    return `${itemTitle} - ${serviceTypeTitle}`;
-                } else if (itemTitle) {
-                    return itemTitle;
-                } else if (serviceTypeTitle) {
-                    return serviceTypeTitle;
-                }
-                return '';
-            }).filter(Boolean).join(', ');
-        }
-
-        return booking.serviceName || 'N/A';
-    };
 
     const { data: bookings = [], isLoading, error } = useQuery({
         queryKey: ["bookingAdmin"],
         queryFn: async () => {
-            try {
-                const res = await axiosSecure.get("/booking");
-                if (res?.data?.success) {
-                    return res.data.Data || [];
-                } else {
-                    throw new Error(res.data.message || "Failed to fetch bookings");
-                }
-            } catch (error) {
-                console.error("Error fetching bookings:", error);
-                throw error;
-            }
+            const res = await axiosSecure.get("/booking");
+            if (res?.data?.success) return res.data.Data || [];
+            throw new Error(res.data.message || "Failed to fetch bookings");
         },
         retry: 2,
         staleTime: 1000 * 60 * 5,
         refetchInterval: 1000 * 30,
-        refetchIntervalInBackground: true,
         refetchOnWindowFocus: true,
-        refetchOnMount: true,
-        refetchOnReconnect: true
     });
 
+    // Outside click → close share dropdown
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (shareRef.current && !shareRef.current.contains(event.target)) {
-                setShowShareOptions(false);
-            }
+        const handler = (e) => {
+            if (shareRef.current && !shareRef.current.contains(e.target)) setShowShareOptions(false);
         };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const filteredBookings = bookings.filter(book => {
+    // Reset page on filter change
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
+
+    // ── Filtered & paginated data ──
+    const filteredBookings = useMemo(() => bookings.filter(book => {
         if (!book) return false;
-
-        const userInfo = getUserInfo(book);
-        const serviceDisplay = getServiceDisplay(book);
-
-        const matchesSearch =
-            serviceDisplay.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            book.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            book.id?.toString().includes(searchTerm) ||
-            userInfo.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            userInfo.phone.includes(searchTerm);
-
+        const { fullName, phone } = getUserInfo(book);
+        const service = getServiceDisplay(book);
+        const q = searchTerm.toLowerCase();
+        const matchesSearch = !q ||
+            service.toLowerCase().includes(q) ||
+            book.address?.toLowerCase().includes(q) ||
+            book.id?.toString().includes(q) ||
+            fullName.toLowerCase().includes(q) ||
+            phone.includes(q);
         const matchesStatus = statusFilter === "all" || book.status === statusFilter;
         return matchesSearch && matchesStatus;
-    });
+    }), [bookings, searchTerm, statusFilter]);
 
-    const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(filteredBookings.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentBookings = filteredBookings.slice(startIndex, endIndex);
+    const currentBookings = filteredBookings.slice(startIndex, startIndex + itemsPerPage);
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
+    const stats = useMemo(() => ({
+        total: bookings.length,
+        completed: bookings.filter(b => b.status === 'Delivered').length,
+        // only count paid bookings for revenue
+        revenue: bookings
+            .filter(b => b.paymentStatus === 'Paid')
+            .reduce((s, b) => s + (parseFloat(b.totalPay) || 0), 0),
+    }), [bookings]);
+
+    // ── Handlers ──
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-
         setSelectedBooking(prev => {
-            const updatedBooking = {
-                ...prev,
-                [name]: value
-            };
-
+            const updated = { ...prev, [name]: value };
             if (name === 'status') {
-                if (value === 'Delivered') {
-                    updatedBooking.paymentStatus = 'Paid';
-                } else if (value === 'Cancelled' || value === 'Requested' || value === 'Pending') {
-                    updatedBooking.paymentStatus = 'Unpaid';
-                }
+                updated.paymentStatus = value === 'Delivered' ? 'Paid'
+                    : (value === 'Cancelled' || value === 'Requested' || value === 'Pending') ? 'Unpaid'
+                        : prev.paymentStatus;
             }
-
-            return updatedBooking;
+            return updated;
         });
     };
 
     const handleUpdateBooking = async () => {
+        if (!selectedBooking) return;   // guard BEFORE setLoading
         setLoading(true);
-        if (!selectedBooking) return;
-
-        let finalPaymentStatus = selectedBooking.paymentStatus;
-
-        if (selectedBooking.status === 'Delivered' && selectedBooking.paymentStatus !== 'Paid') {
-            const result = await Swal.fire({
-                title: 'Auto-payment update',
-                text: 'Setting status to Delivered will automatically mark payment as Paid. Continue?',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, proceed'
-            });
-
-            if (!result.isConfirmed) {
-                setLoading(false);
-                return;
-            }
-
-            finalPaymentStatus = 'Paid';
-            setSelectedBooking(prev => ({ ...prev, paymentStatus: 'Paid' }));
-        }
-
-        const updateData = {
-            status: selectedBooking.status,
-            address: selectedBooking.address,
-            date: selectedBooking.date,
-            time: selectedBooking.time,
-            totalPay: Number(selectedBooking.totalPay),
-            paymentStatus: finalPaymentStatus 
-        };
 
         try {
-            const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, updateData);
-            if (res?.data?.success) {
-                await queryClient.invalidateQueries({
-                    queryKey: ["bookingAdmin"],
-                    exact: true,
-                    refetchType: 'active'
+            let finalPaymentStatus = selectedBooking.paymentStatus;
+            if (selectedBooking.status === 'Delivered' && selectedBooking.paymentStatus !== 'Paid') {
+                const result = await Swal.fire({
+                    title: 'Auto-payment update',
+                    text: 'Setting Delivered will mark payment as Paid. Continue?',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, proceed',
                 });
-                await queryClient.refetchQueries({
-                    queryKey: ["bookingAdmin"]
-                });
+                if (!result.isConfirmed) return; // finally still runs
+                finalPaymentStatus = 'Paid';
+                setSelectedBooking(prev => ({ ...prev, paymentStatus: 'Paid' }));
+            }
 
+            const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, {
+                status: selectedBooking.status,
+                address: selectedBooking.address,
+                date: selectedBooking.date,
+                time: selectedBooking.time,
+                totalPay: Number(selectedBooking.totalPay),
+                paymentStatus: finalPaymentStatus,
+            });
+
+            if (res?.data?.success) {
+                await queryClient.invalidateQueries({ queryKey: ["bookingAdmin"], exact: true });
+                await queryClient.refetchQueries({ queryKey: ["bookingAdmin"] });
                 setSelectedBooking(null);
-                toast.success("Booking updated successfully!");
+                toast.success("Booking updated!");
             } else {
                 toast.error("Failed to update booking");
             }
-        } catch (error) {
-            console.error("Update error:", error);
+        } catch (err) {
+            console.error(err);
             toast.error("Something went wrong!");
         } finally {
             setLoading(false);
@@ -224,816 +215,554 @@ const AdminBooking = () => {
     };
 
     const handleDeleteBooking = async (bookingId) => {
+        const result = await Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!",
+        });
+        if (!result.isConfirmed) return;
         try {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "You won't be able to revert this!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, delete it!"
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const res = await axiosSecure.delete(`/booking/delete/${bookingId}`);
-                    if (res?.data?.success) {
-                        queryClient.invalidateQueries(["bookingAdmin"]);
-                        Swal.fire({
-                            title: "Deleted!",
-                            text: "Your file has been deleted.",
-                            icon: "success"
-                        });
-                    }
-                }
-            })
-        } catch (error) {
-            console.error("Delete error:", error);
+            const res = await axiosSecure.delete(`/booking/delete/${bookingId}`);
+            if (res?.data?.success) {
+                queryClient.invalidateQueries({ queryKey: ["bookingAdmin"] });
+                toast.success("Booking deleted!");
+            } else {
+                toast.error("Failed to delete booking");
+            }
+        } catch (err) {
+            console.error(err);
             toast.error("Something went wrong!");
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'upcoming': return 'bg-blue-50 text-blue-700 border border-blue-200';
-            case 'pending': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
-            case 'cancelled': return 'bg-red-50 text-red-700 border border-red-200';
-            case 'delivered': return 'bg-green-50 text-green-700 border border-green-200';
-            default: return 'bg-gray-50 text-gray-700 border border-gray-200';
-        }
-    };
-
-    const getGoogleMapsUrl = useCallback((booking) => {
-        if (booking?.latitude && booking?.longitude) {
-            return `https://www.google.com/maps?q=${booking.latitude},${booking.longitude}`;
-        }
-
-        if (demoMode && booking?.id) {
-            const idNum = parseInt(booking.id) || Math.floor(Math.random() * 1000);
-            const lat = 23.8103 + (idNum % 100) * 0.01;
-            const lng = 90.4125 + (idNum % 100) * 0.01;
-            return `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-        }
-
-        if (booking?.address) {
-            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.address)}`;
-        }
-
-        return 'https://www.google.com/maps';
-    }, [demoMode]);
-
-    const getCoordinates = useCallback((booking) => {
-        if (!booking) return { latitude: 23.8103, longitude: 90.4125 };
-
-        if (booking.latitude && booking.longitude) {
-            return {
-                latitude: Number(booking.latitude),
-                longitude: Number(booking.longitude)
-            };
-        }
-
-        let idNum;
-        if (booking.id) {
-            const numMatch = booking.id.toString().match(/\d+/);
-            idNum = numMatch ? parseInt(numMatch[0]) : Math.floor(Math.random() * 1000);
-        } else {
-            idNum = Math.floor(Math.random() * 1000);
-        }
-
-        const lat = 23.8103 + (idNum % 100) * 0.01;
-        const lng = 90.4125 + (idNum % 100) * 0.01;
-
-        return {
-            latitude: Number(lat.toFixed(6)),
-            longitude: Number(lng.toFixed(6))
-        };
-    }, []);
-
-    const generateShareText = (booking) => {
+    const generateShareText = useCallback((booking) => {
         const mapUrl = getGoogleMapsUrl(booking);
-        const userInfo = getUserInfo(booking);
-
-        const lines = [
-            "📋 *BOOKING DETAILS* 📋",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "",
-            `👤 *Customer:* ${userInfo.fullName}`,
-            `📞 *Phone:* ${userInfo.phone}`,
-            `📧 *Email:* ${userInfo.email}`,
+        const { fullName, phone, email } = getUserInfo(booking);
+        return [
+            "📋 *BOOKING DETAILS*",
+            "━━━━━━━━━━━━━━━━",
+            `👤 *Customer:* ${fullName}`,
+            `📞 *Phone:* ${phone}`,
+            `📧 *Email:* ${email}`,
             "",
             `🔹 *ID:* ${booking.id}`,
             `🔹 *Service:* ${getServiceDisplay(booking)}`,
             `🔹 *Date & Time:* ${booking.date} at ${booking.time}`,
-            `🔹 *Amount:* $${booking.totalPay}`,
+            `🔹 *Amount:* ${formatCurrency(booking.totalPay)}`,
             `🔹 *Booking Status:* ${booking.status}`,
             `🔹 *Payment Status:* ${booking.paymentStatus}`,
-            `🔹 *Payment Method:* ${booking.paymentMethod}`,
             "",
-            "📍 *LOCATION*",
-            `Address: ${booking.address}`,
-            `Map: ${mapUrl}`,
-            "",
-            booking.additionalInfo ? `📝 *Additional Notes:*\n${booking.additionalInfo}` : "",
-            "",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "📍 Tap the map link above to view location"
-        ];
-
-        return lines.filter(line => line !== "").join("\n");
-    };
+            `📍 *Address:* ${booking.address}`,
+            `🗺️ *Map:* ${mapUrl}`,
+            booking.additionalInfo ? `\n📝 *Notes:* ${booking.additionalInfo}` : "",
+        ].filter(Boolean).join("\n");
+    }, []);
 
     const handleShare = (method) => {
         if (!bookingDetails) return;
-
-        const shareText = generateShareText(bookingDetails);
-
-        switch (method) {
-            case 'copy':
-                navigator.clipboard.writeText(shareText).then(() => {
-                    setCopied(true);
-                    setShowShareOptions(false);
-                    setTimeout(() => setCopied(false), 2000);
-                });
-                break;
-
-            case 'whatsapp':
-                window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+        const text = generateShareText(bookingDetails);
+        if (method === 'copy') {
+            navigator.clipboard.writeText(text).then(() => {
+                setCopied(true);
                 setShowShareOptions(false);
-                break;
+                setTimeout(() => setCopied(false), 2000);
+            });
+        } else if (method === 'whatsapp') {
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            setShowShareOptions(false);
         }
     };
 
     const handleCopyMapLink = () => {
         if (!bookingDetails) return;
-
-        const mapUrl = getGoogleMapsUrl(bookingDetails);
-        navigator.clipboard.writeText(mapUrl).then(() => {
+        navigator.clipboard.writeText(getGoogleMapsUrl(bookingDetails)).then(() => {
             setMapLinkCopied(true);
             setTimeout(() => setMapLinkCopied(false), 2000);
         });
     };
 
-    const formatCurrency = (amount) => {
-        return `$${parseFloat(amount || 0).toFixed(2)}`;
+    const goToPage = (p) => {
+        if (p >= 1 && p <= totalPages) setCurrentPage(p);
     };
 
-    const totalRevenue = bookings.reduce((sum, booking) => sum + (parseFloat(booking.totalPay) || 0), 0);
-    const completedBookings = bookings.filter(b => b.status === 'Completed' || b.status === 'Delivered').length;
+    // ── Loading / Error states ──
+    if (error) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center px-4">
+                <div className="text-5xl mb-4">⚠️</div>
+                <p className="text-lg font-semibold text-gray-900 mb-1">Error loading bookings</p>
+                <p className="text-sm text-gray-500 mb-4">{error.message}</p>
+                <button onClick={() => queryClient.refetchQueries(["bookingAdmin"])}
+                    className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">
+                    Retry
+                </button>
+            </div>
+        </div>
+    );
 
-    const goToPage = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    if (isLoading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-blue-600 mx-auto" />
+                <p className="mt-3 text-sm text-gray-500 font-medium">Loading bookings…</p>
+            </div>
+        </div>
+    );
 
-    const handleItemsPerPageChange = (value) => {
-        setItemsPerPage(parseInt(value));
-        setCurrentPage(1);
-    };
+    // ── Pagination helper ──
+    const PaginationBar = ({ compact = false }) => {
+        const maxVisible = compact ? 3 : 5;
+        const pages = Array.from({ length: Math.min(maxVisible, totalPages) }, (_, i) => {
+            if (totalPages <= maxVisible) return i + 1;
+            if (currentPage <= Math.ceil(maxVisible / 2)) return i + 1;
+            if (currentPage >= totalPages - Math.floor(maxVisible / 2)) return totalPages - maxVisible + 1 + i;
+            return currentPage - Math.floor(maxVisible / 2) + i;
+        });
 
-    if (error) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                    <div className="text-red-500 text-5xl mb-4">⚠️</div>
-                    <p className="text-lg font-medium text-gray-900 mb-2">Error loading bookings</p>
-                    <p className="text-gray-600 mb-4">{error.message}</p>
-                    <button
-                        onClick={() => queryClient.refetchQueries(["bookingAdmin"])}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        Retry
+            <div className="flex items-center gap-1.5">
+                <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}
+                    className={`p-2 rounded-lg border text-sm ${currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                    <FaChevronLeft className="w-3 h-3" />
+                </button>
+                {pages.map(p => (
+                    <button key={p} onClick={() => goToPage(p)}
+                        className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors
+                            ${currentPage === p ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                        {p}
                     </button>
-                </div>
+                ))}
+                <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}
+                    className={`p-2 rounded-lg border text-sm ${currentPage === totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                    <FaChevronRight className="w-3 h-3" />
+                </button>
             </div>
         );
-    }
+    };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-3 border-gray-300 border-t-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600 font-medium">Loading bookings...</p>
-                </div>
-            </div>
-        );
-    }
-
+    // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Header Section */}
-            <div className="mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+
+            {/* ── Header ── */}
+            <div className="mb-6 sm:mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 mb-5 sm:mb-6">
                     <div>
-                        <h1 className="text-3xl font-semibold text-gray-900">Bookings</h1>
-                        <p className="text-gray-600 mt-2">
-                            {bookings.length} total bookings • {completedBookings} completed • {formatCurrency(totalRevenue)} revenue
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Bookings</h1>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                            <span className="font-semibold text-gray-700">{stats.total}</span> total ·{" "}
+                            <span className="font-semibold text-emerald-600">{stats.completed}</span> delivered ·{" "}
+                            <span className="font-semibold text-gray-700">{formatCurrency(stats.revenue)}</span> collected
                         </p>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setViewMode(viewMode === "table" ? "card" : "table")}
-                            className="px-4 py-2.5 border rounded-lg font-medium"
-                        >
-                            {viewMode === "table" ? "📱 Card View" : "📋 Table View"}
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setViewMode(v => v === "table" ? "card" : "table")}
+                        className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        {viewMode === "table" ? "📱 Cards" : "📋 Table"}
+                    </button>
                 </div>
 
-                {/* Search and Filter */}
-                <div className="flex flex-col lg:flex-row gap-4 mb-8">
-                    <div className="flex-1">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Search by name, phone, service..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full px-4 py-3.5 pl-12 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                            />
-                            <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                                🔍
-                            </div>
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm("")}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:text-gray-600 p-1"
-                                >
-                                    <IoClose className="w-5 h-5" />
-                                </button>
-                            )}
-                        </div>
+                {/* Search + Filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search name, phone, service…"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <IoClose className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="w-full sm:w-48">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="Requested">Requested</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Cancelled">Cancelled</option>
-                            </select>
-                        </div>
-                        <div className="w-full sm:w-40">
-                            <select
-                                value={itemsPerPage}
-                                onChange={(e) => handleItemsPerPageChange(e.target.value)}
-                                className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                            >
-                                <option value="5">5 per page</option>
-                                <option value="10">10 per page</option>
-                                <option value="20">20 per page</option>
-                                <option value="50">50 per page</option>
-                            </select>
-                        </div>
+                    <div className="flex gap-2">
+                        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                            className="flex-1 sm:flex-none sm:w-40 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            <option value="all">All Status</option>
+                            <option value="Requested">Requested</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <select value={itemsPerPage} onChange={e => { setItemsPerPage(+e.target.value); setCurrentPage(1); }}
+                            className="flex-1 sm:flex-none sm:w-32 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            <option value="5">5 / page</option>
+                            <option value="10">10 / page</option>
+                            <option value="20">20 / page</option>
+                            <option value="50">50 / page</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            {/* Bookings Content */}
+            {/* ── Table View ── */}
             {viewMode === "table" ? (
-                <>
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[580px]">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-200">
+                                    {["#", "Service & Customer", "Schedule", "Payment", "Status", "Actions"].map(h => (
+                                        <th key={h} className="py-3 px-3 sm:px-4 text-left text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            {h}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {currentBookings.length === 0 ? (
                                     <tr>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">No</th>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">Service & Amount</th>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">Schedule</th>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">Payment Status</th>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">Booking Status</th>
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">Actions</th>
+                                        <td colSpan="6" className="py-16 text-center">
+                                            <FaCalendarAlt className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                            <p className="text-gray-500 font-semibold">No bookings found</p>
+                                            <p className="text-xs text-gray-400 mt-1">{searchTerm ? 'Try a different search' : 'Nothing here yet'}</p>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {currentBookings.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="6" className="py-12 text-center">
-                                                <div className="text-gray-300 mb-3">
-                                                    <FaCalendarAlt className="w-14 h-14 mx-auto" />
-                                                </div>
-                                                <p className="text-gray-500 font-medium text-base">No bookings found</p>
-                                                <p className="text-sm text-gray-400 mt-1">
-                                                    {searchTerm ? 'Try adjusting your search' : 'No bookings available'}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        currentBookings.map((book, idx) => {
-                                            const userInfo = getUserInfo(book);
-
-                                            const paymentStatus = book.paymentStatus || 'Pending';
-                                            const paymentStatusColor =
-                                                paymentStatus.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
-                                                    paymentStatus.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        paymentStatus.toLowerCase() === 'unpaid' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800';
-
-                                            const bookingStatus = book.status || 'Pending';
-                                            const bookingStatusColor =
-                                                bookingStatus.toLowerCase() === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                                                    bookingStatus.toLowerCase() === 'delivered' ? 'bg-teal-100 text-teal-800' :
-                                                        bookingStatus.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                            bookingStatus.toLowerCase() === 'pending' ? 'bg-purple-100 text-purple-800' :
-                                                                'bg-gray-100 text-gray-800';
-
-                                            return (
-                                                <tr key={book.id} className="hover:bg-gray-50/80 transition-colors duration-200 group">
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <div className="font-mono text-sm font-semibold text-gray-900">
-                                                            #{idx + 1 + startIndex}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <div>
-                                                            <div className="font-semibold text-gray-900 text-sm mb-1">
-                                                                {getServiceDisplay(book)}
-                                                            </div>
-                                                            <div className="font-semibold text-gray-900 text-sm">
-                                                                {formatCurrency(book.totalPay)}
-                                                            </div>
-                                                            {userInfo.fullName !== 'N/A' && (
-                                                                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                                                    <FaUser className="w-3 h-3" />
-                                                                    <span className="truncate max-w-[120px]">{userInfo.fullName}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center gap-2 text-gray-900 text-sm">
-                                                                <FaCalendarAlt className="w-3.5 h-3.5" />
-                                                                <span className="font-medium">{book.date}</span>
-                                                            </div>
-                                                            <div className="text-xs text-gray-600 pl-5">{book.time}</div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${paymentStatusColor}`}>
-                                                            {paymentStatus}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${bookingStatusColor}`}>
-                                                            {bookingStatus}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-2 px-1 md:py-3 md:px-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => setBookingDetails(book)}
-                                                                className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
-                                                                title="View Details"
-                                                            >
-                                                                <FaRegEye className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setSelectedBooking(book)}
-                                                                className="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
-                                                                title="Edit"
-                                                            >
-                                                                <FaRegEdit className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteBooking(book.id)}
-                                                                className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
-                                                                title="Delete"
-                                                            >
-                                                                <FaRegTrashAlt className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination */}
-                        {filteredBookings.length > 0 && (
-                            <div className="px-6 py-5 border-t border-gray-200 bg-gray-50/50">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div className="text-sm text-gray-600">
-                                        Showing <span className="font-semibold">{startIndex + 1}-{Math.min(endIndex, filteredBookings.length)}</span> of{" "}
-                                        <span className="font-semibold">{filteredBookings.length}</span> bookings
-                                        <span className="ml-4 text-gray-400">•</span>
-                                        <span className="ml-4">Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span></span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => goToPage(currentPage - 1)}
-                                            disabled={currentPage === 1}
-                                            className={`p-2.5 rounded-lg border ${currentPage === 1 ? 'border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                        >
-                                            <FaChevronLeft className="w-4 h-4" />
-                                        </button>
-                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                            let pageNum;
-                                            if (totalPages <= 5) pageNum = i + 1;
-                                            else if (currentPage <= 3) pageNum = i + 1;
-                                            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                                            else pageNum = currentPage - 2 + i;
-
-                                            return (
-                                                <button
-                                                    key={pageNum}
-                                                    onClick={() => goToPage(pageNum)}
-                                                    className={`w-10 h-10 rounded-lg font-medium ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                                >
-                                                    {pageNum}
-                                                </button>
-                                            );
-                                        })}
-                                        <button
-                                            onClick={() => goToPage(currentPage + 1)}
-                                            disabled={currentPage === totalPages}
-                                            className={`p-2.5 rounded-lg border ${currentPage === totalPages ? 'border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                        >
-                                            <FaChevronRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </>
-            ) : (
-                /* Card View */
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        {currentBookings.length === 0 ? (
-                            <div className="col-span-full py-16 text-center bg-white rounded-2xl border border-gray-200">
-                                <div className="text-gray-300 mb-4">
-                                    <FaCalendarAlt className="w-20 h-20 mx-auto" />
-                                </div>
-                                <p className="text-gray-500 font-medium text-lg">No bookings found</p>
-                                <p className="text-gray-400 mt-2">
-                                    {searchTerm ? 'Try adjusting your search' : 'No bookings available'}
-                                </p>
-                            </div>
-                        ) : (
-                            currentBookings.map((book) => {
-                                const userInfo = getUserInfo(book);
-                                return (
-                                    <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                                        <div className="p-6 w-full">
-                                            <div className="flex items-start justify-between mb-5">
-                                                <div>
-                                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(book.status)}`}>
-                                                        {book.status}
-                                                    </span>
-                                                    <p className="text-xs text-gray-500 mt-2">ID: {book.id}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="bg-gray-50 px-4 py-3 rounded-xl border border-gray-200">
-                                                        <p className="text-2xl font-semibold text-gray-900">{formatCurrency(book.totalPay)}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <h3 className="font-semibold text-gray-900 text-lg mb-4 line-clamp-1">
+                                ) : currentBookings.map((book, idx) => (
+                                    <tr key={book.id} className="hover:bg-gray-50/70 transition-colors group">
+                                        <td className="py-3 px-3 sm:px-4">
+                                            <span className="text-xs font-bold text-gray-400">#{startIndex + idx + 1}</span>
+                                        </td>
+                                        <td className="py-3 px-3 sm:px-4 max-w-[180px]">
+                                            <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
                                                 {getServiceDisplay(book)}
-                                            </h3>
-                                            {userInfo.fullName !== 'N/A' && (
-                                                <div className="flex items-center gap-3 text-gray-600 mb-5 p-3 bg-gray-50 rounded-lg">
-                                                    <FaUser className="w-4 h-4" />
-                                                    <div>
-                                                        <p className="font-medium">{userInfo.fullName}</p>
-                                                        {userInfo.phone !== 'N/A' && (
-                                                            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                                                                <FaPhone className="w-3 h-3" />
-                                                                {userInfo.phone}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                                                    <div className="p-2 bg-blue-50 rounded-lg">
-                                                        <FaCalendarAlt className="w-5 h-5 text-blue-600" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">{book.date}</p>
-                                                        <p className="text-sm text-gray-600">{book.time}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg">
-                                                    <div className="p-2 bg-green-50 rounded-lg">
-                                                        <FaMapMarkerAlt className="w-5 h-5 text-green-600" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-medium text-gray-900 line-clamp-2">{book.address}</p>
-                                                        <button onClick={() => setBookingDetails(book)} className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2">
-                                                            View on Map →
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
-                                                <button onClick={() => setBookingDetails(book)} className="flex-1 py-3 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors">
-                                                    View Details
+                                            </p>
+                                            <p className="text-sm font-bold text-gray-700 mt-0.5">{formatCurrency(book.totalPay)}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                                                <FaUser className="w-2.5 h-2.5 flex-shrink-0" />
+                                                {getUserInfo(book).fullName}
+                                            </p>
+                                        </td>
+                                        <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                                            <p className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                                                <FaCalendarAlt className="w-3 h-3 text-gray-400" /> {book.date}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-0.5 pl-4">{book.time}</p>
+                                        </td>
+                                        <td className="py-3 px-3 sm:px-4">
+                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getPaymentStyle(book.paymentStatus)}`}>
+                                                {book.paymentStatus || 'Pending'}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-3 sm:px-4">
+                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getStatusStyle(book.status)}`}>
+                                                {book.status || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-3 sm:px-4">
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => setBookingDetails(book)} title="View"
+                                                    className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-100 transition-colors">
+                                                    <FaRegEye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                                 </button>
-                                                <button onClick={() => setSelectedBooking(book)} className="flex-1 py-3 text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
-                                                    Edit
+                                                <button onClick={() => setSelectedBooking(book)} title="Edit"
+                                                    className="p-1.5 sm:p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-colors">
+                                                    <FaRegEdit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                </button>
+                                                <button onClick={() => handleDeleteBooking(book.id)} title="Delete"
+                                                    className="p-1.5 sm:p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg border border-red-100 transition-colors">
+                                                    <FaRegTrashAlt className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                                 </button>
                                             </div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
                     {filteredBookings.length > 0 && (
-                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div className="text-sm text-gray-600">
-                                    Showing <span className="font-semibold">{startIndex + 1}-{Math.min(endIndex, filteredBookings.length)}</span> of{" "}
-                                    <span className="font-semibold">{filteredBookings.length}</span> bookings
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => goToPage(currentPage - 1)}
-                                        disabled={currentPage === 1}
-                                        className={`px-4 py-2.5 rounded-lg font-medium ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
-                                    >
-                                        Previous
-                                    </button>
-                                    <div className="flex items-center gap-1">
-                                        {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                                            let pageNum;
-                                            if (totalPages <= 3) pageNum = i + 1;
-                                            else if (currentPage === 1) pageNum = i + 1;
-                                            else if (currentPage === totalPages) pageNum = totalPages - 2 + i;
-                                            else pageNum = currentPage - 1 + i;
+                        <div className="px-4 py-4 border-t border-gray-100 bg-gray-50/50">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p className="text-xs text-gray-500">
+                                    <span className="font-semibold text-gray-700">{startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredBookings.length)}</span>
+                                    {" "}of{" "}
+                                    <span className="font-semibold text-gray-700">{filteredBookings.length}</span> results
+                                </p>
+                                <PaginationBar />
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-                                            return (
-                                                <button
-                                                    key={pageNum}
-                                                    onClick={() => goToPage(pageNum)}
-                                                    className={`w-10 h-10 rounded-lg font-medium ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
-                                                >
-                                                    {pageNum}
-                                                </button>
-                                            );
-                                        })}
+            ) : (
+                /* ── Card View ── */
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
+                        {currentBookings.length === 0 ? (
+                            <div className="col-span-full py-16 text-center bg-white rounded-2xl border border-gray-200">
+                                <FaCalendarAlt className="w-14 h-14 text-gray-200 mx-auto mb-3" />
+                                <p className="text-gray-500 font-semibold">No bookings found</p>
+                            </div>
+                        ) : currentBookings.map(book => {
+                            const { fullName, phone } = getUserInfo(book);
+                            return (
+                                <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                                    {/* Card header stripe */}
+                                    <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
+                                                {getServiceDisplay(book)}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">#{book.id}</p>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-lg font-bold text-gray-900">{formatCurrency(book.totalPay)}</p>
+                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusStyle(book.status)}`}>
+                                                {book.status}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => goToPage(currentPage + 1)}
-                                        disabled={currentPage === totalPages}
-                                        className={`px-4 py-2.5 rounded-lg font-medium ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
-                                    >
-                                        Next
-                                    </button>
+
+                                    <div className="px-4 pb-4 flex-1 space-y-2.5">
+                                        {/* Customer */}
+                                        {fullName !== 'N/A' && (
+                                            <div className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-xl">
+                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                    <FaUser className="w-3 h-3 text-blue-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-gray-800 truncate">{fullName}</p>
+                                                    {phone !== 'N/A' && (
+                                                        <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                                                            <FaPhone className="w-2.5 h-2.5" />{phone}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Date + Payment row */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="p-2.5 border border-gray-100 rounded-xl">
+                                                <p className="text-[9px] text-gray-400 uppercase font-bold mb-0.5">Schedule</p>
+                                                <p className="text-xs font-semibold text-gray-800">{book.date}</p>
+                                                <p className="text-[10px] text-gray-500">{book.time}</p>
+                                            </div>
+                                            <div className="p-2.5 border border-gray-100 rounded-xl">
+                                                <p className="text-[9px] text-gray-400 uppercase font-bold mb-0.5">Payment</p>
+                                                <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold ${getPaymentStyle(book.paymentStatus)}`}>
+                                                    {book.paymentStatus || 'Pending'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Address */}
+                                        {book.address && (
+                                            <div className="flex items-start gap-2 p-2.5 border border-gray-100 rounded-xl">
+                                                <FaMapMarkerAlt className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">{book.address}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="border-t border-gray-100 grid grid-cols-2 divide-x divide-gray-100">
+                                        <button onClick={() => setBookingDetails(book)}
+                                            className="py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                                            View Details
+                                        </button>
+                                        <button onClick={() => setSelectedBooking(book)}
+                                            className="py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
+                            );
+                        })}
+                    </div>
+
+                    {filteredBookings.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-200 px-4 py-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p className="text-xs text-gray-500">
+                                    <span className="font-semibold text-gray-700">{startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredBookings.length)}</span>
+                                    {" "}of{" "}
+                                    <span className="font-semibold text-gray-700">{filteredBookings.length}</span>
+                                </p>
+                                <PaginationBar compact />
                             </div>
                         </div>
                     )}
                 </>
             )}
 
-            {/* Edit Modal */}
+            {/* ── Edit Modal ── */}
             {selectedBooking && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
 
-                        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-white">
-                            <div className="min-w-0">
-                                <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">Edit Booking</h3>
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Booking</h3>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] sm:text-[10px] uppercase tracking-wider font-bold whitespace-nowrap ${getStatusColor(selectedBooking.status)}`}>
+                                    <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${getStatusStyle(selectedBooking.status)}`}>
                                         {selectedBooking.status}
                                     </span>
-                                    <p className="text-[10px] sm:text-xs text-gray-400 font-medium truncate">ID: #{selectedBooking.id}</p>
+                                    <span className="text-[10px] text-gray-400">#{selectedBooking.id}</span>
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedBooking(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all">
+                            <button onClick={() => setSelectedBooking(null)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
                                 <IoClose className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                        Service Name
-                                    </label>
-                                    {/* FIX #3: getServiceDisplay() দিয়ে সঠিক service name দেখানো হচ্ছে */}
-                                    <input
-                                        type="text"
-                                        name="serviceName"
-                                        readOnly
-                                        value={getServiceDisplay(selectedBooking)}
-                                        className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed outline-none"
-                                    />
+                        <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Service</label>
+                                    <input readOnly value={getServiceDisplay(selectedBooking)}
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed outline-none" />
                                 </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                        Total Amount
-                                    </label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Amount</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                                            <img src={dirhum} alt="" className="w-4 h-4" />
-                                        </span>
-                                        <input
-                                            type="number"
-                                            name="totalPay"
-                                            value={selectedBooking.totalPay || ""}
+                                        <img src={dirhum} alt="" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
+                                        <input type="number" name="totalPay" value={selectedBooking.totalPay || ""}
                                             onChange={handleInputChange}
-                                            className="w-full pl-7 pr-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                        />
+                                            className="w-full pl-8 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                        Booking Status
-                                    </label>
-                                    <select
-                                        name="status"
-                                        value={selectedBooking.status || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                    >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Booking Status</label>
+                                    <select name="status" value={selectedBooking.status || ""} onChange={handleInputChange}
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
                                         <option value="Requested">Requested</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Delivered">Delivered</option>
                                         <option value="Cancelled">Cancelled</option>
                                     </select>
                                 </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">
-                                        Payment Status
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={selectedBooking.paymentStatus || 'Pending'}
-                                        readOnly
-                                        className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed"
-                                    />
-                                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
-                                        {selectedBooking.status === 'Delivered'
-                                            ? '✅ Auto-updated to Paid for delivered bookings'
-                                            : 'ℹ️ Auto-updates based on booking status'}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Payment Status</label>
+                                    <input readOnly value={selectedBooking.paymentStatus || 'Pending'}
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed outline-none" />
+                                    <p className="text-[10px] text-gray-400">
+                                        {selectedBooking.status === 'Delivered' ? '✅ Auto-set to Paid' : 'ℹ️ Updates with booking status'}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">Date</label>
-                                    <input
-                                        type="date"
-                                        name="date"
-                                        value={selectedBooking.date || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                    />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Date</label>
+                                    <input type="date" name="date" value={selectedBooking.date || ""} onChange={handleInputChange}
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide ml-1">Time</label>
-                                    <input
-                                        type="time"
-                                        name="time"
-                                        value={selectedBooking.time || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-2 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30"
-                                    />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Time</label>
+                                    <input type="time" name="time" value={selectedBooking.time || ""} onChange={handleInputChange}
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between ml-1">
-                                    <label className="text-[11px] sm:text-[12px] font-bold text-gray-500 uppercase tracking-wide">Address</label>
-                                    <a
-                                        href={getGoogleMapsUrl(selectedBooking)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[10px] sm:text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-bold"
-                                    >
-                                        <FaExternalLinkAlt className="w-2.5 h-2.5" />
-                                        VIEW MAP
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Address</label>
+                                    <a href={getGoogleMapsUrl(selectedBooking)} target="_blank" rel="noopener noreferrer"
+                                        className="text-[10px] text-blue-600 hover:underline font-bold flex items-center gap-1">
+                                        <FaExternalLinkAlt className="w-2.5 h-2.5" /> Open Map
                                     </a>
                                 </div>
-                                <textarea
-                                    name="address"
-                                    value={selectedBooking.address || ""}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none bg-gray-50/30"
-                                    rows="2"
-                                />
+                                <textarea name="address" value={selectedBooking.address || ""} onChange={handleInputChange} rows={2}
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none" />
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80">
-                            <button onClick={() => setSelectedBooking(null)} className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors">
+                        <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+                            <button onClick={() => setSelectedBooking(null)}
+                                className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
                                 Cancel
                             </button>
-                            <button
-                                disabled={loading}
-                                onClick={handleUpdateBooking}
-                                className="flex-2 sm:flex-none px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-100 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Updating...' : 'Update Booking'}
+                            <button disabled={loading} onClick={handleUpdateBooking}
+                                className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all shadow-sm shadow-blue-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                                {loading ? 'Saving…' : 'Save Changes'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Details Modal */}
+            {/* ── Details Modal ── */}
             {bookingDetails && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
 
-                        <div className="flex items-center justify-between p-4 sm:p-7 border-b border-gray-200 bg-white">
+                        {/* Modal header */}
+                        <div className="flex items-start justify-between px-4 sm:px-7 py-4 sm:py-5 border-b border-gray-200">
                             <div className="min-w-0">
-                                <h3 className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">Booking Details</h3>
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 sm:mt-2">
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-sm font-semibold whitespace-nowrap ${getStatusColor(bookingDetails.status)}`}>
+                                <h3 className="text-base sm:text-xl font-bold text-gray-900">Booking Details</h3>
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getStatusStyle(bookingDetails.status)}`}>
                                         {bookingDetails.status}
                                     </span>
-                                    <p className="text-[11px] sm:text-sm text-gray-500 font-medium">ID: {bookingDetails.id}</p>
-                                    <p className="hidden sm:block text-sm text-gray-300">•</p>
-                                    <p className="text-[11px] sm:text-sm text-gray-600 font-medium flex gap-1">
-                                        <span>{bookingDetails.date}</span>
-                                        <span>{bookingDetails.time}</span>
-                                    </p>
+                                    <span className="text-[10px] text-gray-400 font-mono">#{bookingDetails.id}</span>
+                                    <span className="text-[10px] sm:text-xs text-gray-500 font-medium">{bookingDetails.date} · {bookingDetails.time}</span>
                                 </div>
                             </div>
-                            <button onClick={() => setBookingDetails(null)} className="p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors shrink-0">
-                                <IoClose className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <button onClick={() => setBookingDetails(null)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0">
+                                <IoClose className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-4 sm:p-7 space-y-6 sm:space-y-8 overflow-y-auto flex-1 custom-scrollbar">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                                <div className="space-y-4 sm:space-y-6">
+                        <div className="overflow-y-auto flex-1 px-4 sm:px-7 py-4 sm:py-6 space-y-5 sm:space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+
+                                {/* Left column */}
+                                <div className="space-y-4">
+                                    {/* Service info */}
                                     <div>
-                                        <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <FaCalendarAlt className="w-3.5 h-3.5" />
-                                            Service Info
-                                        </h4>
-                                        <div className="p-4 sm:p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                            <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                            <FaCalendarAlt className="w-3 h-3" /> Service Info
+                                        </p>
+                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                                            <p className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
                                                 {getServiceDisplay(bookingDetails)}
                                             </p>
-                                            <div className="space-y-3">
-                                                {bookingDetails.customerName && (
-                                                    <div className="flex items-start gap-3">
-                                                        <FaUser className="w-4 h-4 text-gray-400 mt-1" />
-                                                        <div>
-                                                            <p className="font-semibold text-gray-900 text-sm sm:text-base">{bookingDetails.customerName}</p>
-                                                            {bookingDetails.phone && (
-                                                                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{bookingDetails.phone}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-start gap-3">
-                                                    <FaCalendarAlt className="w-4 h-4 text-gray-400 mt-1" />
-                                                    <div>
-                                                        <p className="font-semibold text-gray-900 text-sm sm:text-base">{bookingDetails.date}</p>
-                                                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{bookingDetails.time}</p>
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                <FaCalendarAlt className="w-3.5 h-3.5 text-gray-400" />
+                                                <span>{bookingDetails.date}</span>
+                                                <span className="text-gray-300">·</span>
+                                                <span>{bookingDetails.time}</span>
                                             </div>
                                         </div>
                                     </div>
 
+                                    {/* Payment info */}
                                     <div>
-                                        <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <FaDollarSign className="w-3.5 h-3.5" />
-                                            Payment Info
-                                        </h4>
-                                        <div className="p-4 sm:p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <p className="text-sm sm:text-base text-gray-600">Total Amount</p>
-                                                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                            <FaDollarSign className="w-3 h-3" /> Payment Info
+                                        </p>
+                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                                            <div className="flex items-end justify-between">
+                                                <span className="text-xs text-gray-500">Total Amount</span>
+                                                <span className="text-2xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</span>
                                             </div>
-                                            <div className="flex items-center justify-between mb-3">
-                                                {/* FIX #6: "Mathod" → "Method" */}
-                                                <p className="text-sm sm:text-base text-gray-600">Payment Method</p>
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold">
-                                                    {bookingDetails.paymentMethod === 'Online' ? 'Ziina Payment' : 'Cash On Delivery'}
+                                            <div className="h-px bg-gray-200" />
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500 text-xs">Method</span>
+                                                <span className="text-xs font-semibold text-gray-700">
+                                                    {bookingDetails.paymentMethod === 'Online' ? 'Ziina Payment' : 'Cash on Delivery'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <p className="text-sm sm:text-base text-gray-600">Status</p>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${bookingDetails.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                                                <span className="text-gray-500 text-xs">Status</span>
+                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${getPaymentStyle(bookingDetails.paymentStatus)}`}>
                                                     {bookingDetails.paymentStatus || 'Pending'}
                                                 </span>
                                             </div>
@@ -1041,97 +770,75 @@ const AdminBooking = () => {
                                     </div>
                                 </div>
 
-                                {/* Location Section */}
-                                <div className="space-y-4 sm:space-y-6">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                                                <FaMapMarkerAlt className="w-3.5 h-3.5" />
-                                                Location
-                                            </h4>
-                                            <div className="flex items-center gap-2">
-                                                {/* FIX #4: mapLinkCopied দিয়ে visual feedback দেখানো হচ্ছে */}
-                                                <button
-                                                    onClick={handleCopyMapLink}
-                                                    className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                                                    title={mapLinkCopied ? "Copied!" : "Copy Map Link"}
-                                                >
-                                                    {mapLinkCopied
-                                                        ? <span className="text-xs font-bold text-green-600 px-1">✓</span>
-                                                        : <IoCopyOutline className="w-4 h-4" />
-                                                    }
-                                                </button>
-                                                <a
-                                                    href={getGoogleMapsUrl(bookingDetails)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-bold transition-colors"
-                                                >
-                                                    <FaExternalLinkAlt className="w-3 h-3" />
-                                                    <span>MAP</span>
-                                                </a>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 mb-4">
-                                            <p className="text-sm text-gray-700 leading-relaxed">{bookingDetails.address}</p>
-                                        </div>
-
-                                        {/* FIX #2: getCoordinates() এখন Map Preview এ ব্যবহার করা হচ্ছে */}
-                                        <div className="relative rounded-xl overflow-hidden border border-gray-200 h-[180px] sm:h-[200px]">
-                                            {(() => {
-                                                const coords = getCoordinates(bookingDetails);
-                                                return (
-                                                    <iframe
-                                                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.longitude - 0.005},${coords.latitude - 0.005},${coords.longitude + 0.005},${coords.latitude + 0.005}&layer=mapnik&marker=${coords.latitude},${coords.longitude}`}
-                                                        width="100%"
-                                                        height="100%"
-                                                        style={{ border: 0 }}
-                                                        title="Location Map"
-                                                    ></iframe>
-                                                );
-                                            })()}
+                                {/* Right column — Location */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <FaMapMarkerAlt className="w-3 h-3" /> Location
+                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                            <button onClick={handleCopyMapLink}
+                                                title={mapLinkCopied ? "Copied!" : "Copy map link"}
+                                                className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
+                                                {mapLinkCopied
+                                                    ? <span className="text-[10px] font-bold text-emerald-600 px-0.5">✓</span>
+                                                    : <IoCopyOutline className="w-3.5 h-3.5" />}
+                                            </button>
+                                            <a href={getGoogleMapsUrl(bookingDetails)} target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                                                <FaExternalLinkAlt className="w-2.5 h-2.5" /> Open Map
+                                            </a>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* User Information */}
-                            <div>
-                                <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <FaUser className="w-3.5 h-3.5" />
-                                    User Information
-                                </h4>
-                                <div className="p-4 sm:p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 mb-3">
+                                        <p className="text-xs text-gray-700 leading-relaxed">{bookingDetails.address}</p>
+                                    </div>
+
+                                    {/* Map preview */}
+                                    <div className="rounded-2xl overflow-hidden border border-gray-200 h-[160px] sm:h-[185px]">
                                         {(() => {
-                                            const userInfo = getUserInfo(bookingDetails);
+                                            const { latitude, longitude } = getCoordinates(bookingDetails);
                                             return (
-                                                <>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 mb-1">Full Name</p>
-                                                        <p className="font-medium text-gray-900">{userInfo.fullName}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 mb-1">Phone</p>
-                                                        <p className="font-medium text-gray-900">{userInfo.phone}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 mb-1">Email</p>
-                                                        <p className="font-medium text-gray-900 break-all">{userInfo.email}</p>
-                                                    </div>
-                                                </>
+                                                <iframe
+                                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.005},${latitude - 0.005},${longitude + 0.005},${latitude + 0.005}&layer=mapnik&marker=${latitude},${longitude}`}
+                                                    width="100%" height="100%"
+                                                    style={{ border: 0 }}
+                                                    title="Location Map"
+                                                />
                                             );
                                         })()}
                                     </div>
                                 </div>
                             </div>
 
+                            {/* User info */}
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <FaUser className="w-3 h-3" /> Customer Info
+                                </p>
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    {(() => {
+                                        const { fullName, phone, email } = getUserInfo(bookingDetails);
+                                        return (
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                {[['Full Name', fullName], ['Phone', phone], ['Email', email]].map(([label, val]) => (
+                                                    <div key={label}>
+                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">{label}</p>
+                                                        <p className="text-sm font-semibold text-gray-800 break-all">{val}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
                             {bookingDetails.additionalInfo && (
-                                <div className="pb-4">
-                                    <h4 className="text-[12px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Additional Notes</h4>
-                                    <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Notes</p>
+                                    <div className="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
+                                        <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
                                             {bookingDetails.additionalInfo}
                                         </p>
                                     </div>
@@ -1139,24 +846,24 @@ const AdminBooking = () => {
                             )}
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-7 border-t border-gray-200 bg-gray-50/50">
-                            <div className="w-full sm:w-auto relative" ref={shareRef}>
-                                <button
-                                    onClick={() => setShowShareOptions(!showShareOptions)}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-5 py-3 border border-gray-300 rounded-xl hover:bg-white bg-transparent transition-all font-bold text-gray-700 text-sm shadow-sm"
-                                >
-                                    <FaShare className="w-4 h-4" />
-                                    {copied ? '✓ Copied!' : 'Share Details'}
+                        {/* Modal footer */}
+                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-7 py-4 border-t border-gray-200 bg-gray-50/50">
+                            <div className="relative w-full sm:w-auto" ref={shareRef}>
+                                <button onClick={() => setShowShareOptions(s => !s)}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-white transition-all">
+                                    <FaShare className="w-3.5 h-3.5" />
+                                    {copied ? '✓ Copied!' : 'Share'}
                                 </button>
-
                                 {showShareOptions && (
-                                    <div className="absolute bottom-full left-0 mb-3 w-full sm:w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-10 overflow-hidden animate-slideUp">
-                                        <button onClick={() => handleShare('copy')} className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50">
-                                            <FaCopy className="text-gray-400" />
+                                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-10 overflow-hidden">
+                                        <button onClick={() => handleShare('copy')}
+                                            className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100">
+                                            <FaCopy className="text-gray-400 w-3.5 h-3.5" />
                                             <span className="text-sm font-semibold">Copy Details</span>
                                         </button>
-                                        <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-                                            <FaWhatsapp className="text-green-500" />
+                                        <button onClick={() => handleShare('whatsapp')}
+                                            className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+                                            <FaWhatsapp className="text-green-500 w-3.5 h-3.5" />
                                             <span className="text-sm font-semibold">WhatsApp</span>
                                         </button>
                                     </div>
@@ -1164,16 +871,12 @@ const AdminBooking = () => {
                             </div>
 
                             <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <button onClick={() => setBookingDetails(null)} className="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                                <button onClick={() => setBookingDetails(null)}
+                                    className="flex-1 sm:flex-none px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
                                     Close
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        setSelectedBooking(bookingDetails);
-                                        setBookingDetails(null);
-                                    }}
-                                    className="flex-2 sm:flex-none px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all font-bold text-sm shadow-md shadow-blue-100 active:scale-95"
-                                >
+                                <button onClick={() => { setSelectedBooking(bookingDetails); setBookingDetails(null); }}
+                                    className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-200 active:scale-95">
                                     Edit Booking
                                 </button>
                             </div>
@@ -1186,9 +889,6 @@ const AdminBooking = () => {
 };
 
 export default AdminBooking;
-
-
-
 
 
 
