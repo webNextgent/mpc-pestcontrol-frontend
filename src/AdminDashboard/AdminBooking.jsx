@@ -23,7 +23,7 @@ const AdminBooking = () => {
     const [demoMode,] = useState(true);
     const shareRef = useRef(null);
     const axiosSecure = useAxiosSecure();
-    const [loading, setLoading] = useState(false);  // [lodaing] থেকে [loading] ঠিক করলাম
+    const [loading, setLoading] = useState(false);
 
     const getUserInfo = (booking) => {
         if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
@@ -103,8 +103,17 @@ const AdminBooking = () => {
                 throw error;
             }
         },
+        // retry: 2,
+        // staleTime: 1000 * 60 * 5
+
+
         retry: 2,
-        staleTime: 1000 * 60 * 5
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchInterval: 1000 * 30, // প্রতি 30 সেকেন্ড পর পর auto refetch হবে
+        refetchIntervalInBackground: true, // ব্যাকগ্রাউন্ডে থাকলেও refetch হবে
+        refetchOnWindowFocus: true, // window focus হলে refetch হবে
+        refetchOnMount: true, // component mount হলে refetch হবে
+        refetchOnReconnect: true // internet reconnect হলে refetch হবে
     });
 
     // console.log(bookings);
