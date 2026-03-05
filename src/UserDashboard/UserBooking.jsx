@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// /* eslint-disable react-hooks/exhaustive-deps */
 import { FaCalendarAlt } from "react-icons/fa";
 import { MdOutlineWatchLater } from "react-icons/md";
 import { PiBookThin } from "react-icons/pi";
@@ -13,12 +14,9 @@ export default function UserBooking() {
   const [activeTab, setActiveTab] = useState("All");
   const [filteredData, setFilteredData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
-  
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [paginatedData, setPaginatedData] = useState([]);
-  
   const axiosSecure = useAxiosSecure();
 
   const tabs = [
@@ -38,13 +36,12 @@ export default function UserBooking() {
   });
 
   const bookingData = booking?.Data || [];
-  // console.log("Booking Data:", bookingData);
 
   // Filter when tab changes or data loads
   useEffect(() => {
     if (!bookingData.length) {
       setFilteredData([]);
-      setCurrentPage(1); // রিসেট পেজ
+      setCurrentPage(1);
       return;
     }
 
@@ -62,7 +59,7 @@ export default function UserBooking() {
       }
 
       setFilteredData(result);
-      setCurrentPage(1); // ট্যাব চেঞ্জ হলে প্রথম পৃষ্ঠায় ফিরে যান
+      setCurrentPage(1);
       setTabLoading(false);
     }, 300);
 
@@ -82,7 +79,6 @@ export default function UserBooking() {
   // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    // স্ক্রলের উপরে নিয়ে যাওয়া
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -95,20 +91,16 @@ export default function UserBooking() {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`p-2 rounded-lg border ${
-            currentPage === 1
+          className={`p-2 rounded-lg border ${currentPage === 1
               ? "border-gray-200 text-gray-400 cursor-not-allowed"
               : "border-[#01788E] text-[#01788E] hover:bg-[#01788E] hover:text-white"
-          } transition`}
+            } transition`}
         >
           <IoChevronBack />
         </button>
 
-        {/* পৃষ্ঠা সংখ্যা দেখানো */}
         {[...Array(totalPages)].map((_, index) => {
           const pageNumber = index + 1;
-          
-          // শুধু ৫টি পৃষ্ঠা দেখাবে (বর্তমান পৃষ্ঠাকে কেন্দ্র করে)
           if (
             pageNumber === 1 ||
             pageNumber === totalPages ||
@@ -118,33 +110,30 @@ export default function UserBooking() {
               <button
                 key={pageNumber}
                 onClick={() => handlePageChange(pageNumber)}
-                className={`w-10 h-10 rounded-lg border ${
-                  currentPage === pageNumber
+                className={`w-10 h-10 rounded-lg border ${currentPage === pageNumber
                     ? "bg-[#01788E] text-white border-[#01788E]"
                     : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                } transition`}
+                  } transition`}
               >
                 {pageNumber}
               </button>
             );
           }
           
-          // এলিপসিস দেখানো
           if (pageNumber === currentPage - 3 || pageNumber === currentPage + 3) {
             return <span key={pageNumber} className="text-gray-500">...</span>;
           }
-          
+
           return null;
         })}
 
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`p-2 rounded-lg border ${
-            currentPage === totalPages
+          className={`p-2 rounded-lg border ${currentPage === totalPages
               ? "border-gray-200 text-gray-400 cursor-not-allowed"
               : "border-[#01788E] text-[#01788E] hover:bg-[#01788E] hover:text-white"
-          } transition`}
+            } transition`}
         >
           <IoChevronForward />
         </button>
