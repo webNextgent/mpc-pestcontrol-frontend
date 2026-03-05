@@ -448,11 +448,6 @@ const DateTime = () => {
                                             />
                                             <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                         </div>
-                                        {manualDate && (
-                                            <p className="mt-2 text-sm text-gray-600">
-                                                Selected: <span className="font-medium">{getFullDateLabel(formatDateForAPI(manualDate))}</span>
-                                            </p>
-                                        )}
                                     </div>
 
                                     {/* Time Input */}
@@ -472,11 +467,6 @@ const DateTime = () => {
                                             />
                                             <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                         </div>
-                                        {manualTime && (
-                                            <p className="mt-2 text-sm text-gray-600">
-                                                Selected: <span className="font-medium">{convertTo12Hour(manualTime)}</span>
-                                            </p>
-                                        )}
                                         <p className="mt-2 text-xs text-gray-500">
                                             Our service hours are 8:00 AM to 8:00 PM
                                         </p>

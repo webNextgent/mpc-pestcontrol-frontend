@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FaCalendarAlt, FaRegEye, FaRegEdit, FaRegTrashAlt, FaMapMarkerAlt, FaShare, FaExternalLinkAlt, FaCopy, FaWhatsapp, FaEnvelope, FaUser, FaPhone, FaDollarSign, FaChevronLeft, FaChevronRight, FaMap, FaLink } from "react-icons/fa";
@@ -14,7 +13,6 @@ const AdminBooking = () => {
     const [bookingDetails, setBookingDetails] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
-    // FIX #4: copied & mapLinkCopied এখন UI তে visual feedback দেবে
     const [copied, setCopied] = useState(false);
     const [mapLinkCopied, setMapLinkCopied] = useState(false);
     const [showShareOptions, setShowShareOptions] = useState(false);
@@ -118,7 +116,6 @@ const AdminBooking = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // FIX #5: getServiceDisplay দিয়ে সার্চ করা হচ্ছে, আগে শুধু serviceName দিয়ে হতো
     const filteredBookings = bookings.filter(book => {
         if (!book) return false;
 
@@ -166,9 +163,6 @@ const AdminBooking = () => {
         });
     };
 
-    // FIX #1: setSelectedBooking async সমস্যা ঠিক করা হয়েছে
-    // আগে: setSelectedBooking করার পরেই selectedBooking পুরনো value দিয়ে updateData বানাতো
-    // এখন: paymentStatus সরাসরি updateData তে নির্ধারণ করা হচ্ছে
     const handleUpdateBooking = async () => {
         setLoading(true);
         if (!selectedBooking) return;
@@ -191,7 +185,6 @@ const AdminBooking = () => {
                 return;
             }
 
-            // FIX: state update এর উপর নির্ভর না করে সরাসরি local variable এ রাখা হচ্ছে
             finalPaymentStatus = 'Paid';
             setSelectedBooking(prev => ({ ...prev, paymentStatus: 'Paid' }));
         }
@@ -202,12 +195,11 @@ const AdminBooking = () => {
             date: selectedBooking.date,
             time: selectedBooking.time,
             totalPay: Number(selectedBooking.totalPay),
-            paymentStatus: finalPaymentStatus // FIX: সঠিক value যাচ্ছে
+            paymentStatus: finalPaymentStatus 
         };
 
         try {
             const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, updateData);
-
             if (res?.data?.success) {
                 await queryClient.invalidateQueries({
                     queryKey: ["bookingAdmin"],
@@ -289,7 +281,6 @@ const AdminBooking = () => {
         return 'https://www.google.com/maps';
     }, [demoMode]);
 
-    // FIX #2: getCoordinates এখন Map Preview এ ব্যবহার করা হচ্ছে (dead code সরানো হয়েছে)
     const getCoordinates = useCallback((booking) => {
         if (!booking) return { latitude: 23.8103, longitude: 90.4125 };
 
@@ -317,7 +308,6 @@ const AdminBooking = () => {
         };
     }, []);
 
-    // FIX #6: "Mathod" → "Method" typo ঠিক করা হয়েছে
     const generateShareText = (booking) => {
         const mapUrl = getGoogleMapsUrl(booking);
         const userInfo = getUserInfo(booking);
@@ -1151,7 +1141,6 @@ const AdminBooking = () => {
 
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-7 border-t border-gray-200 bg-gray-50/50">
                             <div className="w-full sm:w-auto relative" ref={shareRef}>
-                                {/* FIX #4: copied state দিয়ে Share বাটনে visual feedback */}
                                 <button
                                     onClick={() => setShowShareOptions(!showShareOptions)}
                                     className="w-full sm:w-auto flex items-center justify-center gap-3 px-5 py-3 border border-gray-300 rounded-xl hover:bg-white bg-transparent transition-all font-bold text-gray-700 text-sm shadow-sm"
