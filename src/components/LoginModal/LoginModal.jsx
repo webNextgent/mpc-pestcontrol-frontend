@@ -87,7 +87,7 @@ const LoginModal = ({ open, onClose }) => {
                 toast.error(data?.message || 'Failed to send OTP. Please try again.');
             } else {
                 setOtpMethod(via); setOtpSent(true); setTimer(30); setResendDisabled(true);
-                toast.success(`OTP sent via ${via === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
+                // toast.success(`OTP sent via ${via === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
                 setTimeout(() => inputRefs.current[0]?.focus(), 100);
             }
         } catch { toast.error('Network error. Please check your connection.'); }
@@ -132,7 +132,7 @@ const LoginModal = ({ open, onClose }) => {
             });
             const data = await res.json();
             if (data?.success === false) { toast.error(data?.message || 'Failed to resend OTP'); setResendDisabled(false); }
-            else { toast.success(`OTP resent via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`); inputRefs.current[0]?.focus(); }
+            // else { toast.success(`OTP resent via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`); inputRefs.current[0]?.focus(); }
         } catch { toast.error('Failed to resend OTP'); setResendDisabled(false); }
     };
 
@@ -273,7 +273,7 @@ const LoginModal = ({ open, onClose }) => {
             >
                 {/* ── SHEET ── */}
                 <div
-                    className={`bg-white w-full rounded-t-md md:rounded-xl shadow-2xl px-5 pt-4 pb-9 md:px-7 md:pt-7 md:w-[460px] overflow-hidden font-sans ${validationError ? ' h-[300px]' : ' h-[275px]'}`}
+                    className={`bg-white w-full rounded-t-md md:rounded-xl shadow-2xl px-5 pt-4 pb-9 md:px-7 md:pt-7 md:w-[460px] overflow-hidden font-sans ${validationError ? 'h-[300px]' : 'h-[275px]'}`}
                     onClick={e => e.stopPropagation()}
                 >
 
@@ -382,9 +382,9 @@ const LoginModal = ({ open, onClose }) => {
 
                     {/* ════════════════ OTP SCREEN ════════════════ */}
                     {otpSent && (
-                        <div className="border-4 ">
+                        <div className="h-60">
                             {/* Header */}
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => { setOtpSent(false); setOtp(['', '', '', '']); }}
@@ -487,7 +487,7 @@ const LoginModal = ({ open, onClose }) => {
                     {openCountryModal && (
                         <div
                             onClick={e => e.stopPropagation()}
-                            className="absolute top-9/12 md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[360px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden z-10000"
+                            className="absolute top-9/12 md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[360px] bg-white rounded-sm shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden z-10000"
                         >
                             {/* Search */}
                             <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-100">
