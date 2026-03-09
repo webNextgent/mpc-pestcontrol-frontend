@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import dirhum from '../assets/icon/dirhum.png';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getUserInfo = (booking) => {
     if (!booking) return { fullName: 'N/A', phone: 'N/A', email: 'N/A' };
@@ -47,7 +47,6 @@ const getCoordinates = (booking) => {
     if (booking.latitude && booking.longitude) {
         return { latitude: Number(booking.latitude), longitude: Number(booking.longitude) };
     }
-    // deterministic seed from id — no Math.random()
     const seed = booking.id ? parseInt(booking.id.toString().replace(/\D/g, '') || '0') % 100 : 0;
     return {
         latitude: parseFloat((25.2048 + seed * 0.005).toFixed(6)),
@@ -56,9 +55,8 @@ const getCoordinates = (booking) => {
 };
 
 const getGoogleMapsUrl = (booking) => {
-    if (booking?.latitude && booking?.longitude) {
+    if (booking?.latitude && booking?.longitude)
         return `https://www.google.com/maps?q=${booking.latitude},${booking.longitude}`;
-    }
     const { latitude, longitude } = getCoordinates(booking);
     if (booking?.id) return `https://www.google.com/maps?q=${latitude},${longitude}`;
     if (booking?.address) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.address)}`;
@@ -80,6 +78,12 @@ const PAYMENT_STYLES = {
     pending: 'bg-amber-50 text-amber-700 border border-amber-200',
 };
 const getPaymentStyle = (s) => PAYMENT_STYLES[s?.toLowerCase()] || 'bg-gray-50 text-gray-600 border border-gray-200';
+
+// ── Teal focus helper ─────────────────────────────────────────────────────────
+const tealFocus = {
+    onFocus: (e) => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)'; },
+    onBlur: (e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; },
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -112,7 +116,6 @@ const AdminBooking = () => {
         refetchOnWindowFocus: true,
     });
 
-    // Outside click → close share dropdown
     useEffect(() => {
         const handler = (e) => {
             if (shareRef.current && !shareRef.current.contains(e.target)) setShowShareOptions(false);
@@ -121,10 +124,8 @@ const AdminBooking = () => {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    // Reset page on filter change
     useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
 
-    // ── Filtered & paginated data ──
     const filteredBookings = useMemo(() => bookings.filter(book => {
         if (!book) return false;
         const { fullName, phone } = getUserInfo(book);
@@ -147,13 +148,10 @@ const AdminBooking = () => {
     const stats = useMemo(() => ({
         total: bookings.length,
         completed: bookings.filter(b => b.status === 'Delivered').length,
-        // only count paid bookings for revenue
         revenue: bookings
             .filter(b => b.paymentStatus === 'Paid')
             .reduce((s, b) => s + (parseFloat(b.totalPay) || 0), 0),
     }), [bookings]);
-
-    // ── Handlers ──
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -169,10 +167,8 @@ const AdminBooking = () => {
     };
 
     const handleUpdateBooking = async () => {
-        if (!selectedBooking) return;   // guard BEFORE setLoading
-
+        if (!selectedBooking) return;
         setLoading(true);
-
         try {
             let finalPaymentStatus = selectedBooking.paymentStatus;
             if (selectedBooking.status === 'Delivered' && selectedBooking.paymentStatus !== 'Paid') {
@@ -181,16 +177,17 @@ const AdminBooking = () => {
                     text: 'Setting Delivered will mark payment as Paid. Continue?',
                     icon: 'info',
                     showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
+                    confirmButtonColor: '#01788E',
                     cancelButtonColor: '#d33',
                     confirmButtonText: 'Yes, proceed',
                 });
-                if (!result.isConfirmed) return; // finally still runs
+                if (!result.isConfirmed) return;
                 finalPaymentStatus = 'Paid';
                 setSelectedBooking(prev => ({ ...prev, paymentStatus: 'Paid' }));
             }
-
-            const res = await axiosSecure.patch(`/booking/update/${selectedBooking.id}`, {
+            // BUG FIX: _id fallback
+            const bookingId = selectedBooking.id || selectedBooking._id;
+            const res = await axiosSecure.patch(`/booking/update/${bookingId}`, {
                 status: selectedBooking.status,
                 address: selectedBooking.address,
                 date: selectedBooking.date,
@@ -198,7 +195,6 @@ const AdminBooking = () => {
                 totalPay: Number(selectedBooking.totalPay),
                 paymentStatus: finalPaymentStatus,
             });
-
             if (res?.data?.success) {
                 await queryClient.invalidateQueries({ queryKey: ["bookingAdmin"], exact: true });
                 await queryClient.refetchQueries({ queryKey: ["bookingAdmin"] });
@@ -221,7 +217,7 @@ const AdminBooking = () => {
             text: "You won't be able to revert this!",
             icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: "#3085d6",
+            confirmButtonColor: "#01788E",
             cancelButtonColor: "#d33",
             confirmButtonText: "Yes, delete it!",
         });
@@ -250,7 +246,7 @@ const AdminBooking = () => {
             `📞 *Phone:* ${phone}`,
             `📧 *Email:* ${email}`,
             "",
-            `🔹 *ID:* ${booking.id}`,
+            `🔹 *ID:* ${booking.id || booking._id}`,
             `🔹 *Service:* ${getServiceDisplay(booking)}`,
             `🔹 *Date & Time:* ${booking.date} at ${booking.time}`,
             `🔹 *Amount:* ${formatCurrency(booking.totalPay)}`,
@@ -268,8 +264,7 @@ const AdminBooking = () => {
         const text = generateShareText(bookingDetails);
         if (method === 'copy') {
             navigator.clipboard.writeText(text).then(() => {
-                setCopied(true);
-                setShowShareOptions(false);
+                setCopied(true); setShowShareOptions(false);
                 setTimeout(() => setCopied(false), 2000);
             });
         } else if (method === 'whatsapp') {
@@ -286,11 +281,8 @@ const AdminBooking = () => {
         });
     };
 
-    const goToPage = (p) => {
-        if (p >= 1 && p <= totalPages) setCurrentPage(p);
-    };
+    const goToPage = (p) => { if (p >= 1 && p <= totalPages) setCurrentPage(p); };
 
-    // ── Loading / Error states ──
     if (error) return (
         <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center px-4">
@@ -298,7 +290,10 @@ const AdminBooking = () => {
                 <p className="text-lg font-semibold text-gray-900 mb-1">Error loading bookings</p>
                 <p className="text-sm text-gray-500 mb-4">{error.message}</p>
                 <button onClick={() => queryClient.refetchQueries(["bookingAdmin"])}
-                    className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">
+                    className="px-5 py-2 text-white rounded-lg text-sm font-semibold transition-all"
+                    style={{ background: '#01788E' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#015f70'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#01788E'}>
                     Retry
                 </button>
             </div>
@@ -308,13 +303,13 @@ const AdminBooking = () => {
     if (isLoading) return (
         <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-blue-600 mx-auto" />
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 mx-auto"
+                    style={{ borderTopColor: '#01788E' }} />
                 <p className="mt-3 text-sm text-gray-500 font-medium">Loading bookings…</p>
             </div>
         </div>
     );
 
-    // ── Pagination helper ──
     const PaginationBar = ({ compact = false }) => {
         const maxVisible = compact ? 3 : 5;
         const pages = Array.from({ length: Math.min(maxVisible, totalPages) }, (_, i) => {
@@ -323,31 +318,31 @@ const AdminBooking = () => {
             if (currentPage >= totalPages - Math.floor(maxVisible / 2)) return totalPages - maxVisible + 1 + i;
             return currentPage - Math.floor(maxVisible / 2) + i;
         });
-
         return (
             <div className="flex items-center gap-1.5">
                 <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}
-                    className={`p-2 rounded-lg border text-sm ${currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                    className={`p-2 rounded-lg border text-sm transition-colors ${currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
                     <FaChevronLeft className="w-3 h-3" />
                 </button>
                 {pages.map(p => (
                     <button key={p} onClick={() => goToPage(p)}
-                        className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors
-                            ${currentPage === p ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                        className="w-9 h-9 rounded-lg text-sm font-semibold transition-colors border"
+                        style={currentPage === p
+                            ? { background: '#01788E', color: '#fff', borderColor: '#01788E' }
+                            : { background: '#fff', color: '#4b5563', borderColor: '#e5e7eb' }}>
                         {p}
                     </button>
                 ))}
                 <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg border text-sm ${currentPage === totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                    className={`p-2 rounded-lg border text-sm transition-colors ${currentPage === totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
                     <FaChevronRight className="w-3 h-3" />
                 </button>
             </div>
         );
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+        <div className="max-w-7xl mx-auto px-1 sm:px-2.5 py-2 sm:py-3" style={{ minHeight: '100vh' }}>
 
             {/* ── Header ── */}
             <div className="mb-6 sm:mb-8">
@@ -362,13 +357,11 @@ const AdminBooking = () => {
                     </div>
                     <button
                         onClick={() => setViewMode(v => v === "table" ? "card" : "table")}
-                        className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
+                        className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 bg-white transition-colors">
                         {viewMode === "table" ? "📱 Cards" : "📋 Table"}
                     </button>
                 </div>
 
-                {/* Search + Filters */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1 relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
@@ -377,7 +370,8 @@ const AdminBooking = () => {
                             placeholder="Search name, phone, service…"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
+                            className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all bg-white"
+                            {...tealFocus}
                         />
                         {searchTerm && (
                             <button onClick={() => setSearchTerm("")}
@@ -388,7 +382,8 @@ const AdminBooking = () => {
                     </div>
                     <div className="flex gap-2">
                         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                            className="flex-1 sm:flex-none sm:w-40 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            className="flex-1 sm:flex-none sm:w-40 px-3 py-2.5 text-xs sm:text-sm border border-gray-200 rounded-xl outline-none bg-white"
+                            {...tealFocus}>
                             <option value="all">All Status</option>
                             <option value="Requested">Requested</option>
                             <option value="Pending">Pending</option>
@@ -396,7 +391,8 @@ const AdminBooking = () => {
                             <option value="Cancelled">Cancelled</option>
                         </select>
                         <select value={itemsPerPage} onChange={e => { setItemsPerPage(+e.target.value); setCurrentPage(1); }}
-                            className="flex-1 sm:flex-none sm:w-32 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            className="flex-1 sm:flex-none sm:w-32 px-3 py-2.5 text-xs sm:text-sm border border-gray-200 rounded-xl outline-none bg-white"
+                            {...tealFocus}>
                             <option value="5">5 / page</option>
                             <option value="10">10 / page</option>
                             <option value="20">20 / page</option>
@@ -414,9 +410,7 @@ const AdminBooking = () => {
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-200">
                                     {["#", "Service & Customer", "Schedule", "Payment", "Status", "Actions"].map(h => (
-                                        <th key={h} className="py-3 px-3 sm:px-4 text-left text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            {h}
-                                        </th>
+                                        <th key={h} className="py-3 px-3 sm:px-4 text-left text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -429,55 +423,61 @@ const AdminBooking = () => {
                                             <p className="text-xs text-gray-400 mt-1">{searchTerm ? 'Try a different search' : 'Nothing here yet'}</p>
                                         </td>
                                     </tr>
-                                ) : currentBookings.map((book, idx) => (
-                                    <tr key={book.id} className="hover:bg-gray-50/70 transition-colors group">
-                                        <td className="py-3 px-3 sm:px-4">
-                                            <span className="text-xs font-bold text-gray-400">#{startIndex + idx + 1}</span>
-                                        </td>
-                                        <td className="py-3 px-3 sm:px-4 max-w-[180px]">
-                                            <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                                                {getServiceDisplay(book)}
-                                            </p>
-                                            <p className="text-sm font-bold text-gray-700 mt-0.5">{formatCurrency(book.totalPay)}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 truncate">
-                                                <FaUser className="w-2.5 h-2.5 flex-shrink-0" />
-                                                {getUserInfo(book).fullName}
-                                            </p>
-                                        </td>
-                                        <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
-                                            <p className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
-                                                <FaCalendarAlt className="w-3 h-3 text-gray-400" /> {book.date}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-0.5 pl-4">{book.time}</p>
-                                        </td>
-                                        <td className="py-3 px-3 sm:px-4">
-                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getPaymentStyle(book.paymentStatus)}`}>
-                                                {book.paymentStatus || 'Pending'}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 sm:px-4">
-                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getStatusStyle(book.status)}`}>
-                                                {book.status || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 sm:px-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <button onClick={() => setBookingDetails(book)} title="View"
-                                                    className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-100 transition-colors">
-                                                    <FaRegEye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                </button>
-                                                <button onClick={() => setSelectedBooking(book)} title="Edit"
-                                                    className="p-1.5 sm:p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-colors">
-                                                    <FaRegEdit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                </button>
-                                                <button onClick={() => handleDeleteBooking(book.id)} title="Delete"
-                                                    className="p-1.5 sm:p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg border border-red-100 transition-colors">
-                                                    <FaRegTrashAlt className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                ) : currentBookings.map((book, idx) => {
+                                    const bid = book.id || book._id;
+                                    return (
+                                        <tr key={bid} className="hover:bg-gray-50/70 transition-colors">
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <span className="text-xs font-bold text-gray-400">#{startIndex + idx + 1}</span>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4 max-w-[180px]">
+                                                <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate leading-tight">
+                                                    {getServiceDisplay(book)}
+                                                </p>
+                                                <p className="text-xs sm:text-sm font-bold text-gray-700 mt-0.5">{formatCurrency(book.totalPay)}</p>
+                                                <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                                                    <FaUser className="w-2.5 h-2.5 flex-shrink-0" />
+                                                    {getUserInfo(book).fullName}
+                                                </p>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                                                <p className="text-[11px] sm:text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                                                    <FaCalendarAlt className="w-3 h-3 text-gray-400" /> {book.date}
+                                                </p>
+                                                <p className="text-[11px] text-gray-500 mt-0.5 pl-4">{book.time}</p>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${getPaymentStyle(book.paymentStatus)}`}>
+                                                    {book.paymentStatus || 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${getStatusStyle(book.status)}`}>
+                                                    {book.status || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    <button onClick={() => setBookingDetails(book)} title="View"
+                                                        className="p-1.5 sm:p-2 rounded-lg border transition-colors"
+                                                        style={{ background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(1,120,142,0.14)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(1,120,142,0.07)'}>
+                                                        <FaRegEye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => setSelectedBooking(book)} title="Edit"
+                                                        className="p-1.5 sm:p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-colors">
+                                                        <FaRegEdit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteBooking(bid)} title="Delete"
+                                                        className="p-1.5 sm:p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg border border-red-100 transition-colors">
+                                                        <FaRegTrashAlt className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -497,7 +497,6 @@ const AdminBooking = () => {
                 </div>
 
             ) : (
-                /* ── Card View ── */
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
                         {currentBookings.length === 0 ? (
@@ -507,18 +506,18 @@ const AdminBooking = () => {
                             </div>
                         ) : currentBookings.map(book => {
                             const { fullName, phone } = getUserInfo(book);
+                            const bid = book.id || book._id;
                             return (
-                                <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                                    {/* Card header stripe */}
+                                <div key={bid} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                                     <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
                                                 {getServiceDisplay(book)}
                                             </p>
-                                            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">#{book.id}</p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">#{bid}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className="text-lg font-bold text-gray-900">{formatCurrency(book.totalPay)}</p>
+                                            <p className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(book.totalPay)}</p>
                                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusStyle(book.status)}`}>
                                                 {book.status}
                                             </span>
@@ -526,11 +525,11 @@ const AdminBooking = () => {
                                     </div>
 
                                     <div className="px-4 pb-4 flex-1 space-y-2.5">
-                                        {/* Customer */}
                                         {fullName !== 'N/A' && (
                                             <div className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-xl">
-                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                                    <FaUser className="w-3 h-3 text-blue-500" />
+                                                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                                    style={{ background: 'rgba(1,120,142,0.1)' }}>
+                                                    <FaUser className="w-3 h-3" style={{ color: '#01788E' }} />
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-semibold text-gray-800 truncate">{fullName}</p>
@@ -543,11 +542,10 @@ const AdminBooking = () => {
                                             </div>
                                         )}
 
-                                        {/* Date + Payment row */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="p-2.5 border border-gray-100 rounded-xl">
                                                 <p className="text-[9px] text-gray-400 uppercase font-bold mb-0.5">Schedule</p>
-                                                <p className="text-xs font-semibold text-gray-800">{book.date}</p>
+                                                <p className="text-[11px] sm:text-xs font-semibold text-gray-800">{book.date}</p>
                                                 <p className="text-[10px] text-gray-500">{book.time}</p>
                                             </div>
                                             <div className="p-2.5 border border-gray-100 rounded-xl">
@@ -558,7 +556,6 @@ const AdminBooking = () => {
                                             </div>
                                         </div>
 
-                                        {/* Address */}
                                         {book.address && (
                                             <div className="flex items-start gap-2 p-2.5 border border-gray-100 rounded-xl">
                                                 <FaMapMarkerAlt className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" />
@@ -567,10 +564,12 @@ const AdminBooking = () => {
                                         )}
                                     </div>
 
-                                    {/* Actions */}
                                     <div className="border-t border-gray-100 grid grid-cols-2 divide-x divide-gray-100">
                                         <button onClick={() => setBookingDetails(book)}
-                                            className="py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                                            className="py-2.5 text-xs font-bold transition-colors"
+                                            style={{ color: '#01788E' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(1,120,142,0.06)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                             View Details
                                         </button>
                                         <button onClick={() => setSelectedBooking(book)}
@@ -602,15 +601,16 @@ const AdminBooking = () => {
             {selectedBooking && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+                        <div className="h-1 w-full shrink-0" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
 
                         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
                             <div>
-                                <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Booking</h3>
+                                <h3 className="text-sm sm:text-base font-bold text-gray-900">Edit Booking</h3>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${getStatusStyle(selectedBooking.status)}`}>
                                         {selectedBooking.status}
                                     </span>
-                                    <span className="text-[10px] text-gray-400">#{selectedBooking.id}</span>
+                                    <span className="text-[10px] text-gray-400">#{selectedBooking.id || selectedBooking._id}</span>
                                 </div>
                             </div>
                             <button onClick={() => setSelectedBooking(null)}
@@ -632,7 +632,8 @@ const AdminBooking = () => {
                                         <img src={dirhum} alt="" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
                                         <input type="number" name="totalPay" value={selectedBooking.totalPay || ""}
                                             onChange={handleInputChange}
-                                            className="w-full pl-8 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
+                                            className="w-full pl-8 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all"
+                                            {...tealFocus} />
                                     </div>
                                 </div>
                             </div>
@@ -641,7 +642,8 @@ const AdminBooking = () => {
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Booking Status</label>
                                     <select name="status" value={selectedBooking.status || ""} onChange={handleInputChange}
-                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all"
+                                        {...tealFocus}>
                                         <option value="Requested">Requested</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Delivered">Delivered</option>
@@ -662,12 +664,14 @@ const AdminBooking = () => {
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Date</label>
                                     <input type="date" name="date" value={selectedBooking.date || ""} onChange={handleInputChange}
-                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all"
+                                        {...tealFocus} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Time</label>
                                     <input type="time" name="time" value={selectedBooking.time || ""} onChange={handleInputChange}
-                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all"
+                                        {...tealFocus} />
                                 </div>
                             </div>
 
@@ -675,22 +679,27 @@ const AdminBooking = () => {
                                 <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Address</label>
                                     <a href={getGoogleMapsUrl(selectedBooking)} target="_blank" rel="noopener noreferrer"
-                                        className="text-[10px] text-blue-600 hover:underline font-bold flex items-center gap-1">
+                                        className="text-[10px] font-bold flex items-center gap-1 hover:underline"
+                                        style={{ color: '#01788E' }}>
                                         <FaExternalLinkAlt className="w-2.5 h-2.5" /> Open Map
                                     </a>
                                 </div>
                                 <textarea name="address" value={selectedBooking.address || ""} onChange={handleInputChange} rows={2}
-                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none" />
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all resize-none"
+                                    {...tealFocus} />
                             </div>
                         </div>
 
                         <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/60">
                             <button onClick={() => setSelectedBooking(null)}
-                                className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+                                className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
                                 Cancel
                             </button>
                             <button disabled={loading} onClick={handleUpdateBooking}
-                                className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all shadow-sm shadow-blue-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                                className="px-6 py-2.5 text-xs sm:text-sm font-bold text-white rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                                style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                                onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'linear-gradient(135deg, #015f70, #014d5a)'; }}
+                                onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #01788E, #015f70)'}>
                                 {loading ? 'Saving…' : 'Save Changes'}
                             </button>
                         </div>
@@ -702,16 +711,16 @@ const AdminBooking = () => {
             {bookingDetails && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                        <div className="h-1 w-full shrink-0" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
 
-                        {/* Modal header */}
                         <div className="flex items-start justify-between px-4 sm:px-7 py-4 sm:py-5 border-b border-gray-200">
                             <div className="min-w-0">
-                                <h3 className="text-base sm:text-xl font-bold text-gray-900">Booking Details</h3>
+                                <h3 className="text-sm sm:text-xl font-bold text-gray-900">Booking Details</h3>
                                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                     <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${getStatusStyle(bookingDetails.status)}`}>
                                         {bookingDetails.status}
                                     </span>
-                                    <span className="text-[10px] text-gray-400 font-mono">#{bookingDetails.id}</span>
+                                    <span className="text-[10px] text-gray-400 font-mono">#{bookingDetails.id || bookingDetails._id}</span>
                                     <span className="text-[10px] sm:text-xs text-gray-500 font-medium">{bookingDetails.date} · {bookingDetails.time}</span>
                                 </div>
                             </div>
@@ -723,28 +732,24 @@ const AdminBooking = () => {
 
                         <div className="overflow-y-auto flex-1 px-4 sm:px-7 py-4 sm:py-6 space-y-5 sm:space-y-6">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-
-                                {/* Left column */}
                                 <div className="space-y-4">
-                                    {/* Service info */}
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                             <FaCalendarAlt className="w-3 h-3" /> Service Info
                                         </p>
                                         <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
-                                            <p className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                                            <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug">
                                                 {getServiceDisplay(bookingDetails)}
                                             </p>
                                             <div className="flex items-center gap-2.5 text-sm text-gray-600">
                                                 <FaCalendarAlt className="w-3.5 h-3.5 text-gray-400" />
-                                                <span>{bookingDetails.date}</span>
+                                                <span className="text-xs sm:text-sm">{bookingDetails.date}</span>
                                                 <span className="text-gray-300">·</span>
-                                                <span>{bookingDetails.time}</span>
+                                                <span className="text-xs sm:text-sm">{bookingDetails.time}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Payment info */}
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                             <FaDollarSign className="w-3 h-3" /> Payment Info
@@ -752,10 +757,10 @@ const AdminBooking = () => {
                                         <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
                                             <div className="flex items-end justify-between">
                                                 <span className="text-xs text-gray-500">Total Amount</span>
-                                                <span className="text-2xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</span>
+                                                <span className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(bookingDetails.totalPay)}</span>
                                             </div>
                                             <div className="h-px bg-gray-200" />
-                                            <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center justify-between">
                                                 <span className="text-gray-500 text-xs">Method</span>
                                                 <span className="text-xs font-semibold text-gray-700">
                                                     {bookingDetails.paymentMethod === 'Online' ? 'Ziina Payment' : 'Cash on Delivery'}
@@ -771,7 +776,6 @@ const AdminBooking = () => {
                                     </div>
                                 </div>
 
-                                {/* Right column — Location */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -786,7 +790,10 @@ const AdminBooking = () => {
                                                     : <IoCopyOutline className="w-3.5 h-3.5" />}
                                             </button>
                                             <a href={getGoogleMapsUrl(bookingDetails)} target="_blank" rel="noopener noreferrer"
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors"
+                                                style={{ background: '#01788E' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = '#015f70'}
+                                                onMouseLeave={e => e.currentTarget.style.background = '#01788E'}>
                                                 <FaExternalLinkAlt className="w-2.5 h-2.5" /> Open Map
                                             </a>
                                         </div>
@@ -796,7 +803,6 @@ const AdminBooking = () => {
                                         <p className="text-xs text-gray-700 leading-relaxed">{bookingDetails.address}</p>
                                     </div>
 
-                                    {/* Map preview */}
                                     <div className="rounded-2xl overflow-hidden border border-gray-200 h-40 sm:h-[185px]">
                                         {(() => {
                                             const { latitude, longitude } = getCoordinates(bookingDetails);
@@ -813,7 +819,6 @@ const AdminBooking = () => {
                                 </div>
                             </div>
 
-                            {/* User info */}
                             <div>
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <FaUser className="w-3 h-3" /> Customer Info
@@ -826,7 +831,7 @@ const AdminBooking = () => {
                                                 {[['Full Name', fullName], ['Phone', phone], ['Email', email]].map(([label, val]) => (
                                                     <div key={label}>
                                                         <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">{label}</p>
-                                                        <p className="text-sm font-semibold text-gray-800 break-all">{val}</p>
+                                                        <p className="text-xs sm:text-sm font-semibold text-gray-800 break-all">{val}</p>
                                                     </div>
                                                 ))}
                                             </div>
@@ -838,7 +843,8 @@ const AdminBooking = () => {
                             {bookingDetails.additionalInfo && (
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Notes</p>
-                                    <div className="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
+                                    <div className="p-4 rounded-2xl border"
+                                        style={{ background: 'rgba(1,120,142,0.05)', borderColor: 'rgba(1,120,142,0.15)' }}>
                                         <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
                                             {bookingDetails.additionalInfo}
                                         </p>
@@ -847,11 +853,10 @@ const AdminBooking = () => {
                             )}
                         </div>
 
-                        {/* Modal footer */}
                         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-7 py-4 border-t border-gray-200 bg-gray-50/50">
                             <div className="relative w-full sm:w-auto" ref={shareRef}>
                                 <button onClick={() => setShowShareOptions(s => !s)}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-white transition-all">
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-gray-700 hover:bg-white bg-white transition-all">
                                     <FaShare className="w-3.5 h-3.5" />
                                     {copied ? '✓ Copied!' : 'Share'}
                                 </button>
@@ -860,12 +865,12 @@ const AdminBooking = () => {
                                         <button onClick={() => handleShare('copy')}
                                             className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100">
                                             <FaCopy className="text-gray-400 w-3.5 h-3.5" />
-                                            <span className="text-sm font-semibold">Copy Details</span>
+                                            <span className="text-xs sm:text-sm font-semibold">Copy Details</span>
                                         </button>
                                         <button onClick={() => handleShare('whatsapp')}
                                             className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
                                             <FaWhatsapp className="text-green-500 w-3.5 h-3.5" />
-                                            <span className="text-sm font-semibold">WhatsApp</span>
+                                            <span className="text-xs sm:text-sm font-semibold">WhatsApp</span>
                                         </button>
                                     </div>
                                 )}
@@ -873,11 +878,14 @@ const AdminBooking = () => {
 
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <button onClick={() => setBookingDetails(null)}
-                                    className="flex-1 sm:flex-none px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                                    className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
                                     Close
                                 </button>
                                 <button onClick={() => { setSelectedBooking(bookingDetails); setBookingDetails(null); }}
-                                    className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-200 active:scale-95">
+                                    className="flex-1 sm:flex-none px-6 py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95"
+                                    style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #015f70, #014d5a)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #01788E, #015f70)'}>
                                     Edit Booking
                                 </button>
                             </div>

@@ -472,18 +472,6 @@ const DateTime = () => {
                                         </p>
                                     </div>
 
-                                    {/* Submit Button */}
-                                    {/* <button
-                                        onClick={handleManualDateSelect}
-                                        disabled={!isManualInputValid()}
-                                        className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${isManualInputValid()
-                                                ? 'bg-[#01788E] hover:bg-[#01677A] text-white'
-                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        Confirm Date & Time
-                                    </button> */}
-
                                     {/* Info Note */}
                                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
                                         <div className="flex items-start gap-3">

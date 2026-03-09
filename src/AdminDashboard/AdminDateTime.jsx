@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { GoBrowser } from "react-icons/go";
-import { IoAddOutline, IoTrashOutline, IoCloseOutline, IoTimeOutline } from "react-icons/io5";
+import { IoAddOutline, IoCloseOutline, IoTimeOutline } from "react-icons/io5";
 import { MdDateRange, MdAccessTime } from "react-icons/md";
 import { FiCalendar, FiClock, FiTrash2 } from "react-icons/fi";
 import { BsClock } from "react-icons/bs";
@@ -18,16 +18,13 @@ const convertTo24Hour = (time12h) => {
     const [time, period] = parts;
     const [hoursStr, minutes] = time.split(':');
     let hour = parseInt(hoursStr, 10);
-
     if (period.toUpperCase() === 'PM' && hour !== 12) hour += 12;
     if (period.toUpperCase() === 'AM' && hour === 12) hour = 0;
-
     return `${hour.toString().padStart(2, '0')}:${minutes}`;
 };
 
 const generateTimeOptions = () => {
     const times = new Set();
-
     for (let hour = 0; hour < 24; hour++) {
         for (const minute of ["00", "15", "30", "45"]) {
             let displayHour = hour % 12;
@@ -36,7 +33,6 @@ const generateTimeOptions = () => {
             times.add(`${displayHour}:${minute} ${period}`);
         }
     }
-
     return [...times].sort((a, b) => convertTo24Hour(a).localeCompare(convertTo24Hour(b)));
 };
 
@@ -47,7 +43,10 @@ const CustomDateInput = React.forwardRef(({ value, onClick, onChange, placeholde
     <div className="relative">
         <input
             type="text"
-            className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900 font-medium text-sm pr-10"
+            style={{ borderColor: '#d1d5db' }}
+            className="w-full px-3 py-3 border rounded-xl bg-white text-gray-900 font-medium text-sm pr-10 outline-none transition-all focus:ring-2"
+            onFocus={e => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.2)'; }}
+            onBlur={e => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
             value={value}
             onClick={onClick}
             onChange={onChange}
@@ -62,6 +61,42 @@ const CustomDateInput = React.forwardRef(({ value, onClick, onChange, placeholde
 ));
 CustomDateInput.displayName = "CustomDateInput";
 
+// ─── Time Picker Dropdown (defined outside main component to avoid remount) ──
+const TimeDropdown = ({ index, type, timeSlots, onSelect }) => (
+    <div
+        data-timepicker
+        className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+    >
+        <div className="px-3 py-2 border-b border-gray-100" style={{ background: 'rgba(1,120,142,0.06)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#01788E' }}>
+                {type === 'start' ? 'Start' : 'End'} Time
+            </p>
+        </div>
+        <div className="max-h-44 overflow-y-auto">
+            {timeOptions.map((opt, idx) => {
+                const isSelected = timeSlots[index]?.[type] === opt;
+                return (
+                    <div
+                        key={idx}
+                        className="px-3 py-2 cursor-pointer text-sm transition-colors"
+                        style={isSelected
+                            ? { background: 'rgba(1,120,142,0.08)', color: '#01788E', fontWeight: 600 }
+                            : { color: '#374151' }
+                        }
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            onSelect(index, type, opt);
+                        }}
+                    >
+                        {opt}
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+);
 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -75,6 +110,7 @@ const AdminDateTime = () => {
     const axiosSecure = useAxiosSecure();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+
     const addSlot = () => setTimeSlots(prev => [...prev, { start: "", end: "" }]);
 
     const updateSlot = (index, field, value) => {
@@ -83,6 +119,7 @@ const AdminDateTime = () => {
             updated[index] = { ...updated[index], [field]: value };
             return updated;
         });
+        setShowTimePicker({ index: null, type: null });
     };
 
     const removeSlot = (index) => setTimeSlots(prev => prev.filter((_, i) => i !== index));
@@ -100,6 +137,7 @@ const AdminDateTime = () => {
     }, [axiosSecure]);
 
     useEffect(() => { fetchDateTimeData(); }, [fetchDateTimeData]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (!event.target.closest('[data-timepicker]')) {
@@ -157,47 +195,8 @@ const AdminDateTime = () => {
         }
     };
 
-    const deleteTimeSlot = async (id) => {
-        const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!"
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-            const res = await axiosSecure.delete(`/date-time/delete/${id}`);
-            if (res?.data?.success) {
-                toast.success("Configuration deleted");
-                fetchDateTimeData();
-                // Adjust page if last item on page was deleted
-                const newTotal = groupedDates.length - 1;
-                const newTotalPages = Math.ceil(newTotal / itemsPerPage);
-                if (currentPage > newTotalPages) setCurrentPage(Math.max(1, newTotalPages));
-            } else {
-                toast.error(res?.data?.message || "Failed to delete");
-            }
-        } catch {
-            toast.error('Something went wrong');
-        }
-    };
-
     // ── Data Grouping ──
-    const formatDate = (dateString) => {
-        if (!dateString) return "";
-        try {
-            return new Date(dateString).toLocaleDateString('en-US', {
-                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-            });
-        } catch { return dateString; }
-    };
-
-    const getGroupedData = () => {
+    const getGroupedData = useCallback(() => {
         const grouped = {};
         appliedRecords.forEach((record) => {
             const slots = record.timeSlots || record.time || [];
@@ -211,7 +210,9 @@ const AdminDateTime = () => {
                     grouped[dateKey] = {
                         date: dateKey,
                         slots: [],
-                        fullDate: formatDate(dateKey),
+                        fullDate: new Date(dateKey).toLocaleDateString('en-US', {
+                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                        }),
                         recordId: record.id || record._id,
                         dayName: new Date(dateKey).toLocaleDateString('en-US', { weekday: 'long' })
                     };
@@ -234,6 +235,36 @@ const AdminDateTime = () => {
         return Object.values(grouped).sort((a, b) => {
             try { return new Date(a.date) - new Date(b.date); } catch { return 0; }
         });
+    }, [appliedRecords]);
+
+    const deleteTimeSlot = async (id) => {
+        const result = await Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#01788E",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await axiosSecure.delete(`/date-time/delete/${id}`);
+            if (res?.data?.success) {
+                toast.success("Configuration deleted");
+                // Fetch fresh data and then adjust page
+                const updatedGroups = groupedDates.filter(g => g.recordId !== id);
+                const newTotalPages = Math.ceil(updatedGroups.length / itemsPerPage);
+                if (currentPage > newTotalPages) setCurrentPage(Math.max(1, newTotalPages));
+                fetchDateTimeData();
+            } else {
+                toast.error(res?.data?.message || "Failed to delete");
+            }
+        } catch {
+            toast.error('Something went wrong');
+        }
     };
 
     const groupedDates = getGroupedData();
@@ -244,29 +275,10 @@ const AdminDateTime = () => {
         ? Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1
         : 0;
 
-    // ── Pagination JSX (inline — nested component হলে remount হয়ে state কাজ করে না) ──
+    // ── Pagination ──
     const renderPagination = () => {
         if (groupedDates.length === 0) return null;
-        const pages = [];
-        for (let i = 1; i <= totalPages; i++) pages.push(i);
-
-        const pageButtons = pages.map(n => {
-            const isVisible = totalPages <= 5 || n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1;
-            const showDots = !isVisible && (n === 2 || n === totalPages - 1);
-            if (showDots) return <span key={`dots-${n}`} className="px-1 text-gray-400 text-sm">…</span>;
-            if (!isVisible) return null;
-            return (
-                <button
-                    key={n}
-                    onClick={() => setCurrentPage(n)}
-                    className={`w-8 h-8 text-xs font-semibold rounded-lg transition-colors ${
-                        currentPage === n ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                >
-                    {n}
-                </button>
-            );
-        });
+        const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
         return (
             <div className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/60">
@@ -286,7 +298,25 @@ const AdminDateTime = () => {
                         >
                             Prev
                         </button>
-                        {pageButtons}
+                        {pages.map(n => {
+                            const isVisible = totalPages <= 5 || n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1;
+                            const showDots = !isVisible && (n === 2 || n === totalPages - 1);
+                            if (showDots) return <span key={`dots-${n}`} className="px-1 text-gray-400 text-sm">…</span>;
+                            if (!isVisible) return null;
+                            return (
+                                <button
+                                    key={n}
+                                    onClick={() => setCurrentPage(n)}
+                                    className="w-8 h-8 text-xs font-semibold rounded-lg transition-colors border"
+                                    style={currentPage === n
+                                        ? { background: '#01788E', color: '#fff', borderColor: '#01788E' }
+                                        : { background: '#fff', color: '#4b5563', borderColor: '#e5e7eb' }
+                                    }
+                                >
+                                    {n}
+                                </button>
+                            );
+                        })}
                         <button
                             onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
                             disabled={currentPage === totalPages}
@@ -300,49 +330,15 @@ const AdminDateTime = () => {
         );
     };
 
-    // ── Time Picker Dropdown ──
-    const TimeDropdown = ({ index, type }) => (
-        <div
-            data-timepicker
-            className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
-        >
-            <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {type === 'start' ? 'Start' : 'End'} Time
-                </p>
-            </div>
-            <div className="max-h-44 overflow-y-auto">
-                {timeOptions.map((opt, idx) => {
-                    const isSelected = timeSlots[index]?.[type] === opt;
-                    return (
-                        <div
-                            key={idx}
-                            className={`px-3 py-2 cursor-pointer text-sm transition-colors ${
-                                isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50 text-gray-700'
-                            }`}
-                            onMouseDown={(e) => {
-                                e.preventDefault(); // prevent blur before click registers
-                                updateSlot(index, type, opt);
-                                setShowTimePicker({ index: null, type: null });
-                            }}
-                        >
-                            {opt}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-gray-50/70 p-3 sm:p-5 md:p-6">
+        <div className="min-h-screen p-2 sm:p-4 md:p-4">
             <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
 
                 {/* ── Header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm shrink-0">
+                        <div className="p-2 sm:p-2.5 rounded-xl shadow-sm shrink-0" style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}>
                             <GoBrowser className="text-base sm:text-xl text-white" />
                         </div>
                         <div>
@@ -350,9 +346,10 @@ const AdminDateTime = () => {
                             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Configure available time slots for appointments</p>
                         </div>
                     </div>
-                    <div className="self-start sm:self-auto px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-2">
-                        <BsClock className="text-blue-600 text-sm" />
-                        <span className="text-xs sm:text-sm font-semibold text-blue-700">
+                    <div className="self-start sm:self-auto px-3 py-1.5 rounded-lg border flex items-center gap-2"
+                        style={{ background: 'rgba(1,120,142,0.07)', borderColor: 'rgba(1,120,142,0.2)' }}>
+                        <BsClock style={{ color: '#01788E' }} className="text-sm" />
+                        <span className="text-xs sm:text-sm font-semibold" style={{ color: '#01788E' }}>
                             {groupedDates.length} {groupedDates.length === 1 ? 'Date' : 'Dates'} Configured
                         </span>
                     </div>
@@ -365,8 +362,8 @@ const AdminDateTime = () => {
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex items-center gap-2.5">
-                                <div className="p-1.5 bg-blue-100 rounded-lg">
-                                    <MdDateRange className="text-base text-blue-600" />
+                                <div className="p-1.5 rounded-lg" style={{ background: 'rgba(1,120,142,0.1)' }}>
+                                    <MdDateRange className="text-base" style={{ color: '#01788E' }} />
                                 </div>
                                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Configure Time Slots</h2>
                             </div>
@@ -420,11 +417,11 @@ const AdminDateTime = () => {
                                             />
                                         </div>
                                     </div>
-                                    {/* Date range visual indicator */}
                                     {fromDate && toDate && (
-                                        <div className="mt-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-2">
-                                            <FiCalendar className="text-blue-500 shrink-0 text-xs" />
-                                            <p className="text-xs text-blue-700 font-medium">
+                                        <div className="mt-2 px-3 py-2 rounded-lg border flex items-center gap-2"
+                                            style={{ background: 'rgba(1,120,142,0.06)', borderColor: 'rgba(1,120,142,0.18)' }}>
+                                            <FiCalendar className="shrink-0 text-xs" style={{ color: '#01788E' }} />
+                                            <p className="text-xs font-medium" style={{ color: '#01788E' }}>
                                                 {fromDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                 {' → '}
                                                 {toDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -442,7 +439,10 @@ const AdminDateTime = () => {
                                         </p>
                                         <button
                                             onClick={addSlot}
-                                            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-blue-500 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg text-xs font-semibold transition-all shadow-sm border"
+                                            style={{ borderColor: '#01788E', color: '#01788E' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(1,120,142,0.06)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                                         >
                                             <IoAddOutline className="text-sm" />
                                             Add Slot
@@ -452,18 +452,24 @@ const AdminDateTime = () => {
                                     <div className="space-y-2.5">
                                         {timeSlots.length === 0 ? (
                                             <div className="text-center py-8 sm:py-10 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                                                <div className="w-12 h-12 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center">
-                                                    <MdAccessTime className="text-2xl text-blue-400" />
+                                                <div className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+                                                    style={{ background: 'rgba(1,120,142,0.08)' }}>
+                                                    <MdAccessTime className="text-2xl" style={{ color: '#01788E' }} />
                                                 </div>
                                                 <p className="text-sm font-medium text-gray-500">No time slots added</p>
                                                 <p className="text-xs text-gray-400 mt-1">Tap "Add Slot" to get started</p>
                                             </div>
                                         ) : (
                                             timeSlots.map((slot, index) => (
-                                                <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-200 transition-colors">
+                                                <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-opacity-70 transition-colors"
+                                                    style={{ '--tw-border-opacity': 1 }}
+                                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(1,120,142,0.35)'}
+                                                    onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}
+                                                >
                                                     {/* Slot number badge */}
-                                                    <div className="shrink-0 w-6 h-6 mt-7 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <span className="text-[10px] font-bold text-blue-600">{index + 1}</span>
+                                                    <div className="shrink-0 w-6 h-6 mt-7 rounded-full flex items-center justify-center"
+                                                        style={{ background: 'rgba(1,120,142,0.12)' }}>
+                                                        <span className="text-[10px] font-bold" style={{ color: '#01788E' }}>{index + 1}</span>
                                                     </div>
 
                                                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -473,7 +479,8 @@ const AdminDateTime = () => {
                                                             <div className="relative" data-timepicker>
                                                                 <input
                                                                     type="text"
-                                                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm text-gray-900 cursor-pointer pr-9"
+                                                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-900 cursor-pointer pr-9 outline-none transition-all"
+                                                                    style={{ borderColor: showTimePicker.index === index && showTimePicker.type === 'start' ? '#01788E' : '#d1d5db' }}
                                                                     value={slot.start}
                                                                     onClick={() => setShowTimePicker(
                                                                         prev => (prev.index === index && prev.type === 'start')
@@ -485,7 +492,7 @@ const AdminDateTime = () => {
                                                                 />
                                                                 <FiClock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                                                                 {showTimePicker.index === index && showTimePicker.type === 'start' && (
-                                                                    <TimeDropdown index={index} type="start" />
+                                                                    <TimeDropdown index={index} type="start" timeSlots={timeSlots} onSelect={updateSlot} />
                                                                 )}
                                                             </div>
                                                         </div>
@@ -496,7 +503,8 @@ const AdminDateTime = () => {
                                                             <div className="relative" data-timepicker>
                                                                 <input
                                                                     type="text"
-                                                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm text-gray-900 cursor-pointer pr-9"
+                                                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-900 cursor-pointer pr-9 outline-none transition-all"
+                                                                    style={{ borderColor: showTimePicker.index === index && showTimePicker.type === 'end' ? '#01788E' : '#d1d5db' }}
                                                                     value={slot.end}
                                                                     onClick={() => setShowTimePicker(
                                                                         prev => (prev.index === index && prev.type === 'end')
@@ -508,7 +516,7 @@ const AdminDateTime = () => {
                                                                 />
                                                                 <FiClock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                                                                 {showTimePicker.index === index && showTimePicker.type === 'end' && (
-                                                                    <TimeDropdown index={index} type="end" />
+                                                                    <TimeDropdown index={index} type="end" timeSlots={timeSlots} onSelect={updateSlot} />
                                                                 )}
                                                             </div>
                                                         </div>
@@ -517,7 +525,9 @@ const AdminDateTime = () => {
                                                     {/* Remove Button */}
                                                     <button
                                                         onClick={() => removeSlot(index)}
-                                                        className="shrink-0 mt-7 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        className="shrink-0 mt-7 p-1.5 text-gray-400 rounded-lg transition-colors"
+                                                        onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
                                                         title="Remove"
                                                     >
                                                         <IoCloseOutline className="text-lg" />
@@ -533,7 +543,10 @@ const AdminDateTime = () => {
                                     <button
                                         onClick={handleApply}
                                         disabled={isLoading || timeSlots.length === 0 || !fromDate || !toDate}
-                                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg active:scale-[0.99]"
+                                        className="w-full py-3 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-md active:scale-[0.99]"
+                                        style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                                        onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'linear-gradient(135deg, #015f70, #014d5a)'; }}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #01788E, #015f70)'}
                                     >
                                         {isLoading ? (
                                             <>
@@ -557,33 +570,34 @@ const AdminDateTime = () => {
                     {/* Right — Stats & Preview */}
                     <div className="space-y-4">
                         {/* Stats */}
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 sm:p-5 border border-blue-100">
+                        <div className="rounded-2xl p-4 sm:p-5 border"
+                            style={{ background: 'linear-gradient(135deg, rgba(1,120,142,0.06), rgba(1,95,112,0.1))', borderColor: 'rgba(1,120,142,0.15)' }}>
                             <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Overview</h3>
                             <div className="space-y-2.5">
                                 {[
                                     {
-                                        icon: <FiCalendar className="text-blue-600 text-sm" />,
-                                        bg: "bg-blue-100",
+                                        icon: <FiCalendar className="text-sm" style={{ color: '#01788E' }} />,
+                                        bg: 'rgba(1,120,142,0.12)',
                                         label: "Selected Range",
                                         value: fromDate && toDate
                                             ? `${fromDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${toDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                                             : "Not set"
                                     },
                                     {
-                                        icon: <BsClock className="text-green-600 text-sm" />,
-                                        bg: "bg-green-100",
+                                        icon: <BsClock className="text-sm text-green-600" />,
+                                        bg: 'rgba(22,163,74,0.1)',
                                         label: "Time Slots",
                                         value: `${timeSlots.length} slot${timeSlots.length !== 1 ? 's' : ''}`
                                     },
                                     {
-                                        icon: <IoTimeOutline className="text-purple-600 text-sm" />,
-                                        bg: "bg-purple-100",
+                                        icon: <IoTimeOutline className="text-sm text-purple-600" />,
+                                        bg: 'rgba(147,51,234,0.1)',
                                         label: "Total Days",
                                         value: `${totalDays} day${totalDays !== 1 ? 's' : ''}`
                                     },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-white/80 shadow-sm">
-                                        <div className={`p-1.5 ${item.bg} rounded-lg shrink-0`}>{item.icon}</div>
+                                        <div className="p-1.5 rounded-lg shrink-0" style={{ background: item.bg }}>{item.icon}</div>
                                         <div className="min-w-0">
                                             <p className="text-xs text-gray-500">{item.label}</p>
                                             <p className="text-sm font-semibold text-gray-900 truncate">{item.value}</p>
@@ -603,9 +617,11 @@ const AdminDateTime = () => {
                                     {timeSlots.map((slot, index) => (
                                         <div key={index} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#01788E' }} />
                                                 <span className="text-xs sm:text-sm font-medium text-gray-800">
-                                                    {slot.start && slot.end ? `${slot.start} – ${slot.end}` : <span className="text-gray-400 italic">Incomplete</span>}
+                                                    {slot.start && slot.end
+                                                        ? `${slot.start} – ${slot.end}`
+                                                        : <span className="text-gray-400 italic">Incomplete</span>}
                                                 </span>
                                             </div>
                                             <span className="text-[10px] text-gray-400 font-medium shrink-0">#{index + 1}</span>
@@ -656,8 +672,9 @@ const AdminDateTime = () => {
                                             <td className="py-3 px-4">
                                                 <div className="flex flex-wrap gap-1.5 max-w-sm">
                                                     {item.slots.map((slot, idx) => (
-                                                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                                            <span className="w-1 h-1 bg-blue-500 rounded-full" />
+                                                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border"
+                                                            style={{ background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }}>
+                                                            <span className="w-1 h-1 rounded-full" style={{ background: '#01788E' }} />
                                                             {slot.display}
                                                         </span>
                                                     ))}
@@ -677,7 +694,9 @@ const AdminDateTime = () => {
                                             <td className="py-3 px-4">
                                                 <button
                                                     onClick={() => deleteTimeSlot(item.recordId)}
-                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 hover:border-red-200"
+                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-500 rounded-lg transition-colors border border-gray-200"
+                                                    onMouseEnter={e => { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
                                                 >
                                                     <FiTrash2 className="text-xs" /> Remove
                                                 </button>
@@ -703,7 +722,9 @@ const AdminDateTime = () => {
                                             </span>
                                             <button
                                                 onClick={() => deleteTimeSlot(item.recordId)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-gray-200 hover:border-red-200 transition-colors"
+                                                className="p-1.5 text-gray-400 rounded-lg border border-gray-200 transition-colors"
+                                                onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
                                             >
                                                 <FiTrash2 className="text-xs" />
                                             </button>
@@ -711,8 +732,9 @@ const AdminDateTime = () => {
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
                                         {item.slots.map((slot, idx) => (
-                                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                                <span className="w-1 h-1 bg-blue-500 rounded-full" />
+                                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border"
+                                                style={{ background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }}>
+                                                <span className="w-1 h-1 rounded-full" style={{ background: '#01788E' }} />
                                                 {slot.display}
                                             </span>
                                         ))}
@@ -729,12 +751,13 @@ const AdminDateTime = () => {
                 {/* ── Empty States ── */}
                 {groupedDates.length === 0 && appliedRecords.length === 0 && (
                     <div className="text-center py-12 sm:py-16 border-2 border-dashed border-gray-200 rounded-2xl bg-white">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center">
-                            <MdAccessTime className="text-3xl text-blue-400" />
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg, rgba(1,120,142,0.08), rgba(1,120,142,0.15))' }}>
+                            <MdAccessTime className="text-3xl" style={{ color: '#01788E' }} />
                         </div>
                         <h4 className="text-base sm:text-lg font-semibold text-gray-700 mb-1">No Time Slots Configured</h4>
                         <p className="text-xs sm:text-sm text-gray-400 max-w-xs mx-auto mb-4">Configure your first date range and time slots to get started</p>
-                        <div className="inline-flex items-center gap-1.5 text-sm text-blue-600 font-medium">
+                        <div className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: '#01788E' }}>
                             <IoAddOutline /> Add your first configuration
                         </div>
                     </div>
@@ -759,8 +782,6 @@ const AdminDateTime = () => {
 };
 
 export default AdminDateTime;
-
-
 
 
 

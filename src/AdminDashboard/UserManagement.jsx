@@ -54,6 +54,7 @@ const UserManagement = () => {
     // Role toggle
     const handleMakeAdmin = (user) => {
         const isAdmin = user.role === 'ADMIN';
+        const userId = user.id || user._id;
         Swal.fire({
             title: isAdmin ? "Remove Admin Role?" : "Make Admin?",
             text: isAdmin
@@ -61,7 +62,7 @@ const UserManagement = () => {
                 : `${user.firstName || 'User'} will get admin privileges.`,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: isAdmin ? "#dc2626" : "#2563eb",
+            confirmButtonColor: "#01788E",
             cancelButtonColor: "#6b7280",
             confirmButtonText: isAdmin ? "Remove Admin" : "Make Admin",
             cancelButtonText: "Cancel",
@@ -69,7 +70,7 @@ const UserManagement = () => {
         }).then(async (result) => {
             if (!result.isConfirmed) return;
             try {
-                const res = await axiosSecure.patch(`/auth/change-role/${user.id}`, {
+                const res = await axiosSecure.patch(`/auth/change-role/${userId}`, {
                     role: isAdmin ? 'USER' : 'ADMIN'
                 });
                 if (res.data?.success) {
@@ -88,6 +89,7 @@ const UserManagement = () => {
     };
 
     const handleDeleteUser = (user) => {
+        const userId = user.id || user._id;
         Swal.fire({
             title: "Delete User?",
             text: `"${user.firstName || 'This user'}" will be permanently deleted.`,
@@ -100,7 +102,7 @@ const UserManagement = () => {
         }).then(async (result) => {
             if (!result.isConfirmed) return;
             try {
-                const res = await axiosSecure.delete(`/auth/delete-account/${user.id}`);
+                const res = await axiosSecure.delete(`/auth/delete-account/${userId}`);
                 if (res?.data?.success) {
                     await queryClient.invalidateQueries({ queryKey: ['all-users'] });
                     const newTotal = filteredUsers.length - 1;
@@ -129,22 +131,24 @@ const UserManagement = () => {
 
     const getAvatarColor = (id) => {
         const colors = [
-            'bg-blue-100 text-blue-700',
-            'bg-purple-100 text-purple-700',
-            'bg-emerald-100 text-emerald-700',
-            'bg-amber-100 text-amber-700',
-            'bg-rose-100 text-rose-700',
-            'bg-cyan-100 text-cyan-700',
+            { bg: 'rgba(1,120,142,0.1)', text: '#01788E' },
+            { bg: 'rgba(124,58,237,0.1)', text: '#7c3aed' },
+            { bg: 'rgba(5,150,105,0.1)', text: '#059669' },
+            { bg: 'rgba(217,119,6,0.1)', text: '#d97706' },
+            { bg: 'rgba(225,29,72,0.1)', text: '#e11d48' },
+            { bg: 'rgba(8,145,178,0.1)', text: '#0891b2' },
         ];
-        const idx = (parseInt(id) || 0) % colors.length;
-        return colors[idx];
+        // works for both numeric and string IDs
+        const charSum = String(id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        return colors[charSum % colors.length];
     };
 
     // Loading
     if (isLoading) return (
         <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-                <div className="w-10 h-10 border-3 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
+                <div className="w-10 h-10 border-[3px] border-gray-200 rounded-full animate-spin mx-auto"
+                    style={{ borderTopColor: '#01788E' }} />
                 <p className="mt-3 text-sm text-gray-500 font-medium">Loading users...</p>
             </div>
         </div>
@@ -156,21 +160,22 @@ const UserManagement = () => {
                 <p className="text-red-500 font-medium">Failed to load users</p>
                 <button
                     onClick={() => queryClient.refetchQueries({ queryKey: ['all-users'] })}
-                    className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg"
+                    className="mt-3 px-4 py-2 text-white text-sm rounded-lg"
+                    style={{ background: '#01788E' }}
                 >Retry</button>
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-50/60 p-3 sm:p-5 md:p-6">
+        <div className="min-h-screen p-2 sm:p-4 md:p-4">
             <div className="max-w-6xl mx-auto space-y-5">
 
                 {/* ── Header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 flex items-center gap-2.5">
-                            <span className="p-2 bg-blue-600 rounded-xl inline-flex">
+                            <span className="p-2 rounded-xl inline-flex" style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}>
                                 <FaUsers className="text-white text-base sm:text-lg" />
                             </span>
                             User Management
@@ -182,17 +187,17 @@ const UserManagement = () => {
 
                     {/* Stat pills */}
                     <div className="flex items-center gap-2 self-start sm:self-auto">
-                        <div className="px-3 py-2 bg-white rounded-xl border border-gray-200 shadow-sm text-center min-w-[64px]">
-                            <p className="text-lg font-bold text-gray-900">{allUsers.length}</p>
-                            <p className="text-[10px] text-gray-500 font-medium">Total</p>
+                        <div className="px-3 py-2 bg-white rounded-xl border border-gray-200 shadow-sm text-center min-w-[60px] sm:min-w-16">
+                            <p className="text-base sm:text-lg font-bold text-gray-900">{allUsers.length}</p>
+                            <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium">Total</p>
                         </div>
-                        <div className="px-3 py-2 bg-purple-50 rounded-xl border border-purple-100 shadow-sm text-center min-w-[64px]">
-                            <p className="text-lg font-bold text-purple-700">{adminCount}</p>
-                            <p className="text-[10px] text-purple-500 font-medium">Admins</p>
+                        <div className="px-3 py-2 bg-purple-50 rounded-xl border border-purple-100 shadow-sm text-center min-w-[60px] sm:min-w-16">
+                            <p className="text-base sm:text-lg font-bold text-purple-700">{adminCount}</p>
+                            <p className="text-[10px] sm:text-[11px] text-purple-500 font-medium">Admins</p>
                         </div>
-                        <div className="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm text-center min-w-[64px]">
-                            <p className="text-lg font-bold text-emerald-700">{userCount}</p>
-                            <p className="text-[10px] text-emerald-500 font-medium">Users</p>
+                        <div className="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm text-center min-w-[60px] sm:min-w-16">
+                            <p className="text-base sm:text-lg font-bold text-emerald-700">{userCount}</p>
+                            <p className="text-[10px] sm:text-[11px] text-emerald-500 font-medium">Users</p>
                         </div>
                     </div>
                 </div>
@@ -201,7 +206,7 @@ const UserManagement = () => {
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
                     {/* Toolbar */}
-                    <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white">
                         <div className="flex flex-col sm:flex-row gap-3">
                             {/* Search */}
                             <div className="relative flex-1">
@@ -211,7 +216,9 @@ const UserManagement = () => {
                                     placeholder="Search by name, phone or email..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-sm bg-white"
+                                    className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-xl outline-none transition-all text-sm bg-white"
+                                    onFocus={e => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)'; }}
+                                    onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
                                 />
                                 {searchTerm && (
                                     <button
@@ -228,7 +235,9 @@ const UserManagement = () => {
                                 <select
                                     value={roleFilter}
                                     onChange={(e) => setRoleFilter(e.target.value)}
-                                    className="px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-sm bg-white"
+                                    className="px-3 py-2.5 border border-gray-200 rounded-xl outline-none transition-all text-xs sm:text-sm bg-white"
+                                    onFocus={e => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)'; }}
+                                    onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
                                 >
                                     <option value="all">All Roles</option>
                                     <option value="ADMIN">Admin</option>
@@ -239,7 +248,9 @@ const UserManagement = () => {
                                 <select
                                     value={itemsPerPage}
                                     onChange={(e) => { setItemsPerPage(parseInt(e.target.value)); setCurrentPage(1); }}
-                                    className="px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-sm bg-white"
+                                    className="px-3 py-2.5 border border-gray-200 rounded-xl outline-none transition-all text-xs sm:text-sm bg-white"
+                                    onFocus={e => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)'; }}
+                                    onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
                                 >
                                     <option value="5">5 / page</option>
                                     <option value="10">10 / page</option>
@@ -255,11 +266,11 @@ const UserManagement = () => {
                         <table className="w-full">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-100">
-                                    <th className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
-                                    <th className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                                    <th className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
-                                    <th className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    {['#', 'User', 'Contact', 'Role', 'Actions'].map(h => (
+                                        <th key={h} className="py-3 px-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                                            {h}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -273,62 +284,73 @@ const UserManagement = () => {
                                             </p>
                                         </td>
                                     </tr>
-                                ) : currentUsers.map((user, idx) => (
-                                    <tr key={user.id} className="hover:bg-gray-50/60 transition-colors group">
-                                        <td className="py-3 px-4">
-                                            <span className="text-xs font-semibold text-gray-400">#{startIndex + idx + 1}</span>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getAvatarColor(user.id)}`}>
-                                                    {getUserInitials(user)}
+                                ) : currentUsers.map((user, idx) => {
+                                    const uid = user.id || user._id;
+                                    const avatarColor = getAvatarColor(uid);
+                                    return (
+                                        <tr key={uid} className="hover:bg-gray-50/60 transition-colors">
+                                            <td className="py-3 px-4">
+                                                <span className="text-xs font-semibold text-gray-400">#{startIndex + idx + 1}</span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                                                        style={{ background: avatarColor.bg, color: avatarColor.text }}
+                                                    >
+                                                        {getUserInitials(user)}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">
+                                                        {user.firstName || user.lastName
+                                                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                                                            : <span className="text-gray-400 italic">Unnamed</span>}
+                                                    </span>
                                                 </div>
-                                                <span className="text-sm font-medium text-gray-900">
-                                                    {user.firstName || user.lastName
-                                                        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                                                        : <span className="text-gray-400 italic">Unnamed</span>}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <p className="text-sm text-gray-900">{user.phone || <span className="text-gray-400">—</span>}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{user.email || '—'}</p>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${user.role === 'ADMIN'
-                                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <p className="text-sm text-gray-900">{user.phone || <span className="text-gray-400">—</span>}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{user.email || '—'}</p>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                                    user.role === 'ADMIN'
+                                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                 }`}>
-                                                {user.role === 'ADMIN'
-                                                    ? <RiShieldUserLine className="text-xs" />
-                                                    : <RiUserLine className="text-xs" />}
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleMakeAdmin(user)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${user.role === 'ADMIN'
-                                                            ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
-                                                            : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                                        }`}
-                                                >
                                                     {user.role === 'ADMIN'
-                                                        ? <><RiUserLine /> Remove Admin</>
-                                                        : <><RiShieldUserLine /> Make Admin</>}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteUser(user)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
-                                                    title="Delete user"
-                                                >
-                                                    <RiDeleteBin5Line className="text-base" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                        ? <RiShieldUserLine className="text-xs" />
+                                                        : <RiUserLine className="text-xs" />}
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleMakeAdmin(user)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all"
+                                                        style={user.role === 'ADMIN'
+                                                            ? { background: 'rgba(234,88,12,0.07)', color: '#c2410c', borderColor: 'rgba(234,88,12,0.2)' }
+                                                            : { background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }
+                                                        }
+                                                        onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                                                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                                    >
+                                                        {user.role === 'ADMIN'
+                                                            ? <><RiUserLine /> Remove Admin</>
+                                                            : <><RiShieldUserLine /> Make Admin</>}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
+                                                        title="Delete user"
+                                                    >
+                                                        <RiDeleteBin5Line className="text-base" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -343,54 +365,63 @@ const UserManagement = () => {
                                     {searchTerm ? 'Try adjusting your search' : 'Users will appear here once they register'}
                                 </p>
                             </div>
-                        ) : currentUsers.map((user, idx) => (
-                            <div key={user.id} className="px-4 py-4 hover:bg-gray-50/60 transition-colors">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getAvatarColor(user.id)}`}>
-                                            {getUserInitials(user)}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                                    {user.firstName || user.lastName
-                                                        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                                                        : <span className="text-gray-400 italic">Unnamed</span>}
-                                                </p>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${user.role === 'ADMIN'
-                                                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                    }`}>
-                                                    {user.role}
-                                                </span>
+                        ) : currentUsers.map((user) => {
+                            const uid = user.id || user._id;
+                            const avatarColor = getAvatarColor(uid);
+                            return (
+                                <div key={uid} className="px-4 py-4 hover:bg-gray-50/60 transition-colors">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div
+                                                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                                                style={{ background: avatarColor.bg, color: avatarColor.text }}
+                                            >
+                                                {getUserInitials(user)}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-0.5">{user.phone || '—'}</p>
-                                            <p className="text-xs text-gray-400 truncate">{user.email || '—'}</p>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                                        {user.firstName || user.lastName
+                                                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                                                            : <span className="text-gray-400 italic text-xs">Unnamed</span>}
+                                                    </p>
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                                        user.role === 'ADMIN'
+                                                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {user.role}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">{user.phone || '—'}</p>
+                                                <p className="text-[11px] sm:text-xs text-gray-400 truncate max-w-[180px]">{user.email || '—'}</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Mobile actions */}
-                                    <div className="flex items-center gap-1.5 shrink-0">
-                                        <button
-                                            onClick={() => handleMakeAdmin(user)}
-                                            className={`p-2 rounded-lg border text-sm transition-all ${user.role === 'ADMIN'
-                                                    ? 'bg-orange-50 text-orange-600 border-orange-200'
-                                                    : 'bg-blue-50 text-blue-600 border-blue-200'
-                                                }`}
-                                            title={user.role === 'ADMIN' ? 'Remove Admin' : 'Make Admin'}
-                                        >
-                                            {user.role === 'ADMIN' ? <RiUserLine /> : <RiShieldUserLine />}
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteUser(user)}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-gray-200 hover:border-red-100 transition-all"
-                                        >
-                                            <RiDeleteBin5Line className="text-sm" />
-                                        </button>
+                                        {/* Mobile action buttons */}
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                                onClick={() => handleMakeAdmin(user)}
+                                                className="p-2 rounded-lg border text-sm transition-all"
+                                                style={user.role === 'ADMIN'
+                                                    ? { background: 'rgba(234,88,12,0.07)', color: '#c2410c', borderColor: 'rgba(234,88,12,0.2)' }
+                                                    : { background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }
+                                                }
+                                                title={user.role === 'ADMIN' ? 'Remove Admin' : 'Make Admin'}
+                                            >
+                                                {user.role === 'ADMIN' ? <RiUserLine /> : <RiShieldUserLine />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(user)}
+                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-gray-200 hover:border-red-100 transition-all"
+                                            >
+                                                <RiDeleteBin5Line className="text-sm" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* ── Pagination ── */}
@@ -423,10 +454,11 @@ const UserManagement = () => {
                                             <button
                                                 key={pageNum}
                                                 onClick={() => goToPage(pageNum)}
-                                                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${currentPage === pageNum
-                                                        ? 'bg-blue-600 text-white shadow-sm'
-                                                        : 'border border-gray-200 text-gray-600 hover:bg-gray-100'
-                                                    }`}
+                                                className="w-8 h-8 rounded-lg text-xs font-semibold transition-colors border"
+                                                style={currentPage === pageNum
+                                                    ? { background: '#01788E', color: '#fff', borderColor: '#01788E' }
+                                                    : { background: '#fff', color: '#4b5563', borderColor: '#e5e7eb' }
+                                                }
                                             >
                                                 {pageNum}
                                             </button>
@@ -451,8 +483,6 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
-
 
 
 

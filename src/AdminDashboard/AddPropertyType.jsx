@@ -15,12 +15,18 @@ import { FiLayers, FiDollarSign } from "react-icons/fi";
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
 
-// ── Shared styles — blue palette matching other components ────────────────────
-const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-gray-50/30 placeholder:text-gray-300";
-const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
-const errCls   = "text-red-500 text-xs mt-1";
+// ── Shared styles — teal palette ──────────────────────────────────────────────
+const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm outline-none transition-all bg-gray-50/30 placeholder:text-gray-300";
+const labelCls = "block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
+const errCls = "text-red-500 text-[11px] mt-1";
 
-// ── Reusable field wrapper ────────────────────────────────────────────────────
+// ── Input focus helper ────────────────────────────────────────────────────────
+const tealFocus = {
+    onFocus: (e) => { e.target.style.borderColor = '#01788E'; e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)'; },
+    onBlur: (e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }
+};
+
+// ── Field wrapper ─────────────────────────────────────────────────────────────
 const Field = ({ label, error, hint, children }) => (
     <div>
         {label && <label className={labelCls}>{label}</label>}
@@ -33,10 +39,10 @@ const Field = ({ label, error, hint, children }) => (
 // ── Section divider ───────────────────────────────────────────────────────────
 const SectionHead = ({ icon: Icon, label }) => (
     <div className="flex items-center gap-2 pt-1 pb-1">
-        <div className="p-1.5 bg-blue-100 rounded-lg shrink-0">
-            <Icon className="text-blue-600 text-xs" />
+        <div className="p-1.5 rounded-lg shrink-0" style={{ background: 'rgba(1,120,142,0.1)' }}>
+            <Icon className="text-xs" style={{ color: '#01788E' }} />
         </div>
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+        <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
         <div className="flex-1 h-px bg-gray-100" />
     </div>
 );
@@ -51,17 +57,17 @@ const Modal = ({ title, onClose, children }) => (
             className="relative bg-white w-full max-w-xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
         >
-            {/* Blue top strip — matches other components */}
-            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-blue-600 shrink-0" />
+            {/* Teal top strip */}
+            <div className="h-1 w-full shrink-0" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white shrink-0">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white shrink-0">
                 <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 bg-blue-100 rounded-lg">
-                        <GoBrowser className="text-blue-600 text-base" />
+                    <div className="p-1.5 rounded-lg" style={{ background: 'rgba(1,120,142,0.1)' }}>
+                        <GoBrowser className="text-base" style={{ color: '#01788E' }} />
                     </div>
                     <div>
-                        <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+                        <h2 className="text-sm sm:text-base font-semibold text-gray-900">{title}</h2>
                         <p className="text-[11px] text-gray-400 mt-0.5">Fill in the details below</p>
                     </div>
                 </div>
@@ -83,10 +89,10 @@ const Modal = ({ title, onClose, children }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AddPropertyType() {
-    const [serviceType]            = useDashboardServiceType();
-    const [propertyType, refetch]  = useDashboardPropertyType();
-    const axiosSecure              = useAxiosSecure();
-    const [loading, setLoading]    = useState(false);
+    const [serviceType] = useDashboardServiceType();
+    const [propertyType, refetch] = useDashboardPropertyType();
+    const axiosSecure = useAxiosSecure();
+    const [loading, setLoading] = useState(false);
 
     const {
         register,
@@ -103,14 +109,14 @@ export default function AddPropertyType() {
         formState: { errors: editErrors }
     } = useForm();
 
-    const [isModalOpen,     setIsModalOpen]     = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedItem,    setSelectedItem]    = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
         const handleEscape = (e) => {
             if (e.key !== 'Escape') return;
-            setIsModalOpen(prev     => { if (prev) { reset();     return false; } return prev; });
+            setIsModalOpen(prev => { if (prev) { reset(); return false; } return prev; });
             setIsEditModalOpen(prev => { if (prev) { resetEdit(); setSelectedItem(null); return false; } return prev; });
         };
         window.addEventListener('keydown', handleEscape);
@@ -123,10 +129,11 @@ export default function AddPropertyType() {
         resetEdit();
         setSelectedItem(item);
         setIsEditModalOpen(true);
-        setValue("title",         item.title         ?? "");
-        setValue("description",   item.description   ?? "");
-        setValue("startFrom",     item.startFrom     ?? "");
-        setValue("serviceTypeId", item.serviceTypeId ?? "");
+        // BUG FIX: use _id fallback for serviceTypeId population
+        setValue("title", item.title ?? "");
+        setValue("description", item.description ?? "");
+        setValue("startFrom", item.startFrom ?? "");
+        setValue("serviceTypeId", item.serviceTypeId || item.serviceType?.id || (item.serviceType?._id ?? ""));
     };
 
     const closeEditModal = () => { resetEdit(); setIsEditModalOpen(false); setSelectedItem(null); };
@@ -136,7 +143,7 @@ export default function AddPropertyType() {
         const fd = new FormData();
         fd.append("image", file);
         const res = await fetch(image_hosting_api, { method: "POST", body: fd });
-        const r   = await res.json();
+        const r = await res.json();
         if (!r.success) throw new Error("Image upload failed");
         return r.data.url;
     };
@@ -147,11 +154,11 @@ export default function AddPropertyType() {
         try {
             const imageUrl = await uploadImage(data.image[0]);
             const finalData = {
-                title:         data.title,
-                description:   data.description,
-                startFrom:     data.startFrom,
+                title: data.title,
+                description: data.description,
+                startFrom: data.startFrom,
                 serviceTypeId: data.serviceTypeId,
-                image:         imageUrl,
+                image: imageUrl,
             };
             const res = await axiosSecure.post(`/property-type/create`, finalData);
             if (res?.data?.success) {
@@ -171,16 +178,19 @@ export default function AddPropertyType() {
         setLoading(true);
         try {
             let imageUrl = selectedItem.image;
-            if (data.image?.length > 0) imageUrl = await uploadImage(data.image[0]);
-
+            if (data.image && data.image.length > 0) {
+                imageUrl = await uploadImage(data.image[0]);
+            }
             const updatedData = {
-                title:         data.title,
-                description:   data.description,
-                startFrom:     data.startFrom,
+                title: data.title,
+                description: data.description,
+                startFrom: data.startFrom,
                 serviceTypeId: data.serviceTypeId,
-                image:         imageUrl,
+                image: imageUrl,
             };
-            const res = await axiosSecure.patch(`/property-type/update/${selectedItem.id}`, updatedData);
+            // BUG FIX: _id fallback for edit endpoint
+            const itemId = selectedItem.id || selectedItem._id;
+            const res = await axiosSecure.patch(`/property-type/update/${itemId}`, updatedData);
             if (res?.data?.success) {
                 toast.success("Updated successfully");
                 closeEditModal();
@@ -195,19 +205,20 @@ export default function AddPropertyType() {
 
     // ── Delete ────────────────────────────────────────────────────────────────
     const handleDeleteServiceType = (service) => {
+        const serviceId = service.id || service._id;
         Swal.fire({
-            title:              "Are you sure?",
-            text:               `"${service.title}" will be permanently deleted.`,
-            icon:               "warning",
-            showCancelButton:   true,
-            confirmButtonColor: "#2563eb",
-            cancelButtonColor:  "#d33",
-            confirmButtonText:  "Yes, delete it!",
-            reverseButtons:     true,
+            title: "Are you sure?",
+            text: `"${service.title}" will be permanently deleted.`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#01788E",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!",
+            reverseButtons: true,
         }).then(async (result) => {
             if (!result.isConfirmed) return;
             try {
-                const res = await axiosSecure.delete(`/property-type/delete/${service.id}`);
+                const res = await axiosSecure.delete(`/property-type/delete/${serviceId}`);
                 if (res?.data?.success) {
                     refetch();
                     toast.success("Property type deleted");
@@ -228,13 +239,13 @@ export default function AddPropertyType() {
 
             <Field label="Title" error={errs.title?.message}>
                 <input type="text" placeholder="e.g. Studio Apartment"
-                    className={inputCls}
+                    className={inputCls} {...tealFocus}
                     {...reg("title", { required: "Title is required" })} />
             </Field>
 
             <Field label="Description" error={errs.description?.message}>
                 <textarea placeholder="Describe this property type…" rows={3}
-                    className={`${inputCls} resize-none`}
+                    className={`${inputCls} resize-none`} {...tealFocus}
                     {...reg("description", { required: "Description is required" })} />
             </Field>
 
@@ -242,11 +253,11 @@ export default function AddPropertyType() {
 
             <Field label="Start From (AED)" error={errs.startFrom?.message}>
                 <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">AED</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-gray-400">AED</span>
                     <input
                         type="number" placeholder="0"
                         className={`${inputCls} pl-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                        onWheel={(e) => e.target.blur()}
+                        onWheel={(e) => e.target.blur()} {...tealFocus}
                         {...reg("startFrom", {
                             required: "Start from price is required",
                             min: { value: 0, message: "Price cannot be negative" }
@@ -255,14 +266,17 @@ export default function AddPropertyType() {
             </Field>
 
             <Field label="Service Type" error={errs.serviceTypeId?.message}>
-                <select className={inputCls}
+                <select className={inputCls} {...tealFocus}
                     {...reg("serviceTypeId", { required: "Service type is required" })}>
                     <option value="">Choose a service type…</option>
-                    {serviceType.map((c) => (
-                        <option key={c.id} value={c.id}>
-                            {c.title} — {c.service?.title}
-                        </option>
-                    ))}
+                    {serviceType.map((c) => {
+                        const cid = c.id || c._id;
+                        return (
+                            <option key={cid} value={cid}>
+                                {c.title} — {c.service?.title}
+                            </option>
+                        );
+                    })}
                 </select>
             </Field>
 
@@ -275,12 +289,14 @@ export default function AddPropertyType() {
             >
                 <input
                     type="file" accept="image/*"
-                    className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-xl px-2 py-2 bg-gray-50/30 transition-all cursor-pointer"
+                    className="w-full text-xs sm:text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 border border-gray-200 rounded-xl px-2 py-2 bg-gray-50/30 transition-all cursor-pointer"
                     {...reg("image", isEdit ? {} : { required: true })} />
                 {isEdit && selectedItem?.image && (
-                    <div className="mt-2 flex items-center gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                    <div className="mt-2 flex items-center gap-3 p-3 rounded-xl border"
+                        style={{ background: 'rgba(1,120,142,0.05)', borderColor: 'rgba(1,120,142,0.15)' }}>
                         <img src={selectedItem.image} alt={selectedItem.title}
-                            className="w-12 h-12 object-cover rounded-lg border border-blue-100 shrink-0" />
+                            className="w-12 h-12 object-cover rounded-lg shrink-0 border"
+                            style={{ borderColor: 'rgba(1,120,142,0.2)' }} />
                         <div>
                             <p className="text-xs font-semibold text-gray-600">Current photo</p>
                             <p className="text-[11px] text-gray-400 mt-0.5">Upload a new one to replace</p>
@@ -293,7 +309,10 @@ export default function AddPropertyType() {
             <div className="pt-2">
                 <button
                     type="submit" disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-blue-100 hover:shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 text-white font-semibold rounded-xl text-sm transition-all shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                    onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'linear-gradient(135deg, #015f70, #014d5a)'; }}
+                    onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #01788E, #015f70)'}
                 >
                     {loading ? (
                         <>
@@ -315,13 +334,14 @@ export default function AddPropertyType() {
 
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-gray-50/70 p-3 sm:p-5 md:p-6">
+        <div className="min-h-screen p-2 sm:p-4 md:p-4">
             <div className="max-w-5xl mx-auto space-y-5">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm shrink-0">
+                        <div className="p-2 sm:p-2.5 rounded-xl shadow-sm shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}>
                             <GoBrowser className="text-base sm:text-xl text-white" />
                         </div>
                         <div>
@@ -335,15 +355,21 @@ export default function AddPropertyType() {
                     </div>
 
                     <div className="flex items-center gap-3 self-start sm:self-auto">
-                        <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-2">
-                            <FiLayers className="text-blue-600 text-sm" />
-                            <span className="text-xs sm:text-sm font-semibold text-blue-700">
+                        {/* Count pill */}
+                        <div className="px-3 py-1.5 rounded-lg border flex items-center gap-2"
+                            style={{ background: 'rgba(1,120,142,0.07)', borderColor: 'rgba(1,120,142,0.2)' }}>
+                            <FiLayers className="text-sm" style={{ color: '#01788E' }} />
+                            <span className="text-xs sm:text-sm font-semibold" style={{ color: '#01788E' }}>
                                 {propertyType.length} {propertyType.length === 1 ? "Type" : "Types"}
                             </span>
                         </div>
+                        {/* Add button */}
                         <button
                             onClick={() => { reset(); setIsModalOpen(true); }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
+                            className="flex items-center gap-2 px-4 py-2.5 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                            style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #015f70, #014d5a)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #01788E, #015f70)'}
                         >
                             <MdOutlineAddPhotoAlternate className="text-base" />
                             Add Type
@@ -357,14 +383,18 @@ export default function AddPropertyType() {
                     {/* Empty state */}
                     {propertyType.length === 0 && (
                         <div className="py-16 text-center px-4">
-                            <div className="w-14 h-14 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
-                                <IoImageOutline className="w-7 h-7 text-blue-300" />
+                            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+                                style={{ background: 'rgba(1,120,142,0.08)' }}>
+                                <IoImageOutline className="w-7 h-7" style={{ color: 'rgba(1,120,142,0.5)' }} />
                             </div>
                             <p className="text-sm font-semibold text-gray-600">No property types yet</p>
                             <p className="text-xs text-gray-400 mt-1 mb-5">Add your first property type to get started</p>
                             <button
                                 onClick={() => { reset(); setIsModalOpen(true); }}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold text-sm rounded-xl border border-blue-100 transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl border transition-all"
+                                style={{ background: 'rgba(1,120,142,0.07)', color: '#01788E', borderColor: 'rgba(1,120,142,0.2)' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(1,120,142,0.12)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(1,120,142,0.07)'}
                             >
                                 <MdOutlineAddPhotoAlternate /> Add your first type
                             </button>
@@ -386,72 +416,80 @@ export default function AddPropertyType() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {propertyType.map((prop, idx) => (
-                                            <tr key={prop.id ?? idx} className="hover:bg-gray-50/60 transition-colors">
-                                                <td className="py-3.5 px-5">
-                                                    <span className="text-xs font-semibold text-gray-400">#{idx + 1}</span>
-                                                </td>
-                                                <td className="py-3.5 px-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <img src={prop.image} alt={prop.title}
-                                                            className="w-11 h-11 object-cover rounded-xl border border-gray-200 shrink-0" />
-                                                        <div className="min-w-0">
-                                                            <p className="text-sm font-semibold text-gray-900 truncate">{prop.title}</p>
-                                                            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">
-                                                                {[prop.serviceType?.title, prop.serviceType?.service?.title].filter(Boolean).join(" · ")}
-                                                            </p>
+                                        {propertyType.map((prop, idx) => {
+                                            const propId = prop.id || prop._id;
+                                            return (
+                                                <tr key={propId ?? idx} className="hover:bg-gray-50/60 transition-colors">
+                                                    <td className="py-3.5 px-5">
+                                                        <span className="text-xs font-semibold text-gray-400">#{idx + 1}</span>
+                                                    </td>
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <img src={prop.image} alt={prop.title}
+                                                                className="w-11 h-11 object-cover rounded-xl border border-gray-200 shrink-0" />
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-900 truncate">{prop.title}</p>
+                                                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">
+                                                                    {[prop.serviceType?.title, prop.serviceType?.service?.title].filter(Boolean).join(" · ")}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3.5 px-5">
-                                                    <span className="text-sm font-semibold text-blue-600">
-                                                        AED {prop.startFrom ?? "—"}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-5">
-                                                    <div className="flex items-center gap-2">
-                                                        <button onClick={() => openEditModal(prop)}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-all">
-                                                            <RiEditBoxLine /> Edit
-                                                        </button>
-                                                        <button onClick={() => handleDeleteServiceType(prop)}
-                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
-                                                            title="Delete">
-                                                            <RiDeleteBin5Line className="text-base" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="py-3.5 px-5">
+                                                        <span className="text-sm font-semibold" style={{ color: '#01788E' }}>
+                                                            AED {prop.startFrom ?? "—"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="flex items-center gap-2">
+                                                            <button onClick={() => openEditModal(prop)}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-all">
+                                                                <RiEditBoxLine /> Edit
+                                                            </button>
+                                                            <button onClick={() => handleDeleteServiceType(prop)}
+                                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
+                                                                title="Delete">
+                                                                <RiDeleteBin5Line className="text-base" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
 
                             {/* Mobile Cards */}
                             <div className="sm:hidden divide-y divide-gray-100">
-                                {propertyType.map((prop, idx) => (
-                                    <div key={prop.id ?? idx} className="p-4 flex items-center gap-3 hover:bg-gray-50/60 transition-colors">
-                                        <img src={prop.image} alt={prop.title}
-                                            className="w-14 h-14 object-cover rounded-xl border border-gray-200 shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-900 truncate">{prop.title}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5 truncate">
-                                                {[prop.serviceType?.title, prop.serviceType?.service?.title].filter(Boolean).join(" · ")}
-                                            </p>
-                                            <p className="text-sm font-semibold text-blue-600 mt-1">AED {prop.startFrom ?? "—"}</p>
+                                {propertyType.map((prop, idx) => {
+                                    const propId = prop.id || prop._id;
+                                    return (
+                                        <div key={propId ?? idx} className="p-4 flex items-center gap-3 hover:bg-gray-50/60 transition-colors">
+                                            <img src={prop.image} alt={prop.title}
+                                                className="w-14 h-14 object-cover rounded-xl border border-gray-200 shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-900 truncate">{prop.title}</p>
+                                                <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+                                                    {[prop.serviceType?.title, prop.serviceType?.service?.title].filter(Boolean).join(" · ")}
+                                                </p>
+                                                <p className="text-sm font-semibold mt-1" style={{ color: '#01788E' }}>
+                                                    AED {prop.startFrom ?? "—"}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 shrink-0">
+                                                <button onClick={() => openEditModal(prop)}
+                                                    className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg transition-all">
+                                                    <RiEditBoxLine className="text-sm" />
+                                                </button>
+                                                <button onClick={() => handleDeleteServiceType(prop)}
+                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-100 rounded-lg transition-all">
+                                                    <RiDeleteBin5Line className="text-sm" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-1.5 shrink-0">
-                                            <button onClick={() => openEditModal(prop)}
-                                                className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg transition-all">
-                                                <RiEditBoxLine className="text-sm" />
-                                            </button>
-                                            <button onClick={() => handleDeleteServiceType(prop)}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-100 rounded-lg transition-all">
-                                                <RiDeleteBin5Line className="text-sm" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </>
                     )}
@@ -478,6 +516,8 @@ export default function AddPropertyType() {
         </div>
     );
 };
+
+
 
 
 
