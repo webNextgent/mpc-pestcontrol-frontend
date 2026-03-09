@@ -170,6 +170,7 @@ const AdminBooking = () => {
 
     const handleUpdateBooking = async () => {
         if (!selectedBooking) return;   // guard BEFORE setLoading
+
         setLoading(true);
 
         try {
@@ -516,7 +517,7 @@ const AdminBooking = () => {
                                             </p>
                                             <p className="text-[10px] text-gray-400 mt-0.5 font-mono">#{book.id}</p>
                                         </div>
-                                        <div className="text-right flex-shrink-0">
+                                        <div className="text-right shrink-0">
                                             <p className="text-lg font-bold text-gray-900">{formatCurrency(book.totalPay)}</p>
                                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusStyle(book.status)}`}>
                                                 {book.status}
@@ -528,7 +529,7 @@ const AdminBooking = () => {
                                         {/* Customer */}
                                         {fullName !== 'N/A' && (
                                             <div className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-xl">
-                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                                                     <FaUser className="w-3 h-3 text-blue-500" />
                                                 </div>
                                                 <div className="min-w-0">
@@ -560,7 +561,7 @@ const AdminBooking = () => {
                                         {/* Address */}
                                         {book.address && (
                                             <div className="flex items-start gap-2 p-2.5 border border-gray-100 rounded-xl">
-                                                <FaMapMarkerAlt className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                <FaMapMarkerAlt className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" />
                                                 <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">{book.address}</p>
                                             </div>
                                         )}
@@ -715,7 +716,7 @@ const AdminBooking = () => {
                                 </div>
                             </div>
                             <button onClick={() => setBookingDetails(null)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0">
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors shrink-0">
                                 <IoClose className="w-5 h-5" />
                             </button>
                         </div>
@@ -796,7 +797,7 @@ const AdminBooking = () => {
                                     </div>
 
                                     {/* Map preview */}
-                                    <div className="rounded-2xl overflow-hidden border border-gray-200 h-[160px] sm:h-[185px]">
+                                    <div className="rounded-2xl overflow-hidden border border-gray-200 h-40 sm:h-[185px]">
                                         {(() => {
                                             const { latitude, longitude } = getCoordinates(bookingDetails);
                                             return (
