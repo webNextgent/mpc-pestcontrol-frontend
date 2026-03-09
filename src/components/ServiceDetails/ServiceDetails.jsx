@@ -3,7 +3,7 @@ const ServiceDetails = ({ title, currentStep }) => {
 
   return (
     <div className="flex flex-col items-center justify-center mt-8 md:mt-4 text-center px-4 mb-5">
-      <h2 className="text-xl sm:text-2xl md:text-[28px] mb-3.5 text-[#5D4F52]">
+      <h2 className="hidden md:block text-xl sm:text-2xl md:text-[28px] mb-3.5 text-[#5D4F52]">
         {title}
       </h2>
 
