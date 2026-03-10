@@ -290,7 +290,7 @@ const DateTime = () => {
                             <div
                               key={`${day.date}-${index}`}
                               onClick={() => setSelectedDay(day.date)}
-                              className={`snap-start min-w-[80px] sm:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
+                              className={`snap-start min-w-20 sm:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
                                                                 ${isActive ? "bg-[#B2D7DE] border-transparent shadow" : "bg-white border-gray-200 hover:bg-gray-50"}`}
                             >
                               <div className="text-center py-1.5 sm:py-2">
@@ -620,6 +620,18 @@ const DateTime = () => {
 };
 
 export default DateTime;
+
+
+
+
+
+
+
+
+
+
+
+
 
 // main component code
 // /* eslint-disable no-unused-vars */

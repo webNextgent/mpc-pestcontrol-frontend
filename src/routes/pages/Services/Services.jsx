@@ -37,6 +37,7 @@ const Services = () => {
     const [open, setOpen] = useState(false);
     const isManualClick = useRef(false);
     const [searchOpen, setSearchOpen] = useState(false);
+    
 
     // ── Scroll active button into view (scroll-spy driven) ──────────────────
     useEffect(() => {
@@ -153,7 +154,7 @@ const Services = () => {
                 <div className="md:w-[60%] md:mb-4 md:space-y-4">
 
                     {/* Mobile Header (back + search) */}
-                    <div className="md:hidden absolute top-20 z-40 w-full p-4">
+                    <div className="md:hidden absolute top-14 z-40 w-full p-4">
                         <div className="flex items-center justify-between mt-5">
                             {/* Back button */}
                             <div className="p-1.5 bg-white rounded-full border">
@@ -454,11 +455,11 @@ const Services = () => {
                                 <p className="text-[10px] text-gray-500 font-medium uppercase">View Summary</p>
                                 <div className="flex items-center gap-1.5 justify-center">
                                     <img src={dirhum} className="w-3.5 h-3.5" alt="" />
-                                    <span className="text-base font-bold text-gray-900">
+                                    <span className="text-sm sm:text-base font-bold text-gray-900">
                                         {totalAfterDiscount.toFixed(2)}
                                     </span>
                                     <span className="text-gray-400 text-sm">›</span>
-                                </div>
+                                </div> 
                             </button>
 
                             {/* Next Button */}
@@ -482,7 +483,18 @@ export default Services;
 
 
 
-// main component 
+
+
+
+
+
+
+
+
+
+
+
+// main component code
 // /* eslint-disable react-hooks/exhaustive-deps */
 // import ServiceDetails from "../../../components/ServiceDetails/ServiceDetails";
 // import Summery from "../../../components/Summery/Summery";

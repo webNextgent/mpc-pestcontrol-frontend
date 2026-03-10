@@ -130,7 +130,7 @@ const ContentModal = ({ setShowModal, property }) => {
                                                         onClick={() => handelDetails(item)}
                                                         className="cursor-pointer"
                                                     >
-                                                        <h3 className="text-[17px] sm:text-base font-medium line-clamp-1">
+                                                        <h3 className="text-[14px] sm:text-base font-medium line-clamp-1">
                                                             {item.title}
                                                         </h3>
                                                         <p className="text-gray-800 text-[12px] sm:text-sm mt-1 line-clamp-2">
@@ -213,7 +213,7 @@ const ContentModal = ({ setShowModal, property }) => {
                     onClick={closeDetailModal}
                 >
                     <div
-                        className="bg-white rounded-xl shadow-2xl w-full max-w-md md:max-w-[560px] max-h-[80vh] md:max-h-[88vh] flex flex-col relative overflow-hidden"
+                        className="bg-white rounded shadow-2xl w-full max-w-md md:max-w-[560px] max-h-[80vh] md:max-h-[88vh] flex flex-col relative overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Close Button */}
@@ -272,12 +272,13 @@ const ContentModal = ({ setShowModal, property }) => {
                         </div>
 
                         {/* Footer */}
-                        <div className="shrink-0 border-t border-gray-100 px-4 sm:px-6 py-4">
+                        <div className="shrink-0 border-t border-gray-100 px-4 sm:px-6 py-2.5">
                             {/* Quantity row */}
                             <div className="flex items-center justify-center gap-4 sm:gap-6 mb-4">
                                 <button
                                     onClick={() => handleRemove(selectedItem.id || selectedItem._id)}
-                                    className="w-9 h-9 flex items-center justify-center border border-gray-300 text-xl text-gray-600 rounded-full hover:bg-gray-50 transition-colors"
+                                    className="w-7 h-7 flex justify-center items-center pb-1
+                                                                 border border-[#01788E] rounded-full text-[#01788E] transition-colors text-lg cursor-pointer"
                                 >
                                     −
                                 </button>
@@ -286,7 +287,8 @@ const ContentModal = ({ setShowModal, property }) => {
                                 </span>
                                 <button
                                     disabled
-                                    className="w-9 h-9 flex items-center justify-center border border-gray-300 text-gray-400 text-xl rounded-full cursor-not-allowed"
+                                    className="w-7 h-7 flex justify-center items-center pb-1
+                                                                 border border-[#01788E] rounded-full text-[#01788E] transition-colors text-lg cursor-pointercursor-not-allowed"
                                     title="Maximum quantity reached"
                                 >
                                     +
@@ -303,7 +305,7 @@ const ContentModal = ({ setShowModal, property }) => {
                                             if (!inCart) handleAdd(iid);
                                             closeDetailModal();
                                         }}
-                                        className={`w-full sm:w-[305px] mx-auto py-3 flex items-center justify-center gap-1.5 border font-semibold rounded transition-colors text-sm sm:text-base
+                                        className={`w-full sm:w-[305px] mx-auto py-1.5 flex items-center justify-center gap-1.5 border font-semibold rounded transition-colors text-sm sm:text-base
                                             ${inCart
                                                 ? 'border-gray-300 text-gray-400 cursor-default'
                                                 : 'border-[#01788E] text-[#01788E] hover:bg-[#01788E]/5 cursor-pointer'}`}
