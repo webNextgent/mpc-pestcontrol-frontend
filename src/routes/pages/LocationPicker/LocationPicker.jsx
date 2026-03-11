@@ -14,6 +14,7 @@ import ServiceDetails from "../../../components/ServiceDetails/ServiceDetails";
 import { useNavigate } from "react-router-dom";
 import dirhum from "../../../assets/icon/dirhum.png";
 import toast from "react-hot-toast";
+import { IoIosArrowUp } from "react-icons/io";
 
 const containerStyle = { width: "100%", height: "460px" };
 const defaultCenter = { lat: 25.2048, lng: 55.2708 };
@@ -270,7 +271,7 @@ export default function LocationPicker() {
     );
 
   return (
-    <div>
+    <div className="mb-20">
       {!showMapForNew && (
         <div className="mt-10 md:mt-0">
           <ServiceDetails title="Address" currentStep={2} />
@@ -281,7 +282,7 @@ export default function LocationPicker() {
         {/* ── Main Card ─────────────────────────────────────────────── */}
         <div className="md:w-[60%] mb-4 w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+          <div className="px-6 pt-1 md:pt-4 pb-4 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-gray-900">
               Where do you need the service?
             </h2>
@@ -292,7 +293,7 @@ export default function LocationPicker() {
 
           {/* ── Saved Addresses View ─────────────────────────────── */}
           {saveAddress.length > 0 && !showMapForNew ? (
-            <div className="px-6 py-5 space-y-3">
+            <div className="px-6 md:px-9 py-5 space-y-3">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
                 Saved Addresses
               </h3>
@@ -367,7 +368,7 @@ export default function LocationPicker() {
                     </div>
 
                     {isSelected && (
-                      <div className="flex-shrink-0 flex items-center gap-1 text-[#01788E] text-xs font-semibold">
+                      <div className="shrink-0 flex items-center gap-1 text-[#01788E] text-xs font-semibold">
                         <svg
                           className="w-4 h-4"
                           fill="none"
@@ -460,7 +461,7 @@ export default function LocationPicker() {
                         onClick={handleCurrentAddressClick}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#01788E]/5 transition-colors text-left"
                       >
-                        <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center shrink-0">
                           {isGettingCurrentAddress ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#01788E]" />
                           ) : (
@@ -685,16 +686,14 @@ export default function LocationPicker() {
               onClick={() => setOpen(true)}
               className="cursor-pointer select-none active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg px-1"
             >
-              <p className="text-[10px] text-gray-500 font-medium uppercase">
-                View Summary
-              </p>
-              <div className="flex items-center gap-1.5 justify-center">
-                <img src={dirhum} className="w-3.5 h-3.5" alt="" />
-                <span className="text-base font-bold text-gray-900">
-                  {totalAfterDiscount.toFixed(2)}
-                </span>
-                <span className="text-gray-400 text-sm">›</span>
-              </div>
+             <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
+                    <div className="flex items-center gap-0.5 justify-center">
+                        <img src={dirhum} className="w-3.5 h-3.5 mt-0.5" alt="" />
+                        <span className="text-sm sm:text-base font-bold text-gray-900">
+                            {totalAfterDiscount.toFixed(2)}
+                        </span>
+                        <span className="text-gray-900 text-sm"><IoIosArrowUp /></span>
+                    </div> 
             </button>
             <div className="w-[140px]">
               <NextBtn disabled={isNextDisabled} onClick={handleNextClick} />

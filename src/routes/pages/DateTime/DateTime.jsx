@@ -4,7 +4,7 @@ import NextBtn from "../../../components/NextBtn/NextBtn";
 import ServiceDetails from "../../../components/ServiceDetails/ServiceDetails";
 import Summery from "../../../components/Summery/Summery";
 import { useSummary } from "../../../provider/SummaryProvider";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { IoIosArrowBack, IoIosArrowForward, IoIosArrowUp } from "react-icons/io";
 import { FaCalendarAlt, FaClock } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { useQuery } from "@tanstack/react-query";
@@ -227,14 +227,14 @@ const DateTime = () => {
     );
 
   return (
-    <div className="mt-10 md:mt-0">
+    <div className="mt-10 md:mt-0 pb-20">
       <div className="mt-6 md:mt-0">
         <ServiceDetails title="Date & Time" currentStep={3} />
       </div>
 
       <div className="flex gap-8 mt-5">
         <div className="md:w-[60%] mb-4 space-y-4 w-full">
-          <div className="p-4 sm:p-6 bg-white rounded-lg shadow-sm">
+          <div className="px-6 md:px-9 py-3 bg-white rounded-lg shadow-sm">
             {/* ── Toggle Tabs ── */}
             <div className="mb-5 flex gap-2 sm:gap-3">
               <button
@@ -571,16 +571,14 @@ const DateTime = () => {
               onClick={() => setOpen(true)}
               className="cursor-pointer select-none active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-[#01788E]/30 focus:ring-offset-2 rounded-lg px-1"
             >
-              <p className="text-[10px] text-gray-500 font-medium uppercase">
-                View Summary
-              </p>
-              <div className="flex items-center gap-1.5 justify-center">
-                <img src={dirhum} className="w-3.5 h-3.5" alt="" />
-                <span className="text-sm sm:text-base font-bold text-gray-900">
-                  {totalAfterDiscount.toFixed(2)}
-                </span>
-                <span className="text-gray-400 text-sm">›</span>
-              </div>
+                  <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
+                   <div className="flex items-center gap-0.5 justify-center">
+                       <img src={dirhum} className="w-3.5 h-3.5 mt-0.5" alt="" />
+                       <span className="text-sm sm:text-base font-bold text-gray-900">
+                           {totalAfterDiscount.toFixed(2)}
+                       </span>
+                       <span className="text-gray-900 text-sm"><IoIosArrowUp /></span>
+                   </div> 
             </button>
 
             <div className="w-[140px]">

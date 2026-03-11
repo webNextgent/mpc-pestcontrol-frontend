@@ -15,6 +15,8 @@ import { useSummary } from "../../../provider/SummaryProvider";
 import useAllServices from "../../../hooks/useAllServices";
 import { CiSearch } from "react-icons/ci";
 import { RxCross2 } from "react-icons/rx";
+import { IoIosArrowUp } from "react-icons/io";
+
 
 const HEADER_OFFSET = 180;
 
@@ -140,7 +142,8 @@ const Services = () => {
 
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div>
+        // pb-20 fro hidden footer component 
+        <div className="pb-20">
             {/* hide scrollbar globally for no-scrollbar class */}
             <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
 
@@ -452,13 +455,13 @@ const Services = () => {
                                 onClick={() => setOpen(true)}
                                 className="cursor-pointer select-none active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg px-1"
                             >
-                                <p className="text-[10px] text-gray-500 font-medium uppercase">View Summary</p>
-                                <div className="flex items-center gap-1.5 justify-center">
-                                    <img src={dirhum} className="w-3.5 h-3.5" alt="" />
+                                <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
+                                <div className="flex items-center gap-0.5 justify-center">
+                                    <img src={dirhum} className="w-3.5 h-3.5 mt-0.5" alt="" />
                                     <span className="text-sm sm:text-base font-bold text-gray-900">
                                         {totalAfterDiscount.toFixed(2)}
                                     </span>
-                                    <span className="text-gray-400 text-sm">›</span>
+                                    <span className="text-gray-900 text-sm"><IoIosArrowUp /></span>
                                 </div> 
                             </button>
 

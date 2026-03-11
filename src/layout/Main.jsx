@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "../routes/pages/shared/Navbar/Navbar";
-import Footer from "../routes/pages/shared/Footer/Footer";
 import LoginModal from "../components/LoginModal/LoginModal";
 import CassieModal from "../components/CassieModal/CassieModal";
 import { useSummary } from "../provider/SummaryProvider";
@@ -14,7 +13,7 @@ const Main = () => {
             <div className="max-w-[1000px] mx-auto">
                 <Outlet></Outlet>
             </div>
-            <Footer></Footer>
+            {/* <Footer></Footer> */}
 
             <LoginModal
                 open={loginModalOpen}

@@ -53,7 +53,7 @@ export default function Summary({
                                         <p className="text-xs text-gray-500 mt-0.5 truncate">{serviceTitle[index]}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 font-semibold text-gray-800 shrink-0 ml-2">
+                                <div className="flex items-center gap-0.5 font-semibold text-gray-800 shrink-0 ml-2">
                                     <img src={dirhum} alt="" className="w-3.5 h-3.5" />
                                     <span className="text-sm">{item.price}</span>
                                 </div>
@@ -124,26 +124,26 @@ export default function Summary({
                 <div className="space-y-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Service Charge</span>
-                        <span className="flex items-center gap-1 font-medium text-sm">
+                        <span className="flex items-center gap-0.5 font-medium text-sm">
                             <img src={dirhum} className="w-3.5 h-3.5" alt="" />{servicePrice}
                         </span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Subtotal</span>
-                        <span className="flex items-center gap-1 font-medium text-sm">
+                        <span className="flex items-center gap-0.5 font-medium text-sm">
                             <img src={dirhum} className="w-3.5 h-3.5" alt="" />{subTotal}
                         </span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">VAT (5%)</span>
-                        <span className="flex items-center gap-1 font-medium text-sm">
+                        <span className="flex items-center gap-0.5 font-medium text-sm">
                             <img src={dirhum} className="w-3.5 h-3.5" alt="" />{vat.toFixed(2)}
                         </span>
                     </div>
                     {useDiscount > 0 && (
                         <div className="flex justify-between items-center text-[#01788E]">
                             <span className="text-sm">Discount ({useDiscount}%)</span>
-                            <span className="flex items-center gap-1 font-medium text-sm">
+                            <span className="flex items-center gap-0.5 font-medium text-sm">
                                 -<img src={dirhum} className="w-3.5 h-3.5" alt="" />{useDiscount.toFixed(2)}
                             </span>
                         </div>
@@ -151,7 +151,7 @@ export default function Summary({
                     <div className="border-t border-gray-200 my-1" />
                     <div className="flex justify-between items-center pt-1">
                         <span className="font-semibold text-sm text-gray-800">Total Amount</span>
-                        <span className="flex items-center gap-1 font-bold text-base text-[#01788E]">
+                        <span className="flex items-center gap-0.5 font-bold text-base">
                             <img src={dirhum} className="w-4 h-4" alt="" />
                             {totalAfterDiscount.toFixed(2)}
                         </span>
