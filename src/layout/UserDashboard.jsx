@@ -13,9 +13,11 @@ import { LuProportions } from "react-icons/lu";
 import { IoMdTime } from "react-icons/io";
 import { SiProton } from "react-icons/si";
 import useAuth from "../hooks/useAuth";
+import { useState } from "react";
 
 const UserDashboard = () => {
     const { user, logOut } = useAuth();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const navigate = useNavigate();
     const role = user?.role;
 
@@ -147,20 +149,71 @@ const UserDashboard = () => {
                 <div className="drawer-content flex flex-col min-h-screen">
 
                     {/* Mobile top bar */}
-                    <div className="sticky top-0 z-30 w-full flex justify-between items-center lg:hidden px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <label htmlFor="dashboard-drawer" className="btn btn-ghost p-2 -ml-2">
-                                <MdMenu size={22} className="text-gray-600" />
-                            </label>
-                            <Link to="/">
-                                <img src={logo} alt="logo" className="h-7 w-auto" />
-                            </Link>
-                        </div>
+           <div className="sticky top-0 z-30 w-full flex justify-between items-center lg:hidden px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
+    
+    {/* Left: Hamburger + Logo */}
+    <div className="flex items-center gap-2">
+        <label htmlFor="dashboard-drawer" className="btn btn-ghost p-1.5 -ml-1.5">
+            <MdMenu size={22} className="text-gray-600" />
+        </label>
+        <Link to="/">
+            <img src={logo} alt="logo" className="h-7 w-auto" />
+        </Link>
+    </div>
 
-                        <div className="w-8 h-8 rounded-full bg-[#01788E]/10 border border-[#01788E]/20 flex items-center justify-center">
-                            <FaUser className="w-3.5 h-3.5 text-[#01788E]" />
+    {/* Right: Avatar with Dropdown */}
+    <div className="relative">
+        <button
+            onClick={() => setDropdownOpen(prev => !prev)}
+            className="w-8 h-8 rounded-full bg-[#01788E]/10 border border-[#01788E]/20 flex items-center justify-center"
+        >
+            <FaUser className="w-3.5 h-3.5 text-[#01788E]" />
+        </button>
+
+        {dropdownOpen && (
+            <>
+                {/* Backdrop */}
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setDropdownOpen(false)}
+                />
+
+                {/* Dropdown */}
+                <div className="absolute right-0 top-10 z-50 w-52 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    
+                    {/* User Info */}
+                    <div className="px-4 py-3 bg-[#01788E]/5 border-b border-gray-100">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-[#01788E]/10 flex items-center justify-center flex-shrink-0">
+                                <FaUser className="w-4 h-4 text-[#01788E]" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-gray-800 truncate">
+                                    {user?.firstName} {user?.lastName}
+                                </p>
+                                <p className="text-[10px] font-semibold text-[#01788E] uppercase tracking-wide">
+                                    {role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Admin' : 'User'}
+                                </p>
+                                <p className="text-[10px] text-gray-400 truncate">
+                                    {user?.email}
+                                </p>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Logout */}
+                    <button
+                        onClick={() => { setDropdownOpen(false); handleLogout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                        <RiLogoutCircleLine className="w-4 h-4" />
+                        Logout
+                    </button>
+                </div>
+            </>
+        )}
+    </div>
+</div>
 
                     {/* Page content */}
                     <div className="flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6">

@@ -13,12 +13,7 @@ import useScrollLock from "../../../hooks/useScrollLock";
 
 export default function Confirmation() {
     const [openModal, setOpenModal] = useState(false);
-    const {
-        serviceCharge, subTotal, services, vat, date, time,
-        mapLongitude, mapLatitude, liveAddress, itemSummary,
-        useDiscount, servicePrice, promoStatus, showInput,
-        setShowInput, handleApply, totalAfterDiscount,
-    } = useSummary();
+    const {serviceCharge, subTotal, services, vat, date, time,mapLongitude, mapLatitude, liveAddress, itemSummary,useDiscount, servicePrice, promoStatus, showInput,setShowInput, handleApply, totalAfterDiscount} = useSummary();
 
     const axiosSecure = useAxiosSecure();
     const promoInputRef = useRef(null);
@@ -155,6 +150,13 @@ export default function Confirmation() {
         await handleApply(promoCode.trim());
     };
 
+    const grouped = itemSummary?.reduce((acc, item) => {
+      const key = item.propertyType.serviceType.title;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item.title);
+      return acc;
+    }, {});
+
     // ── Price calculations ───────────────────────────────────────────────────
     const COD_CHARGE = 5;
     const isCash = paymentMethod === "Cash";
@@ -176,7 +178,7 @@ export default function Confirmation() {
 
                 {/* ── Booking Details Card ── */}
                 <div className="bg-white rounded-2xl">
-                    <h2 className="text-sm md:text-base font-bold text-gray-800 uppercase tracking-wider mb-4">
+                    <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-4">
                         Booking Details
                     </h2>
 
@@ -187,8 +189,13 @@ export default function Confirmation() {
                             </div>
                             <div>
                                 <p className="text-[10px] md:text-xs text-gray-400 font-medium uppercase tracking-wider">Service</p>
-                                <p className="text-sm md:text-base font-semibold text-gray-800 mt-0.5">
-                                    {services[0]?.title || "Service"}
+                                <p className="text-sm md:text-base font-semibold text-gray-600 mt-0.5">
+                                        
+                                        {Object.entries(grouped || {}).map(([serviceType, titles]) => (
+                                          <p key={serviceType} className="text-sm md:text-base font-semibold text-gray-600 mt-0.5">
+                                            • {serviceType} — {titles.join(", ")}
+                                          </p>
+                                        ))}
                                 </p>
                             </div>
                         </div>
@@ -199,7 +206,7 @@ export default function Confirmation() {
                             </div>
                             <div>
                                 <p className="text-[10px] md:text-xs text-gray-400 font-medium uppercase tracking-wider">Schedule</p>
-                                <p className="text-sm md:text-base font-semibold text-gray-800 mt-0.5">
+                                <p className="text-sm md:text-base font-semibold text-gray-600 mt-0.5">
                                     {date || "Not selected"}, between {time || "Not selected"}
                                 </p>
                             </div>
@@ -211,7 +218,7 @@ export default function Confirmation() {
                             </div>
                             <div>
                                 <p className="text-[10px] md:text-xs text-gray-400 font-medium uppercase tracking-wider">Address</p>
-                                <p className="text-sm md:text-base font-semibold text-gray-800 mt-0.5">
+                                <p className="text-sm md:text-base font-semibold text-gray-600 mt-0.5">
                                     {getDisplayAddress() || "No address provided"}
                                 </p>
                             </div>
@@ -235,7 +242,7 @@ export default function Confirmation() {
                 <div className="bg-white rounded-2xl">
                     {promoStatus ? (
                         <>
-                            <h2 className="text-sm md:text-base font-bold text-gray-800 uppercase tracking-wider mb-3">
+                            <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-3">
                                 Offer Applied
                             </h2>
                             <div className="flex items-center justify-between p-3 bg-[#FFF8F5] rounded-xl border border-[#FCDFD5]">
@@ -251,7 +258,7 @@ export default function Confirmation() {
                         </>
                     ) : (
                         <>
-                            <h2 className="text-sm md:text-base font-bold text-gray-800 uppercase tracking-wider mb-3">
+                            <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-3">
                                 Promo Code
                             </h2>
                             {!showInput ? (
@@ -283,7 +290,7 @@ export default function Confirmation() {
 
                 {/* ── Payment Method Card ── */}
                 <div className="bg-white rounded-2xl">
-                    <h2 className="text-sm md:text-base font-bold text-gray-800 uppercase tracking-wider mb-3">
+                    <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-3">
                         Pay With
                     </h2>
 
@@ -307,7 +314,7 @@ export default function Confirmation() {
                                     />
                                     <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
                                 </div>
-                                <span className="text-sm md:text-base font-medium text-gray-800">
+                                <span className="text-sm md:text-base font-medium text-gray-600">
                                     Pay by card with Ziina
                                 </span>
                             </div>
@@ -344,7 +351,7 @@ export default function Confirmation() {
                                     />
                                     <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
                                 </div>
-                                <span className="text-sm md:text-base font-medium text-gray-800">
+                                <span className="text-sm md:text-base font-medium text-gray-600">
                                     Cash On Delivery
                                 </span>
                             </div>
@@ -357,7 +364,7 @@ export default function Confirmation() {
 
                 {/* ── Payment Summary Card ── */}
                 <div className="bg-white rounded-2xl">
-                    <h2 className="text-sm md:text-base font-bold text-gray-800 uppercase tracking-wider mb-4">
+                    <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-4">
                         Payment Summary
                     </h2>
 
@@ -374,7 +381,7 @@ export default function Confirmation() {
                                 <span className={`text-xs md:text-sm ${row.accent ? "text-[#C6724D] font-semibold" : "text-gray-600 font-medium"}`}>
                                     {row.label}
                                 </span>
-                                <span className={`flex items-center gap-0.5 text-xs md:text-sm font-semibold ${row.accent ? "text-[#C6724D]" : "text-gray-800"}`}>
+                                <span className={`flex items-center gap-0.5 text-xs md:text-sm font-semibold ${row.accent ? "text-[#C6724D]" : "text-gray-600"}`}>
                                     <img className="h-2.5 w-2.5 md:h-3 md:w-3 mt-0.5" src={dirhum} alt="" />
                                     {row.value}
                                 </span>
@@ -395,7 +402,7 @@ export default function Confirmation() {
 
                         <div className="border-t border-gray-200 pt-3 mt-1">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm md:text-base font-bold text-gray-800">Total to pay</span>
+                                <span className="text-sm md:text-base font-bold text-gray-600">Total to pay</span>
                                 <span className="flex items-center gap-0.5 text-base md:text-lg font-bold text-[#01788E]">
                                     <img className="h-3.5 w-3.5 md:h-4 md:w-4 mt-0.5" src={dirhum} alt="" />
                                     {finalTotal}

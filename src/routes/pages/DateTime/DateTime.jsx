@@ -573,7 +573,7 @@ const DateTime = () => {
             >
                   <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
                    <div className="flex items-center gap-0.5 justify-center">
-                       <img src={dirhum} className="w-3.5 h-3.5 mt-0.5" alt="" />
+                       <img src={dirhum} className="w-3.5 h-3.5" alt="" />
                        <span className="text-sm sm:text-base font-bold text-gray-900">
                            {totalAfterDiscount.toFixed(2)}
                        </span>

@@ -280,9 +280,9 @@ export default function LocationPicker() {
 
       <div className="flex justify-center gap-8 md:mt-5">
         {/* ── Main Card ─────────────────────────────────────────────── */}
-        <div className="md:w-[60%] mb-4 w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="md:w-[60%] mb-4 w-full overflow-hidden">
           {/* Card Header */}
-          <div className="px-6 pt-1 md:pt-4 pb-4 border-b border-gray-100">
+          <div className={`${showMapForNew? 'px-6 pt-9 md:pt-4 pb-4': 'px-6 pt-1 md:pt-4 pb-4'} border-b border-gray-100`}>
             <h2 className="text-xl font-semibold text-gray-900">
               Where do you need the service?
             </h2>
@@ -688,7 +688,7 @@ export default function LocationPicker() {
             >
              <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
                     <div className="flex items-center gap-0.5 justify-center">
-                        <img src={dirhum} className="w-3.5 h-3.5 mt-0.5" alt="" />
+                        <img src={dirhum} className="w-3.5 h-3.5" alt="" />
                         <span className="text-sm sm:text-base font-bold text-gray-900">
                             {totalAfterDiscount.toFixed(2)}
                         </span>
