@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useEffect, useRef, useState } from "react";
 import { FaUser } from "react-icons/fa";
-import { FiMessageCircle, FiPhone } from "react-icons/fi";
 import { useLoaderData } from "react-router-dom";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import dirhum from '../../../assets/icon/dirhum.png';
@@ -9,1529 +8,922 @@ import { useQuery } from "@tanstack/react-query";
 import { LuArrowLeft } from "react-icons/lu";
 import { useForm } from "react-hook-form";
 import { MdLocationOn, MdCalendarToday, MdPayment, MdInfo } from "react-icons/md";
-import { HiBuildingOffice, HiHome } from "react-icons/hi2";
+import { HiBuildingOffice } from "react-icons/hi2";
 import { BsClock, BsTag } from "react-icons/bs";
 import { TbReceipt } from "react-icons/tb";
+import { IoClose } from "react-icons/io5";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
 
-export default function BookingDetails() {
-    const item = useLoaderData();
-    const scrollerRef = useRef(null);
-    const [openModal, setOpenModal] = useState(false);
-    const [modalAddress, setModalAddress] = useState(false);
-    const [modalPrice, setModalPrice] = useState(false);
-    const [modalRescudle, setModalRescudle] = useState(false);
-    const [modalPaymentMethod, setModalPaymentMethod] = useState(false);
-    const [selectedDay, setSelectedDay] = useState(null);
-    const [selectedTime, setSelectedTime] = useState(null);
-    const [modalAddressUpdate, setModalAddressUpdate] = useState(false);
-    const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
-    const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
-    const axiosSecure = useAxiosSecure();
-    const { user } = useAuth();
-    // console.log(user);
+// ── Teal focus helper (consistent with other components) ──────────────────────
+const tealFocus = {
+    onFocus: (e) => {
+        e.target.style.borderColor = '#01788E';
+        e.target.style.boxShadow = '0 0 0 2px rgba(1,120,142,0.15)';
+    },
+    onBlur: (e) => {
+        e.target.style.borderColor = '#d1d5db';
+        e.target.style.boxShadow = 'none';
+    }
+};
 
-    const { register, handleSubmit, formState: { errors }, setValue } = useForm({
-        mode: "onChange"
-    });
+// ── Status colours ────────────────────────────────────────────────────────────
+const statusConfig = {
+    Requested: { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+    Pending:   { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+    Delivered: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    Cancelled: { bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-500'    },
+};
+
+// ── Shared modal shell ────────────────────────────────────────────────────────
+const ModalShell = ({ title, subtitle, onClose, children, footer, wide = false }) => (
+    <div
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4"
+        onClick={onClose}
+    >
+        <div
+            className={`relative w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-md'} bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] rounded-t-2xl`}
+            onClick={(e) => e.stopPropagation()}
+        >
+            {/* Teal top strip */}
+            <div className="h-1 w-full shrink-0" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+                <div>
+                    <h2 className="text-sm sm:text-base font-semibold text-gray-900">{title}</h2>
+                    {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+                </div>
+                <button
+                    onClick={onClose}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                    <IoClose className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+
+            {/* Footer */}
+            {footer && <div className="border-t border-gray-100 px-5 py-4 shrink-0 bg-white">{footer}</div>}
+        </div>
+    </div>
+);
+
+export default function BookingDetails() {
+    const item       = useLoaderData();
+    const scrollerRef = useRef(null);
+    const axiosSecure = useAxiosSecure();
+    const { user }   = useAuth();
+
+    const [openModal,           setOpenModal]           = useState(false);
+    const [modalAddress,        setModalAddress]        = useState(false);
+    const [modalPrice,          setModalPrice]          = useState(false);
+    const [modalRescudle,       setModalRescudle]       = useState(false);
+    const [modalPaymentMethod,  setModalPaymentMethod]  = useState(false);
+    const [modalAddressUpdate,  setModalAddressUpdate]  = useState(false);
+
+    const [selectedDay,           setSelectedDay]           = useState(null);
+    const [selectedTime,          setSelectedTime]          = useState(null);
+    const [isUpdatingAddress,     setIsUpdatingAddress]     = useState(false);
+    const [isUpdatingPayment,     setIsUpdatingPayment]     = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
+    const [isCancelling,          setIsCancelling]          = useState(false);
+
+    const { register, handleSubmit, formState: { errors }, setValue } = useForm({ mode: "onChange" });
     const [selectedType, setSelectedType] = useState("Apartment");
     const propertyTypes = ["Apartment", "Villa", "Office", "Other"];
 
-    const handelReschudeleFun = () => {
-        setModalRescudle(true);
-    }
+    // ── Body scroll lock ──────────────────────────────────────────────────────
+    const anyModal = openModal || modalAddress || modalPrice || modalRescudle || modalPaymentMethod || modalAddressUpdate;
+    useEffect(() => {
+        document.body.style.overflow = anyModal ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [anyModal]);
 
-    // console.log(item.Data);
-
-    // const handleAddInstructions = () => {
-    //     // console.log("Instructions saved:", instructions);
-    //     setOpenInstructionsModal(false);
-    //     setInstructions("");
-    // }
-
-    const handelAddressDetails = item => {
-        setModalAddress(true);
-        // console.log(item);
-    }
-
-    const handelTotalPay = item => {
-        setModalPrice(true);
-        // console.log(item);
-    }
-
-    const handleChangePaymentMethod = () => {
-        setModalPaymentMethod(true);
-    };
-
-    // Extract address parts from the string
-    const extractAddressParts = (addressString) => {
-        if (!addressString) {
-            return {
-                apartmentNo: "",
-                buildingName: "",
-                area: "",
-                city: "",
-                type: "Apartment"
-            };
-        }
-
-        const parts = addressString.split(" - ").map(part => part.trim());
-        return {
-            apartmentNo: parts[0] || "",
-            buildingName: parts[1] || "",
-            area: parts[2] || "",
-            city: parts[3] || "",
-            type: "Apartment"
-        };
-    };
-
-    // Get address parts from the item data
-    const addressParts = extractAddressParts(item?.Data?.address);
-
-    const { data: dateTime, isLoading } = useQuery({
+    // ── Date-time query ───────────────────────────────────────────────────────
+    const { data: dateTime, isLoading: dtLoading } = useQuery({
         queryKey: ['date-time-user'],
         queryFn: async () => {
-            const res = await axiosSecure.get(`/date-time`);
-            // console.log(res?.data?.success);
-
-            if (!res?.data?.success) {
-                throw new Error("Failed to fetch date-time");
-            }
-            return res?.data;
+            const res = await axiosSecure.get('/date-time');
+            if (!res?.data?.success) throw new Error("Failed to fetch date-time");
+            return res.data;
         }
     });
 
+    // ── Formatters ────────────────────────────────────────────────────────────
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return "";
         try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (error) {
-            console.error("Date formatting error:", error);
-            return dateString;
-        }
+            return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        } catch { return dateString; }
     };
-
-    // Prepare days data from API - Merge duplicate dates
-    const getAvailableDays = () => {
-        if (!dateTime?.Data || !Array.isArray(dateTime.Data)) {
-            return [];
-        }
-
-        const dateMap = new Map();
-        dateTime.Data.forEach(item => {
-            const date = item.date;
-            const timeSlots = item.time || [];
-
-            if (dateMap.has(date)) {
-                const existing = dateMap.get(date);
-                timeSlots.forEach(slot => {
-                    if (!existing.timeSlots.includes(slot)) {
-                        existing.timeSlots.push(slot);
-                    }
-                });
-            } else {
-                dateMap.set(date, {
-                    id: item.id,
-                    date: date,
-                    short: formatDateForDisplay(date),
-                    label: getFullDateLabel(date),
-                    timeSlots: [...timeSlots]
-                });
-            }
-        });
-
-        const daysArray = Array.from(dateMap.values()).sort((a, b) =>
-            new Date(a.date) - new Date(b.date)
-        );
-        return daysArray;
-    };
-
     const getFullDateLabel = (dateString) => {
         if (!dateString) return "";
         try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
-        } catch (error) {
-            console.error("Date formatting error:", error);
-            return dateString;
-        }
+            return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } catch { return dateString; }
     };
 
-    // Get available time slots for selected day
+    // ── Available days ────────────────────────────────────────────────────────
+    const getAvailableDays = () => {
+        if (!dateTime?.Data || !Array.isArray(dateTime.Data)) return [];
+        const dateMap = new Map();
+        dateTime.Data.forEach(it => {
+            const date      = it.date;
+            const timeSlots = it.time || [];
+            if (dateMap.has(date)) {
+                const existing = dateMap.get(date);
+                timeSlots.forEach(slot => { if (!existing.timeSlots.includes(slot)) existing.timeSlots.push(slot); });
+            } else {
+                dateMap.set(date, { id: it.id, date, short: formatDateForDisplay(date), label: getFullDateLabel(date), timeSlots: [...timeSlots] });
+            }
+        });
+        return Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
     const getAvailableTimes = () => {
         if (!selectedDay) return [];
-
-        const selectedDayData = getAvailableDays().find(day => day.date === selectedDay);
-        if (!selectedDayData || !selectedDayData.timeSlots) return [];
-
-        return selectedDayData.timeSlots.sort((a, b) => {
-            return a.localeCompare(b);
-        });
+        const dayData = getAvailableDays().find(d => d.date === selectedDay);
+        return dayData?.timeSlots?.sort((a, b) => a.localeCompare(b)) || [];
     };
 
     const scroll = (dir) => {
-        if (!scrollerRef.current) return;
-        const amount = 200;
-
-        scrollerRef.current.scrollBy({
-            left: dir === "left" ? -amount : amount,
-            behavior: "smooth"
-        });
+        scrollerRef.current?.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
     };
 
-    const availableDays = getAvailableDays();
+    const availableDays  = getAvailableDays();
     const availableTimes = getAvailableTimes();
 
-    // Format display address
+    // Auto-select first date
+    useEffect(() => {
+        if (dateTime?.Data?.length > 0 && !selectedDay) {
+            const days = getAvailableDays();
+            if (days.length > 0) setSelectedDay(days[0].date);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateTime, selectedDay]);
+
+    // ── Address helpers ───────────────────────────────────────────────────────
+    const extractAddressParts = (addressString) => {
+        if (!addressString) return { apartmentNo: "", buildingName: "", area: "", city: "", type: "Apartment" };
+        const parts = addressString.split(" - ").map(p => p.trim());
+        return { apartmentNo: parts[0] || "", buildingName: parts[1] || "", area: parts[2] || "", city: parts[3] || "", type: "Apartment" };
+    };
+    const addressParts = extractAddressParts(item?.Data?.address);
+
     const formatDisplayAddress = (type, data) => {
         switch (type) {
-            case "Apartment":
-            case "Office":
+            case "Apartment": case "Office":
                 return `${data.apartmentNo || ''} - ${data.buildingName || ''} - ${data.area || ''} - ${data.city || ''}`;
-
             case "Villa":
                 return `${data.villaNo || ''} - ${data.community || ''} - ${data.area || ''} - ${data.city || ''}`;
-
             case "Other":
                 return `${data.otherNo || ''} - ${data.streetName || ''} - ${data.area || ''} - ${data.city || ''}`;
-
             default:
                 return `${data.area || ''} - ${data.city || ''}`;
         }
     };
 
-    // Handle type change
     const handleTypeChange = (type) => {
         setSelectedType(type);
-        if (type === "Villa") {
-            setValue("buildingName", "");
-            setValue("apartmentNo", "");
-        } else if (type === "Other") {
-            setValue("buildingName", "");
-            setValue("apartmentNo", "");
-            setValue("community", "");
-            setValue("villaNo", "");
-        } else {
-            setValue("community", "");
-            setValue("villaNo", "");
-            setValue("streetName", "");
-            setValue("otherNo", "");
-            setValue("nickname", "");
-        }
+        ['buildingName','apartmentNo','community','villaNo','streetName','otherNo','nickname'].forEach(f => setValue(f, ""));
     };
 
-    // Handle address update submission
-    const handleAddressUpdate = async (data) => {
-        const bookingId = item?.Data?.id;
-
-        if (!bookingId) {
-            return false;
-        }
-        const formattedAddress = formatDisplayAddress(selectedType, data);
-
-        const updateData = {
-            address: formattedAddress
-        };
-
-        // console.log("Updating address with data:", updateData);
-        setIsUpdatingAddress(true);
-
-        try {
-            const res = await axiosSecure.patch(`/booking/update/${bookingId}`, updateData);
-
-            if (res?.data?.success) {
-                toast.success('Address update successfully');
-                setModalAddressUpdate(false);
-            } else {
-                toast.error('Something is wrong');
-            }
-            // eslint-disable-next-line no-unused-vars
-        } catch (error) {
-            toast.error('Something is wrong');
-        } finally {
-            setIsUpdatingAddress(false);
-        }
-        return true;
-    };
-
-    // Handle payment method update - Updated to work with your backend
-    const handlePaymentMethodUpdate = async () => {
-        const bookingId = item?.Data?.id;
-
-        if (!bookingId) {
-            toast.error("Booking ID not found!");
-            return;
-        }
-
-        setIsUpdatingPayment(true);
-
-        try {
-            // Format the payment method to match your backend expectation
-            // 'Cash' for Cash On Delivery, 'Online' for Ziina/Card payment
-            const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
-
-            const updateData = {
-                paymentMethod: paymentMethodValue
-            };
-
-            // Make the API call using axiosSecure
-            const response = await axiosSecure.patch(`/booking/update/${bookingId}`, updateData);
-
-            if (response?.data?.success) {
-                toast.success(`Payment method updated to ${selectedPaymentMethod === "Cash" ? "Cash On Delivery" : "Online Payment"} successfully!`);
-                setModalPaymentMethod(false);
-
-                // Optional: Refresh the booking data or update local state
-                // You might want to refetch the booking data here
-            } else {
-                toast.error(response?.data?.message || "Failed to update payment method");
-            }
-        } catch (error) {
-            console.error("Error updating payment method:", error);
-            toast.error(error?.response?.data?.message || "Network error. Please try again.");
-        } finally {
-            setIsUpdatingPayment(false);
-        }
-    };
-
-    // Handle payment method update
-    // const handlePaymentMethodUpdate = async () => {
-    //     const bookingId = item?.Data?.id;
-
-    //     if (!bookingId) {
-    //         alert("Booking ID not found!");
-    //         return false;
-    //     }
-
-    //     // console.log("Updating payment method to:", selectedPaymentMethod);
-    //     setIsUpdatingPayment(true);
-
-    //     try {
-    //         const endpoints = [
-    //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/userBooking/${bookingId}`,
-    //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/${bookingId}`,
-    //             `${import.meta.env.VITE_BACKEND_API_URL}/userBooking/${bookingId}`,
-    //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/updatePayment/${bookingId}`
-    //         ];
-
-    //         let response = null;
-    //         let success = false;
-
-    //         for (const endpoint of endpoints) {
-    //             try {
-    //                 // console.log("Trying endpoint:", endpoint);
-    //                 response = await fetch(endpoint, {
-    //                     method: "PATCH",
-    //                     headers: {
-    //                         "Content-Type": "application/json",
-    //                     },
-    //                     body: JSON.stringify({
-    //                         paymentMethod: selectedPaymentMethod
-    //                     }),
-    //                 });
-
-    //                 if (response.ok) {
-    //                     success = true;
-    //                     break;
-    //                 }
-    //             } catch (err) {
-    //                 // console.log("Failed with endpoint:", endpoint, err);
-    //             }
-    //         }
-
-    //         if (success && response) {
-    //             const result = await response.json();
-    //             // console.log("Payment method updated successfully:", result);
-    //             alert(`Payment method changed to ${selectedPaymentMethod} successfully!`);
-    //             setModalPaymentMethod(false);
-    //         } else {
-    //             alert("Failed to update payment method. Please try a different endpoint or contact support.");
-    //         }
-    //     } catch (error) {
-    //         console.error("Error updating payment method:", error);
-    //         alert("Network error. Please check your connection and try again.");
-    //     } finally {
-    //         setIsUpdatingPayment(false);
-    //     }
-    // };
-
-    // Load current address into form when modal opens
+    // Load address into form
     useEffect(() => {
         if (modalAddressUpdate && item?.Data?.address) {
             const parts = item.Data.address.split(" - ");
             if (parts.length >= 4) {
-                const formData = {
-                    apartmentNo: parts[0] || "",
-                    buildingName: parts[1] || "",
-                    area: parts[2] || "",
-                    city: parts[3] || ""
-                };
-
-                setValue("apartmentNo", formData.apartmentNo);
-                setValue("buildingName", formData.buildingName);
-                setValue("area", formData.area);
-                setValue("city", formData.city);
-
+                setValue("apartmentNo",  parts[0] || "");
+                setValue("buildingName", parts[1] || "");
+                setValue("area",         parts[2] || "");
+                setValue("city",         parts[3] || "");
                 setSelectedType("Apartment");
             }
         }
     }, [modalAddressUpdate, item?.Data?.address, setValue]);
 
-    // Reschedule function
-    const handleRescheduleSubmit = async (id) => {
-        const bookingId = id;
-        if (!selectedDay) {
-            alert("Please select a day");
-            return;
-        }
-        if (!selectedTime) {
-            alert("Please select a time slot");
-            return;
-        }
-        const updatedData = {
-            date: selectedDay,
-            time: selectedTime,
-        };
-
+    // ── API calls ─────────────────────────────────────────────────────────────
+    const handleAddressUpdate = async (data) => {
+        const bookingId = item?.Data?.id;
+        if (!bookingId) return false;
+        setIsUpdatingAddress(true);
         try {
-            const resReshudle = await axiosSecure.patch(`/booking/userBooking/${bookingId}`, updatedData);
-            if (resReshudle?.data?.success) {
-                setModalRescudle(false);
-                toast.success("Booking rescheduled successfully!");
-            } else {
-                console.error("Failed:", resReshudle);
-                toast.error(`Failed to reschedule: ${resReshudle.message || `Error ${resReshudle.status}`}`);
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            toast.error("Network error. Please check your connection and try again.");
-        }
+            const res = await axiosSecure.patch(`/booking/update/${bookingId}`, { address: formatDisplayAddress(selectedType, data) });
+            if (res?.data?.success) { toast.success('Address updated successfully'); setModalAddressUpdate(false); }
+            else toast.error('Something went wrong');
+        } catch { toast.error('Something went wrong'); }
+        finally { setIsUpdatingAddress(false); }
+        return true;
     };
 
-    // Auto-select first date
-    useEffect(() => {
-        if (dateTime?.Data && dateTime.Data.length > 0 && !selectedDay) {
-            const days = getAvailableDays();
-            if (days.length > 0) {
-                const firstDay = days[0].date;
-                setSelectedDay(firstDay);
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateTime, selectedDay]);
+    const handlePaymentMethodUpdate = async () => {
+        const bookingId = item?.Data?.id;
+        if (!bookingId) { toast.error("Booking ID not found!"); return; }
+        setIsUpdatingPayment(true);
+        try {
+            const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
+            const response = await axiosSecure.patch(`/booking/update/${bookingId}`, { paymentMethod: paymentMethodValue });
+            if (response?.data?.success) {
+                toast.success(`Payment method updated successfully!`);
+                setModalPaymentMethod(false);
+            } else toast.error(response?.data?.message || "Failed to update payment method");
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Network error. Please try again.");
+        } finally { setIsUpdatingPayment(false); }
+    };
+
+    const handleRescheduleSubmit = async (id) => {
+        if (!selectedDay)  { toast.error("Please select a day"); return; }
+        if (!selectedTime) { toast.error("Please select a time slot"); return; }
+        try {
+            const res = await axiosSecure.patch(`/booking/userBooking/${id}`, { date: selectedDay, time: selectedTime });
+            if (res?.data?.success) { setModalRescudle(false); toast.success("Booking rescheduled successfully!"); }
+            else toast.error("Failed to reschedule booking");
+        } catch { toast.error("Network error. Please try again."); }
+    };
 
     const handleUserUpdateBookingStatus = async (id) => {
-        const updateData = {
-            status: 'Cancelled'
-        }
-
+        setIsCancelling(true);
         try {
-            const resStatus = await axiosSecure.patch(`/booking/update/${id}`, updateData);
-            if (resStatus?.data?.success) {
-                toast.success("Booking cancelled successfully!");
-            } else {
-                toast.error("Failed to cancel booking");
-            }
-        } catch (error) {
-            console.error("Update error:", error);
-            toast.error("Something went wrong!");
-        }
+            const res = await axiosSecure.patch(`/booking/update/${id}`, { status: 'Cancelled' });
+            if (res?.data?.success) { toast.success("Booking cancelled successfully!"); setOpenModal(false); }
+            else toast.error("Failed to cancel booking");
+        } catch { toast.error("Something went wrong!"); }
+        finally { setIsCancelling(false); }
     };
 
+    // ── Derived values ────────────────────────────────────────────────────────
+    const bookingData   = item?.Data;
+    const statusCfg     = statusConfig[bookingData?.status] || { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' };
+    const formattedDate = bookingData?.date
+        ? new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : 'Not set';
+
+    // Group booking items by serviceType
+    const groupedItems = (() => {
+        if (!bookingData?.bookingItems?.length) return null;
+        const grouped = {};
+        bookingData.bookingItems.forEach(it => {
+            const pi    = it.propertyItem;
+            if (!pi) return;
+            const key   = pi.propertyType?.serviceType?.title || 'Other';
+            const title = pi.title || '';
+            if (!grouped[key]) grouped[key] = [];
+            if (title) grouped[key].push(title);
+        });
+        return grouped;
+    })();
+
+    // ── Input class ───────────────────────────────────────────────────────────
+    const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none transition-all";
+
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen py-6 sm:py-8 px-4">
             <div className="max-w-5xl mx-auto">
-                {/* Header Section */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-gray-900 mb-2">Booking Details</h1>
-                    <p className="text-gray-600">Manage your booking and view all details</p>
+
+                {/* ── Page Header ── */}
+                <div className="mb-6">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Booking Details</h1>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                        ID: <span className="font-medium text-gray-700">{bookingData?.id || 'N/A'}</span>
+                    </p>
                 </div>
 
-                {/* Main Content Grid */}
-                <div className="  grid grid-cols-1 lg:grid-cols-3 gap-8 h-screen overflow-y-auto lg:h-auto lg:overflow-visible">
-                    {/* Left Column - Booking Info */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Confirmation Card */}
-                        <div className="bg-linear-to-r from-blue-50 to-cyan-50 rounded-2xl shadow-sm border border-blue-100 p-6">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-blue-200 flex items-center justify-center">
-                                            <BsClock className="text-blue-600 text-lg" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900">Booking Confirmed</h2>
-                                            <p className="text-sm text-gray-600">Booking ID: {item?.Data?.id || "N/A"}</p>
-                                        </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+                    {/* ══ LEFT COLUMN ══════════════════════════════════════════ */}
+                    <div className="lg:col-span-2 space-y-4">
+
+                        {/* ── Status Banner ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
+                            <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                        style={{ background: 'rgba(1,120,142,0.1)' }}>
+                                        <BsClock className="text-base" style={{ color: '#01788E' }} />
                                     </div>
-                                    <p className="text-gray-700 mt-3">
-                                        Your booking is confirmed and will be delivered as per the booked date and time
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-4">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center">
-                                            <FaUser className="text-gray-700" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-900">Al Mandhar Pest Control</p>
-                                            <p className="text-sm text-gray-600">Service Provider</p>
-                                        </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Booking Status</p>
+                                        <p className="text-sm font-semibold text-gray-900">
+                                            {bookingData?.status === 'Requested' ? 'Confirmed & Awaiting' : bookingData?.status || 'Unknown'}
+                                        </p>
                                     </div>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-full ${statusCfg.bg} ${statusCfg.text}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                                    {bookingData?.status || 'Unknown'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* ── Schedule & Address ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                            <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                                Booking Info
+                            </h3>
+                            <div className="space-y-3">
+                                {/* Date & Time */}
+                                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(1,120,142,0.05)' }}>
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                        style={{ background: 'rgba(1,120,142,0.1)' }}>
+                                        <MdCalendarToday className="text-sm" style={{ color: '#01788E' }} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Schedule</p>
+                                        <p className="text-sm font-semibold text-gray-800 mt-0.5">{formattedDate}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">{bookingData?.time || 'Not set'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Address */}
+                                <div className="flex items-start gap-3 p-3 rounded-xl border border-gray-100">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                                        <MdLocationOn className="text-sm text-emerald-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Address</p>
+                                        <p className="text-sm text-gray-700 mt-0.5 leading-snug">{bookingData?.address || 'No address provided'}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setModalAddress(true)}
+                                        className="text-xs font-semibold shrink-0 flex items-center gap-1 transition-colors"
+                                        style={{ color: '#01788E' }}
+                                    >
+                                        View <IoIosArrowForward className="text-[10px]" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Rating Section */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                <BsTag className="text-blue-600" />
+                        {/* ── Service Details ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                            <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <HiBuildingOffice className="text-gray-400" /> Service Details
+                            </h3>
+
+                            {/* Grouped items */}
+                            {groupedItems && Object.keys(groupedItems).length > 0 ? (
+                                <div className="space-y-2 mb-4">
+                                    {Object.entries(groupedItems).map(([serviceType, titles]) => (
+                                        <div key={serviceType} className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100">
+                                            <span className="mt-0.5 text-sm" style={{ color: '#01788E' }}>•</span>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-800">{serviceType}</p>
+                                                {titles.length > 0 && (
+                                                    <p className="text-xs text-gray-500 mt-0.5">{titles.join(' _ ')}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-3 rounded-xl border border-gray-100 mb-4">
+                                    <p className="text-sm font-semibold text-gray-800">{bookingData?.serviceName || 'N/A'}</p>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(1,120,142,0.05)' }}>
+                                <div className="flex items-center gap-2">
+                                    <BsTag className="text-gray-400 text-sm" />
+                                    <span className="text-xs sm:text-sm font-medium text-gray-600">Service Fee</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <img src={dirhum} alt="Currency" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    <span className="text-sm sm:text-base font-bold text-gray-900">{bookingData?.serviceFee}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Map ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="h-40 sm:h-52">
+                                <iframe
+                                    width="100%" height="100%"
+                                    loading="lazy"
+                                    src={`https://www.google.com/maps?q=${bookingData?.latitude || 0},${bookingData?.longitude || 0}&z=16&output=embed`}
+                                    style={{ pointerEvents: "none" }}
+                                    title="Location Map"
+                                />
+                            </div>
+                        </div>
+
+                        {/* ── Rating ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                            <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                                 Rate Your Experience
                             </h3>
                             <div className="rating rating-lg">
                                 {[1, 2, 3, 4, 5].map((star) => (
-                                    <input
-                                        key={star}
-                                        type="radio"
-                                        name="rating-9"
-                                        className="mask mask-star-2 bg-orange-400"
-                                        aria-label={`${star} star`}
-                                    />
+                                    <input key={star} type="radio" name="rating-9"
+                                        className="mask mask-star-2 bg-orange-400" aria-label={`${star} star`} />
                                 ))}
                             </div>
-                            <p className="text-sm text-gray-500 mt-2">Share your experience to help us improve</p>
-                        </div>
-
-                        {/* Job Details Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                                <MdInfo className="text-blue-600" />
-                                Job Details
-                            </h3>
-                            <div className="space-y-5">
-                                <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                                            <MdCalendarToday className="text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-700">Start Time</p>
-                                            <p className="text-sm text-gray-500">{item?.Data?.date}, {item?.Data?.time}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                                            <MdLocationOn className="text-green-600" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-700">Address</p>
-                                            <p className="text-sm text-gray-500">{item?.Data?.address}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handelAddressDetails(item)}
-                                        className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                                    >
-                                        View
-                                        <IoIosArrowForward />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Service Details Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                                <HiBuildingOffice className="text-blue-600" />
-                                Service Details
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                    <div>
-                                        {/* <p className="font-medium text-gray-900">Studio - General</p> */}
-                                        <p className="text-sm text-gray-600">Quantity: 1</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-600">Service Type</p>
-                                        <p className="font-sm text-gray-900">{item?.Data?.serviceName}</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                    <div className="flex items-center gap-2">
-                                        <BsTag className="text-gray-600" />
-                                        <span className="font-medium text-gray-700">Service Fee</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                        <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <p className="text-xs text-gray-400 mt-2">Share your experience to help us improve</p>
                         </div>
                     </div>
 
-                    {/* Right Column - Payment & Actions */}
-                    <div className="space-y-6">
-                        {/* Payment Summary Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                                <TbReceipt className="text-blue-600" />
-                                Payment Summary
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    {/* ══ RIGHT COLUMN ═════════════════════════════════════════ */}
+                    <div className="space-y-4">
+
+                        {/* ── Payment Summary ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
+                            <div className="p-4 sm:p-5">
+                                <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <TbReceipt className="text-gray-400" /> Payment Summary
+                                </h3>
+
+                                <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 mb-3">
                                     <div className="flex items-center gap-2">
-                                        <MdPayment className="text-gray-600" />
-                                        <span className="font-medium text-gray-700">Payment Method</span>
+                                        <MdPayment className="text-gray-400 text-sm" />
+                                        <span className="text-xs sm:text-sm text-gray-600">Method</span>
                                     </div>
-                                    <span className="font-medium text-gray-900">{item?.Data?.paymentMethod}</span>
+                                    <span className="text-xs sm:text-sm font-semibold text-gray-800">{bookingData?.paymentMethod}</span>
                                 </div>
-                                <div className="flex justify-between items-center p-3 bg-linear-to-r from-blue-50 to-cyan-50 rounded-lg">
-                                    <div>
-                                        <p className="font-semibold text-gray-900">Total to Pay</p>
-                                        <p className="text-sm text-gray-600">Inclusive of all charges</p>
+
+                                <div className="p-3 rounded-xl mb-3" style={{ background: 'rgba(1,120,142,0.07)' }}>
+                                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total to Pay</p>
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                        <img src={dirhum} alt="Currency" className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-xl sm:text-2xl font-bold text-gray-900">{bookingData?.totalPay}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="flex items-center gap-1">
-                                            <img src={dirhum} alt="Currency" className="w-6 h-6" />
-                                            <span className="text-2xl font-bold text-gray-900">{item.Data?.totalPay}</span>
-                                        </div>
-                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">Inclusive of all charges</p>
                                 </div>
+
                                 <button
-                                    onClick={() => handelTotalPay(item)}
-                                    className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition flex items-center justify-center gap-2"
+                                    onClick={() => setModalPrice(true)}
+                                    className="w-full py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors"
                                 >
-                                    View Detailed Breakdown
-                                    <IoIosArrowForward />
+                                    View Full Breakdown <IoIosArrowForward className="text-xs" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Manage Booking Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">Manage Booking</h3>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => setOpenModal(true)}
-                                    className="w-full py-3.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl transition shadow-md hover:shadow-lg"
-                                >
-                                    Manage Booking Options
-                                </button>
-                                <p className="text-sm text-gray-500 text-center mt-2">
-                                    Reschedule, add instructions, or make changes to your booking
-                                </p>
+                        {/* ── Manage Booking ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                            <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                Manage Booking
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                {[
+                                    { label: 'Reschedule', icon: <MdCalendarToday />, onClick: () => setModalRescudle(true), color: '#01788E', bg: 'rgba(1,120,142,0.08)' },
+                                    { label: 'Address',    icon: <MdLocationOn />,    onClick: () => setModalAddressUpdate(true), color: '#059669', bg: '#ecfdf5' },
+                                    { label: 'Payment',    icon: <MdPayment />,       onClick: () => setModalPaymentMethod(true), color: '#d97706', bg: '#fffbeb' },
+                                    { label: 'More',       icon: <MdInfo />,          onClick: () => setOpenModal(true), color: '#7c3aed', bg: '#f5f3ff' },
+                                ].map(({ label, icon, onClick, color, bg }) => (
+                                    <button
+                                        key={label}
+                                        onClick={onClick}
+                                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold transition-all active:scale-95"
+                                        style={{ background: bg, color }}
+                                    >
+                                        <span className="text-base">{icon}</span>
+                                        {label}
+                                    </button>
+                                ))}
                             </div>
+
+                            <button
+                                onClick={() => handleUserUpdateBookingStatus(bookingData?.id)}
+                                disabled={isCancelling || bookingData?.status === 'Cancelled'}
+                                className="w-full py-2.5 rounded-xl border border-red-200 bg-red-50 text-xs sm:text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCancelling ? 'Cancelling…' : bookingData?.status === 'Cancelled' ? 'Already Cancelled' : 'Cancel Booking'}
+                            </button>
                         </div>
 
-                        {/* Quick Actions */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={handelReschudeleFun}
-                                    className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition flex flex-col items-center gap-2"
-                                >
-                                    <MdCalendarToday className="text-xl" />
-                                    <span className="text-sm font-medium">Reschedule</span>
-                                </button>
-                                {/* <button
-                                    onClick={() => setOpenInstructionsModal(true)}
-                                    className="p-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition flex flex-col items-center gap-2"
-                                >
-                                    <FiMessageCircle className="text-xl" />
-                                    <span className="text-sm font-medium">Instructions</span>
-                                </button> */}
-                                <button
-                                    onClick={() => setModalAddressUpdate(true)}
-                                    className="p-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition flex flex-col items-center gap-2"
-                                >
-                                    <MdLocationOn className="text-xl" />
-                                    <span className="text-sm font-medium">Address</span>
-                                </button>
-                                <button
-                                    onClick={handleChangePaymentMethod}
-                                    className="p-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition flex flex-col items-center gap-2"
-                                >
-                                    <MdPayment className="text-xl" />
-                                    <span className="text-sm font-medium">Payment</span>
-                                </button>
+                        {/* ── Service Provider ── */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                            <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                Service Provider
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{ background: 'rgba(1,120,142,0.1)' }}>
+                                    <FaUser className="text-sm" style={{ color: '#01788E' }} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900">Al Mandhar Pest Control</p>
+                                    <p className="text-xs text-gray-500">Service Provider</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Manage Booking Modal */}
-                {openModal &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setOpenModal(false)}
-                    >
-                        <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-bold text-gray-900">Manage Booking</h2>
-                                    <button
-                                        onClick={() => setOpenModal(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                    >
-                                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+            {/* ════════════════════════════════════════════════════════════════
+                MODALS
+            ════════════════════════════════════════════════════════════════ */}
+
+            {/* ── Manage Options Modal ── */}
+            {openModal && (
+                <ModalShell title="Manage Booking" subtitle="Choose an option" onClose={() => setOpenModal(false)}>
+                    <div className="divide-y divide-gray-50">
+                        {[
+                            { label: 'Reschedule',      desc: 'Change date or time',      icon: <MdCalendarToday />, color: '#01788E', bg: 'rgba(1,120,142,0.1)', onClick: () => { setOpenModal(false); setModalRescudle(true); } },
+                            { label: 'Change Address',  desc: 'Update service location',  icon: <MdLocationOn />,    color: '#059669', bg: '#d1fae5',             onClick: () => { setOpenModal(false); setModalAddressUpdate(true); } },
+                            { label: 'Payment Method',  desc: 'Update payment details',   icon: <MdPayment />,       color: '#d97706', bg: '#fef3c7',             onClick: () => { setOpenModal(false); setModalPaymentMethod(true); } },
+                        ].map(({ label, desc, icon, color, bg, onClick }) => (
+                            <button key={label} onClick={onClick}
+                                className="w-full flex items-center justify-between py-3.5 hover:bg-gray-50 transition-colors rounded-lg px-1">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0"
+                                        style={{ background: bg, color }}>
+                                        {icon}
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-sm font-semibold text-gray-800">{label}</p>
+                                        <p className="text-xs text-gray-400">{desc}</p>
+                                    </div>
                                 </div>
-                                <p className="text-gray-600 mt-2">Choose an option to manage your booking</p>
+                                <IoIosArrowForward className="text-gray-300 text-xs" />
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => handleUserUpdateBookingStatus(bookingData?.id)}
+                            disabled={isCancelling || bookingData?.status === 'Cancelled'}
+                            className="w-full flex items-center justify-between py-3.5 hover:bg-red-50 transition-colors rounded-lg px-1 disabled:opacity-50"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                                    <IoClose className="text-red-500 text-base" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm font-semibold text-red-600">Cancel Booking</p>
+                                    <p className="text-xs text-red-400">This action cannot be undone</p>
+                                </div>
                             </div>
+                            <IoIosArrowForward className="text-red-300 text-xs" />
+                        </button>
+                    </div>
+                </ModalShell>
+            )}
 
-                            <div className="divide-y divide-gray-100">
-                                <button
-                                    onClick={handelReschudeleFun}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                            <MdCalendarToday className="text-blue-600 text-xl" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-gray-900">Reschedule</p>
-                                            <p className="text-sm text-gray-600">Change date or time</p>
-                                        </div>
-                                    </div>
-                                    <IoIosArrowForward className="text-gray-400" />
-                                </button>
-
-                                {/* <button
-                                    // onClick={() => { setOpenModal(false); setOpenInstructionsModal(true); }}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                                            <FiMessageCircle className="text-green-600 text-xl" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-gray-900">Add Instructions</p>
-                                            <p className="text-sm text-gray-600">Special requirements</p>
-                                        </div>
-                                    </div>
-                                    <IoIosArrowForward className="text-gray-400" />
-                                </button> */}
-
-                                <button
-                                    onClick={() => setModalAddressUpdate(true)}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                                            <MdLocationOn className="text-purple-600 text-xl" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-gray-900">Change Address</p>
-                                            <p className="text-sm text-gray-600">Update location</p>
-                                        </div>
-                                    </div>
-                                    <IoIosArrowForward className="text-gray-400" />
-                                </button>
-
-                                <button
-                                    onClick={handleChangePaymentMethod}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                                            <MdPayment className="text-amber-600 text-xl" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-gray-900">Payment Method</p>
-                                            <p className="text-sm text-gray-600">Update payment details</p>
-                                        </div>
-                                    </div>
-                                    <IoIosArrowForward className="text-gray-400" />
-                                </button>
-
-                                <button
-                                    onClick={() => handleUserUpdateBookingStatus(item?.Data?.id)}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-red-50 transition text-red-600"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                                            <svg className="text-red-600 text-xl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium">Cancel Booking</p>
-                                            <p className="text-sm text-red-500">This action cannot be undone</p>
-                                        </div>
-                                    </div>
-                                    <IoIosArrowForward className="text-red-400" />
-                                </button>
+            {/* ── Address View Modal ── */}
+            {modalAddress && (
+                <ModalShell title="Address Details" onClose={() => setModalAddress(false)}>
+                    <div className="space-y-2">
+                        {[
+                            { label: 'City',           value: addressParts.city         },
+                            { label: 'Area',           value: addressParts.area         },
+                            { label: 'Building Name',  value: addressParts.buildingName },
+                            { label: 'Apartment No.',  value: addressParts.apartmentNo  },
+                        ].map(({ label, value }) => (
+                            <div key={label} className="flex items-center justify-between p-3 rounded-xl border border-gray-100">
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</span>
+                                <span className="text-sm font-semibold text-gray-800">{value || 'Not specified'}</span>
                             </div>
+                        ))}
+                    </div>
+                </ModalShell>
+            )}
 
-                            <div className="p-6 border-t border-gray-200">
-                                <button
-                                    onClick={() => setOpenModal(false)}
-                                    className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium"
-                                >
-                                    Close
-                                </button>
+            {/* ── Price Breakdown Modal ── */}
+            {modalPrice && (
+                <ModalShell title="Payment Breakdown" subtitle="Detailed breakdown of all charges" onClose={() => setModalPrice(false)}>
+                    <div className="space-y-2">
+                        {[
+                            { label: 'Service Charges',          value: bookingData?.serviceCharge  },
+                            { label: 'Service Fee',              value: bookingData?.serviceFee     },
+                            { label: 'Discount',                 value: bookingData?.discount       },
+                            { label: 'Sub Total',                value: bookingData?.subTotal       },
+                            { label: 'VAT (5%)',                 value: bookingData?.vat            },
+                            { label: 'Cash on Delivery Charges', value: bookingData?.cashOnDelivery },
+                        ].map(({ label, value }) => (
+                            <div key={label} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                                <span className="text-xs sm:text-sm text-gray-600">{label}</span>
+                                <div className="flex items-center gap-1">
+                                    <img src={dirhum} alt="" className="w-3.5 h-3.5" />
+                                    <span className="text-sm font-semibold text-gray-900">{value ?? '0'}</span>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Total */}
+                        <div className="flex items-center justify-between p-4 rounded-xl mt-2"
+                            style={{ background: 'rgba(1,120,142,0.08)', border: '1px solid rgba(1,120,142,0.2)' }}>
+                            <div>
+                                <p className="text-sm font-bold text-gray-900">Total to Pay</p>
+                                <p className="text-xs text-gray-500">Inclusive of all taxes</p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <img src={dirhum} alt="" className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-lg sm:text-xl font-bold" style={{ color: '#01788E' }}>{bookingData?.totalPay}</span>
                             </div>
                         </div>
                     </div>
-                }
+                </ModalShell>
+            )}
 
-                {/* Add Instructions Modal */}
-                {/* {openInstructionsModal &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setOpenInstructionsModal(false)}
-                    >
-                        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-bold text-gray-900">Add Instructions</h2>
-                                    <button
-                                        onClick={() => setOpenInstructionsModal(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                    >
-                                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+            {/* ── Reschedule Modal ── */}
+            {modalRescudle && (
+                <ModalShell
+                    title="Reschedule Booking"
+                    subtitle="Select a new date and time"
+                    onClose={() => setModalRescudle(false)}
+                    wide
+                    footer={
+                        <button
+                            onClick={() => handleRescheduleSubmit(bookingData?.id)}
+                            disabled={!selectedDay || !selectedTime}
+                            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ background: selectedDay && selectedTime ? 'linear-gradient(135deg, #01788E, #015f70)' : undefined }}
+                        >
+                            {selectedDay && selectedTime ? 'Confirm Reschedule' : 'Select date and time to continue'}
+                        </button>
+                    }
+                >
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-3">Select Day</p>
+                            {dtLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+                                        style={{ borderColor: '#01788E', borderTopColor: 'transparent' }} />
                                 </div>
-                                <p className="text-gray-600 mt-2">Add special instructions for the service provider</p>
-                            </div>
-
-                            <div className="p-6">
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Additional Instructions
-                                    </label>
-                                    <textarea
-                                        rows="6"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                                        placeholder="Please provide any additional instructions for the service provider (e.g., specific requirements, access codes, parking information, etc.)..."
-                                        value={instructions}
-                                        onChange={(e) => setInstructions(e.target.value)}
-                                    />
-                                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        These instructions will be shared with your service provider.
+                            ) : availableDays.length === 0 ? (
+                                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                                    <MdCalendarToday className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500">No available dates</p>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <button onClick={() => scroll("left")}
+                                        className="hidden md:flex absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-200 rounded-lg shadow-sm items-center justify-center">
+                                        <IoIosArrowBack className="text-gray-500" />
+                                    </button>
+                                    <div ref={scrollerRef} className="flex gap-2 overflow-x-auto no-scrollbar py-1 sm:px-8">
+                                        {availableDays.map((day, index) => {
+                                            const isActive = selectedDay === day.date;
+                                            return (
+                                                <div
+                                                    key={`${day.date}-${index}`}
+                                                    onClick={() => setSelectedDay(day.date)}
+                                                    className="snap-start min-w-[72px] sm:min-w-[80px] px-2 py-2 rounded-xl border cursor-pointer flex flex-col items-center gap-0.5 transition-all"
+                                                    style={isActive ? { background: '#B2D7DE', borderColor: 'transparent' } : {}}
+                                                >
+                                                    <div className="text-[11px] text-gray-500">{day.short.split(',')[0]}</div>
+                                                    <div className="text-[11px] font-semibold text-gray-800">{day.short.split(',')[1]?.trim()}</div>
+                                                    {day.timeSlots?.length > 0 && (
+                                                        <div className="text-[9px] text-emerald-600 font-medium">{day.timeSlots.length} slot{day.timeSlots.length !== 1 ? 's' : ''}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                </div>
-
-                                <div className="flex justify-end gap-3">
-                                    <button
-                                        onClick={() => setOpenInstructionsModal(false)}
-                                        className="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleAddInstructions}
-                                        disabled={!instructions.trim()}
-                                        className="px-6 py-2.5 text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl font-medium transition"
-                                    >
-                                        Save Instructions
+                                    <button onClick={() => scroll("right")}
+                                        className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-200 rounded-lg shadow-sm items-center justify-center">
+                                        <IoIosArrowForward className="text-gray-500" />
                                     </button>
                                 </div>
-                            </div>
+                            )}
                         </div>
-                    </div>
-                } */}
 
-                {/* ADDRESS MODAL - View Current Address */}
-                {modalAddress &&
-                    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 md:items-center md:pt-0 bg-black/50"
-                        onClick={() => setModalAddress(false)}
-                    >
-                        <div className="relative w-full max-w-[600px] mx-4 bg-white rounded-lg shadow-xl h-[90vh] sm:h-[85vh] md:h-[80vh] flex flex-col"
-                            onClick={(e) => e.stopPropagation()}>
-
-                            <div className="shrink-0 flex items-center justify-center p-4 sm:p-5 border-b border-gray-200 relative">
-                                <button className="absolute right-4 cursor-pointer text-gray-500 hover:text-gray-700 p-1.5"
-                                    onClick={() => setModalAddress(false)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                                    </svg>
-                                </button>
-
-                                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
-                                    Address Details
-                                </h2>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
-                                <div className="space-y-4 mb-6">
-                                    {/* Address Info Cards for Mobile */}
-                                    <div className="md:hidden space-y-3">
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-sm text-gray-600 mb-1">City</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.city || "Not specified"}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-sm text-gray-600 mb-1">Area</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.area || "Not specified"}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-sm text-gray-600 mb-1">Building Name</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.buildingName || "Not specified"}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-sm text-gray-600 mb-1">Apartment No.</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.apartmentNo || "Not specified"}
-                                            </p>
-                                        </div>
+                        {selectedDay && (
+                            <div>
+                                <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-3">Select Time</p>
+                                {availableTimes.length === 0 ? (
+                                    <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+                                        <BsClock className="w-7 h-7 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-sm text-gray-500">No time slots for this date</p>
                                     </div>
-
-                                    {/* Address Info for Desktop */}
-                                    <div className="hidden md:grid md:grid-cols-2 md:gap-4">
-                                        <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                            <p className="text-base text-gray-700">City</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.city || "Not specified"}
-                                            </p>
-                                        </div>
-                                        {/* <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                            <p className="text-base text-gray-700">Type</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.type}
-                                            </p>
-                                        </div> */}
-                                        <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                            <p className="text-base text-gray-700">Area</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.area || "Not specified"}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                            <p className="text-base text-gray-700">Building Name</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.buildingName || "Not specified"}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                            <p className="text-base text-gray-700">Apartment No.</p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {addressParts.apartmentNo || "Not specified"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-
-                {/* PRICE MODAL */}
-                {modalPrice &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setModalPrice(false)}
-                    >
-                        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-bold text-gray-900">Payment Breakdown</h2>
-                                    <button
-                                        onClick={() => setModalPrice(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                    >
-                                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <p className="text-gray-600 mt-2">Detailed breakdown of all charges</p>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">Service Charges</span>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceCharge}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">Service Fee</span>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">Discount</span>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.discount}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">Sub Total</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceCharge} + {item?.Data?.serviceFee} = <p className="flex items-center justify-center"><img src={dirhum} alt="Currency" className="w-5 h-5" /> {item?.Data?.subTotal}</p></span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">VAT (5%)</span>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.vat}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                                        <span className="font-medium text-gray-700">Cash on Delivery Charges</span>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-5 h-5" />
-                                            <span className="text-lg font-semibold text-gray-900">{item?.Data?.cashOnDelivery}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-linear-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 mt-6">
-                                        <div>
-                                            <span className="font-semibold text-gray-900 text-lg">Total to Pay</span>
-                                            <p className="text-sm text-gray-600">Final amount including all taxes</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <img src={dirhum} alt="Currency" className="w-6 h-6" />
-                                            <span className="text-2xl font-bold text-gray-900">{item?.Data?.totalPay}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                {/* RESCHEDULE MODAL */}
-                {/* RESCHEDULE MODAL - Updated to match DateTime component */}
-                {modalRescudle &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setModalRescudle(false)}
-                    >
-                        <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => setModalRescudle(false)}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                        >
-                                            <LuArrowLeft className="text-xl" />
-                                        </button>
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900">Reschedule Booking</h2>
-                                            <p className="text-gray-600">Select a new date and time for your service</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="space-y-8">
-                                    {/* Day Selector - Updated to match DateTime component */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold mb-4">
-                                            Which day would you like us to come?
-                                        </h3>
-                                        {isLoading && (
-                                            <div className="text-center py-12">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                                                <p className="mt-4 text-gray-600">Loading available dates...</p>
-                                            </div>
-                                        )}
-                                        {availableDays.length === 0 && !isLoading ? (
-                                            <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                                                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <p className="text-gray-600 font-medium">No available dates</p>
-                                                <p className="text-sm text-gray-500 mt-1">Please check back later for available slots</p>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="relative max-w-[300px] mx-auto md:max-w-4xl">
-                                                    {/* Left Scroll Button */}
-                                                    <button
-                                                        onClick={() => scroll("left")}
-                                                        className="hidden absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 md:flex items-center justify-center"
-                                                    >
-                                                        <IoIosArrowBack className="text-3xl font-bold" />
-                                                    </button>
-
-                                                    {/* Day List */}
-                                                    <div
-                                                        ref={scrollerRef}
-                                                        className="flex gap-3 overflow-x-auto no-scrollbar py-2 px-10"
-                                                    >
-                                                        {availableDays.map((day, index) => {
-                                                            const isActive = selectedDay === day.date;
-
-                                                            return (
-                                                                <div
-                                                                    key={`${day.date}-${index}`}
-                                                                    onClick={() => setSelectedDay(day.date)}
-                                                                    className={`snap-start min-w-[100px] md:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
-                                                        ${isActive ? "bg-[#B2D7DE] border-transparent shadow" : "bg-white border-gray-200 hover:bg-gray-50"}
-                                                    `}
-                                                                >
-                                                                    <div className="text-sm text-gray-600">{day.short}</div>
-                                                                    <div className="text-sm font-medium">{day.label}</div>
-                                                                    {day.timeSlots && day.timeSlots.length > 0 && (
-                                                                        <div className="text-xs text-green-600 mt-1">
-                                                                            {day.timeSlots.length} slot{day.timeSlots.length !== 1 ? 's' : ''}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-
-                                                    {/* Right Scroll Button */}
-                                                    <button
-                                                        onClick={() => scroll("right")}
-                                                        className="hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 md:flex items-center justify-center cursor-pointer"
-                                                    >
-                                                        <IoIosArrowForward className="text-3xl font-bold" />
-                                                    </button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {/* Time Selector - Updated to match DateTime component */}
-                                    {selectedDay && (
-                                        <>
-                                            <h3 className="text-lg font-semibold mt-8 mb-4">
-                                                What time would you like us to arrive?
-                                            </h3>
-
-                                            {availableTimes.length === 0 ? (
-                                                <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
-                                                    <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <p className="text-gray-600">No time slots available for this date</p>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    {availableTimes.map((timeSlot, index) => (
-                                                        <button
-                                                            key={index}
-                                                            onClick={() => setSelectedTime(timeSlot)}
-                                                            className={`w-full text-left rounded-lg border px-6 py-4 transition
-                                                ${selectedTime === timeSlot ? "bg-[#E6F6F6] border-teal-300 shadow-sm" : "bg-white border-gray-200 hover:bg-gray-50"}
-                                            `}
-                                                        >
-                                                            <span className="text-sm font-medium">{timeSlot}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {/* Note Section - Updated to match DateTime component */}
-                                    <div className="mt-8 p-4 bg-gray-50 border rounded-md flex gap-4 text-sm text-gray-700">
-                                        <svg className="w-5 h-5 text-gray-500 mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path d="M12 9v2m0 4h.01M21 12A9 9 0 1112 3a9 9 0 019 9z" strokeWidth="1.5" />
-                                        </svg>
-
-                                        <div>
-                                            Free cancellation up to 6 hours before your booking start time.{" "}
-                                            <a href="#" className="text-teal-600 underline">View cancellation policy</a>
-                                        </div>
-                                    </div>
-
-                                    {/* Confirm Button - Updated styling */}
-                                    <div className="sticky bottom-0 bg-white pt-6 border-t">
-                                        <button
-                                            onClick={() => handleRescheduleSubmit(item.Data.id)}
-                                            disabled={!selectedDay || !selectedTime}
-                                            className={`w-full py-4 text-white font-semibold rounded-lg transition ${!selectedDay || !selectedTime
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl"
-                                                }`}
-                                        >
-                                            {selectedDay && selectedTime ? (
-                                                `Confirm Reschedule`
-                                            ) : (
-                                                "Select date and time to continue"
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                {/* PAYMENT METHOD CHANGE MODAL */}
-                {modalPaymentMethod &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setModalPaymentMethod(false)}
-                    >
-                        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => setModalPaymentMethod(false)}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                        >
-                                            <LuArrowLeft className="text-xl" />
-                                        </button>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-gray-900">Update Payment Method</h2>
-                                            <p className="text-gray-600">Select your preferred payment method</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="space-y-6">
-                                    <div className="bg-blue-50 rounded-xl p-4 mb-6">
-                                        <p className="text-gray-700">
-                                            Current method: <span className="font-semibold text-gray-900">{item?.Data?.paymentMethod || "Not specified"}</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Payment Method Options - Updated to match Confirmation component */}
-                                    <div className="space-y-3">
-                                        {/* Card (Online Payment) - Ziina */}
-                                        <div
-                                            onClick={() => setSelectedPaymentMethod("Online")}
-                                            className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
-                                ${selectedPaymentMethod === "Online" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
-                                        >
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-3">
-                                                    {/* Custom Radio Button */}
-                                                    <div className="relative flex items-center justify-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="paymentMethod"
-                                                            checked={selectedPaymentMethod === "Online"}
-                                                            readOnly
-                                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
-                                                        />
-                                                        <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                                                    </div>
-
-                                                    <span className="text-[#1A1A1A] font-medium md:text-lg">
-                                                        Pay by card with Ziina
-                                                    </span>
-                                                </div>
-
-                                                {/* Card Logos */}
-                                                <div className="flex items-center gap-2">
-                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
-                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3" />
-                                                    </div>
-                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
-                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
-                                                    </div>
-                                                    <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
-                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
-                                                        <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Cash On Delivery */}
-                                        <div
-                                            onClick={() => setSelectedPaymentMethod("Cash")}
-                                            className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
-                                ${selectedPaymentMethod === "Cash" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
-                                        >
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-3">
-                                                    {/* Custom Radio Button */}
-                                                    <div className="relative flex items-center justify-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="paymentMethod"
-                                                            checked={selectedPaymentMethod === "Cash"}
-                                                            readOnly
-                                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
-                                                        />
-                                                        <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                                                    </div>
-
-                                                    <span className="text-[#1A1A1A] font-medium md:text-lg">
-                                                        Cash On Delivery
-                                                    </span>
-                                                </div>
-
-                                                {/* Fee Badge */}
-                                                <div className="bg-[#FFEDD5] text-[#C6724D] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#FDBA74]">
-                                                    +5% FEE
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Important Note */}
-                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
-                                        <div className="flex gap-3">
-                                            <div className="flex-shrink-0">
-                                                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-amber-900 mb-2">Important Information</h4>
-                                                <ul className="text-sm text-amber-800 space-y-2">
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-amber-600">•</span>
-                                                        Changing payment method may affect the total amount due
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-amber-600">•</span>
-                                                        Cash on Delivery includes an additional 5% fee
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-amber-600">•</span>
-                                                        Online payments are processed securely via Ziina
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="border-t p-6">
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setModalPaymentMethod(false)}
-                                        className="flex-1 px-6 py-3.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition"
-                                        disabled={isUpdatingPayment}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handlePaymentMethodUpdate}
-                                        className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                        disabled={isUpdatingPayment}
-                                    >
-                                        {isUpdatingPayment ? (
-                                            <span className="flex items-center justify-center">
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                                Updating...
-                                            </span>
-                                        ) : "Update Payment Method"}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                {/* ADDRESS UPDATE MODAL */}
-                {modalAddressUpdate &&
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
-                        onClick={() => setModalAddressUpdate(false)}
-                    >
-                        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => setModalAddressUpdate(false)}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                        >
-                                            <LuArrowLeft className="text-xl" />
-                                        </button>
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900">Update Address</h2>
-                                            <p className="text-gray-600">Update your service location details</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <form onSubmit={handleSubmit(handleAddressUpdate)} className="space-y-6">
-                                    <div className="flex space-x-3 mb-6 overflow-x-auto">
-                                        {propertyTypes.map(btn => (
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {availableTimes.map((slot, i) => (
                                             <button
-                                                key={btn}
-                                                onClick={() => handleTypeChange(btn)}
-                                                type="button"
-                                                className={`flex items-center px-4 py-2 rounded-full transition duration-300 border cursor-pointer
-                                    ${selectedType === btn ? "bg-teal-600 text-white shadow-md" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}
+                                                key={i}
+                                                onClick={() => setSelectedTime(slot)}
+                                                className="w-full text-left rounded-xl border px-4 py-3 text-xs sm:text-sm font-medium transition-all"
+                                                style={selectedTime === slot
+                                                    ? { background: '#E6F6F6', borderColor: '#01788E', color: '#01788E' }
+                                                    : {}}
                                             >
-                                                {btn}
+                                                {slot}
                                             </button>
                                         ))}
                                     </div>
-
-                                    {/* FORM FIELDS - Updated to match Address component */}
-                                    <div className="space-y-6">
-                                        {/* City */}
-                                        <div>
-                                            <label className="block text-gray-700 font-medium mb-1">City</label>
-                                            <input
-                                                {...register("city", { required: "City is required" })}
-                                                type="text"
-                                                placeholder="Enter City"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                            />
-                                            {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
-                                        </div>
-
-                                        {/* Area */}
-                                        <div>
-                                            <label className="block text-gray-700 font-medium mb-1">Area</label>
-                                            <input
-                                                {...register("area", { required: "Area is required" })}
-                                                type="text"
-                                                placeholder="Enter Area"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                            />
-                                            {errors.area && <p className="text-red-500 text-sm mt-1">{errors.area.message}</p>}
-                                        </div>
-
-                                        {/* Dynamic Fields based on Property Type */}
-                                        {selectedType === "Villa" && (
-                                            <>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Community / Street Name</label>
-                                                    <input
-                                                        {...register("community", { required: "Community is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Community / Street Name"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.community && <p className="text-red-500 text-sm mt-1">{errors.community.message}</p>}
-                                                </div>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Villa No</label>
-                                                    <input
-                                                        {...register("villaNo", { required: "Villa number is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Villa Number"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.villaNo && <p className="text-red-500 text-sm mt-1">{errors.villaNo.message}</p>}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {selectedType === "Other" && (
-                                            <>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Street / Building Name</label>
-                                                    <input
-                                                        {...register("streetName", { required: "Street/Building name is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Street / Building Name"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.streetName && <p className="text-red-500 text-sm mt-1">{errors.streetName.message}</p>}
-                                                </div>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Apartment / Villa No</label>
-                                                    <input
-                                                        {...register("otherNo", { required: "Apartment/Villa number is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Apartment / Villa No"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.otherNo && <p className="text-red-500 text-sm mt-1">{errors.otherNo.message}</p>}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {selectedType !== "Villa" && selectedType !== "Other" && (
-                                            <>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Building Name</label>
-                                                    <input
-                                                        {...register("buildingName", { required: "Building name is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Building Name"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.buildingName && <p className="text-red-500 text-sm mt-1">{errors.buildingName.message}</p>}
-                                                </div>
-                                                <div>
-                                                    <label className="block text-gray-700 font-medium mb-1">Apartment No</label>
-                                                    <input
-                                                        {...register("apartmentNo", { required: "Apartment number is required" })}
-                                                        type="text"
-                                                        placeholder="Enter Apartment No"
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    />
-                                                    {errors.apartmentNo && <p className="text-red-500 text-sm mt-1">{errors.apartmentNo.message}</p>}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {/* Submit Buttons */}
-                                        <div className="pt-6 border-t">
-                                            <div className="flex gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModalAddressUpdate(false)}
-                                                    className="flex-1 px-6 py-3.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
-                                                    disabled={isUpdatingAddress}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg font-medium transition shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                    disabled={isUpdatingAddress}
-                                                >
-                                                    {isUpdatingAddress ? (
-                                                        <span className="flex items-center justify-center gap-2">
-                                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                            Updating...
-                                                        </span>
-                                                    ) : "Update Address"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
+                                )}
                             </div>
+                        )}
+
+                        <div className="flex gap-2.5 p-3 rounded-xl text-xs text-gray-500 border border-gray-100 bg-gray-50">
+                            <MdInfo className="text-gray-400 shrink-0 mt-0.5" />
+                            Free cancellation up to 6 hours before your booking start time.
                         </div>
                     </div>
-                }
-            </div>
+                </ModalShell>
+            )}
+
+            {/* ── Payment Method Modal ── */}
+            {modalPaymentMethod && (
+                <ModalShell
+                    title="Update Payment Method"
+                    subtitle="Select your preferred payment method"
+                    onClose={() => setModalPaymentMethod(false)}
+                    footer={
+                        <div className="flex gap-3">
+                            <button onClick={() => setModalPaymentMethod(false)} disabled={isUpdatingPayment}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button onClick={handlePaymentMethodUpdate} disabled={isUpdatingPayment}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}>
+                                {isUpdatingPayment ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Updating…</>
+                                ) : 'Update Method'}
+                            </button>
+                        </div>
+                    }
+                >
+                    <div className="space-y-3">
+                        <div className="p-3 rounded-xl border border-gray-100 bg-gray-50 mb-4">
+                            <p className="text-xs text-gray-500">Current method: <span className="font-semibold text-gray-800">{bookingData?.paymentMethod || 'Not specified'}</span></p>
+                        </div>
+
+                        {/* Card */}
+                        <div
+                            onClick={() => setSelectedPaymentMethod("Online")}
+                            className="border rounded-xl p-4 cursor-pointer transition-all"
+                            style={selectedPaymentMethod === "Online"
+                                ? { borderColor: '#01788E', background: 'rgba(1,120,142,0.05)' }
+                                : { borderColor: '#e5e7eb' }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all`}
+                                        style={selectedPaymentMethod === "Online"
+                                            ? { borderColor: '#01788E', background: '#01788E' }
+                                            : { borderColor: '#d1d5db' }}>
+                                        {selectedPaymentMethod === "Online" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-800">Pay by card with Ziina</span>
+                                </div>
+                                <div className="flex gap-1.5">
+                                    <div className="border border-gray-200 rounded px-1.5 py-1 h-7 flex items-center bg-white">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2.5" />
+                                    </div>
+                                    <div className="border border-gray-200 rounded px-1.5 py-1 h-7 flex items-center bg-white">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cash */}
+                        <div
+                            onClick={() => setSelectedPaymentMethod("Cash")}
+                            className="border rounded-xl p-4 cursor-pointer transition-all"
+                            style={selectedPaymentMethod === "Cash"
+                                ? { borderColor: '#01788E', background: 'rgba(1,120,142,0.05)' }
+                                : { borderColor: '#e5e7eb' }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
+                                        style={selectedPaymentMethod === "Cash"
+                                            ? { borderColor: '#01788E', background: '#01788E' }
+                                            : { borderColor: '#d1d5db' }}>
+                                        {selectedPaymentMethod === "Cash" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-800">Cash On Delivery</span>
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-1 rounded-lg border"
+                                    style={{ background: '#FFF7ED', color: '#d97706', borderColor: '#FED7AA' }}>
+                                    +5 AED FEE
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Info note */}
+                        <div className="p-3 rounded-xl border text-xs leading-relaxed"
+                            style={{ background: 'rgba(1,120,142,0.04)', borderColor: 'rgba(1,120,142,0.2)', color: '#015f70' }}>
+                            <p className="font-semibold mb-1">Note</p>
+                            Cash on Delivery includes an additional fee. Online payments are processed securely via Ziina.
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
+            {/* ── Address Update Modal ── */}
+            {modalAddressUpdate && (
+                <ModalShell
+                    title="Update Address"
+                    subtitle="Update your service location details"
+                    onClose={() => setModalAddressUpdate(false)}
+                    wide
+                    footer={
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setModalAddressUpdate(false)} disabled={isUpdatingAddress}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSubmit(handleAddressUpdate)}
+                                disabled={isUpdatingAddress}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
+                            >
+                                {isUpdatingAddress ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Updating…</>
+                                ) : 'Update Address'}
+                            </button>
+                        </div>
+                    }
+                >
+                    {/* Type tabs */}
+                    <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
+                        {propertyTypes.map(btn => (
+                            <button
+                                key={btn}
+                                type="button"
+                                onClick={() => handleTypeChange(btn)}
+                                className="px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all shrink-0"
+                                style={selectedType === btn
+                                    ? { background: '#01788E', color: '#fff', borderColor: '#01788E' }
+                                    : { background: '#fff', color: '#374151', borderColor: '#e5e7eb' }}
+                            >
+                                {btn}
+                            </button>
+                        ))}
+                    </div>
+
+                    <form className="space-y-4">
+                        <div>
+                            <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">City</label>
+                            <input {...register("city", { required: "City is required" })} {...tealFocus}
+                                type="text" placeholder="Enter City" className={inputCls} />
+                            {errors.city && <p className="text-red-500 text-[11px] mt-1">{errors.city.message}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Area</label>
+                            <input {...register("area", { required: "Area is required" })} {...tealFocus}
+                                type="text" placeholder="Enter Area" className={inputCls} />
+                            {errors.area && <p className="text-red-500 text-[11px] mt-1">{errors.area.message}</p>}
+                        </div>
+
+                        {selectedType === "Villa" && (
+                            <>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Community / Street</label>
+                                    <input {...register("community", { required: "Community is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Community / Street Name" className={inputCls} />
+                                    {errors.community && <p className="text-red-500 text-[11px] mt-1">{errors.community.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Villa No.</label>
+                                    <input {...register("villaNo", { required: "Villa number is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Villa Number" className={inputCls} />
+                                    {errors.villaNo && <p className="text-red-500 text-[11px] mt-1">{errors.villaNo.message}</p>}
+                                </div>
+                            </>
+                        )}
+
+                        {selectedType === "Other" && (
+                            <>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Street / Building Name</label>
+                                    <input {...register("streetName", { required: "Street/Building name is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Street / Building Name" className={inputCls} />
+                                    {errors.streetName && <p className="text-red-500 text-[11px] mt-1">{errors.streetName.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Apartment / Villa No.</label>
+                                    <input {...register("otherNo", { required: "Number is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Apartment / Villa No" className={inputCls} />
+                                    {errors.otherNo && <p className="text-red-500 text-[11px] mt-1">{errors.otherNo.message}</p>}
+                                </div>
+                            </>
+                        )}
+
+                        {selectedType !== "Villa" && selectedType !== "Other" && (
+                            <>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Building Name</label>
+                                    <input {...register("buildingName", { required: "Building name is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Building Name" className={inputCls} />
+                                    {errors.buildingName && <p className="text-red-500 text-[11px] mt-1">{errors.buildingName.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Apartment No.</label>
+                                    <input {...register("apartmentNo", { required: "Apartment number is required" })} {...tealFocus}
+                                        type="text" placeholder="Enter Apartment No" className={inputCls} />
+                                    {errors.apartmentNo && <p className="text-red-500 text-[11px] mt-1">{errors.apartmentNo.message}</p>}
+                                </div>
+                            </>
+                        )}
+                    </form>
+                </ModalShell>
+            )}
         </div>
     );
 };
@@ -1542,11 +934,7 @@ export default function BookingDetails() {
 
 
 
-
-
-
-
-
+// main component code 
 // /* eslint-disable no-unused-vars */
 // import { useEffect, useRef, useState } from "react";
 // import { FaUser } from "react-icons/fa";
@@ -1557,786 +945,1530 @@ export default function BookingDetails() {
 // import { useQuery } from "@tanstack/react-query";
 // import { LuArrowLeft } from "react-icons/lu";
 // import { useForm } from "react-hook-form";
-// import { MdLocationOn, MdCalendarToday, MdPayment, MdInfo, MdClose } from "react-icons/md";
-// import { HiBuildingOffice } from "react-icons/hi2";
-// import { BsClock, BsTag, BsStar, BsStarFill } from "react-icons/bs";
+// import { MdLocationOn, MdCalendarToday, MdPayment, MdInfo } from "react-icons/md";
+// import { HiBuildingOffice, HiHome } from "react-icons/hi2";
+// import { BsClock, BsTag } from "react-icons/bs";
 // import { TbReceipt } from "react-icons/tb";
 // import useAxiosSecure from "../../../hooks/useAxiosSecure";
 // import toast from "react-hot-toast";
-
-// // Modal Components for better organization
-// const Modal = ({ isOpen, onClose, title, subtitle, children }) => {
-//   if (!isOpen) return null;
-
-//   return (
-//     <div
-//       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-//       onClick={onClose}
-//     >
-//       <div
-//         className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
-//         onClick={(e) => e.stopPropagation()}
-//       >
-//         <div className="shrink-0 p-6 border-b border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-//               {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
-//             </div>
-//             <button
-//               onClick={onClose}
-//               className="p-2 hover:bg-gray-100 rounded-lg transition"
-//             >
-//               <MdClose className="w-6 h-6 text-gray-500" />
-//             </button>
-//           </div>
-//         </div>
-//         <div className="flex-1 overflow-y-auto p-6">
-//           {children}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// // Info Card Component
-// const InfoCard = ({ icon: Icon, title, value, bgColor = "bg-blue-50", iconColor = "text-blue-600" }) => (
-//   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-//     <div className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center shrink-0`}>
-//       <Icon className={iconColor} />
-//     </div>
-//     <div className="min-w-0 flex-1">
-//       <p className="text-sm text-gray-600">{title}</p>
-//       <p className="font-medium text-gray-900 truncate">{value}</p>
-//     </div>
-//   </div>
-// );
-
-// // Action Button Component
-// const ActionButton = ({ icon: Icon, label, onClick, color = "blue" }) => {
-//   const colorClasses = {
-//     blue: "bg-blue-50 hover:bg-blue-100 text-blue-700",
-//     green: "bg-green-50 hover:bg-green-100 text-green-700",
-//     purple: "bg-purple-50 hover:bg-purple-100 text-purple-700",
-//     amber: "bg-amber-50 hover:bg-amber-100 text-amber-700",
-//   };
-
-//   return (
-//     <button
-//       onClick={onClick}
-//       className={`p-3 ${colorClasses[color]} rounded-lg transition flex flex-col items-center gap-2 w-full`}
-//     >
-//       <Icon className="text-xl" />
-//       <span className="text-sm font-medium">{label}</span>
-//     </button>
-//   );
-// };
+// import useAuth from "../../../hooks/useAuth";
 
 // export default function BookingDetails() {
-//   const item = useLoaderData();
-//   const scrollerRef = useRef(null);
-//   const axiosSecure = useAxiosSecure();
+//     const item = useLoaderData();
+//     const scrollerRef = useRef(null);
+//     const [openModal, setOpenModal] = useState(false);
+//     const [modalAddress, setModalAddress] = useState(false);
+//     const [modalPrice, setModalPrice] = useState(false);
+//     const [modalRescudle, setModalRescudle] = useState(false);
+//     const [modalPaymentMethod, setModalPaymentMethod] = useState(false);
+//     const [selectedDay, setSelectedDay] = useState(null);
+//     const [selectedTime, setSelectedTime] = useState(null);
+//     const [modalAddressUpdate, setModalAddressUpdate] = useState(false);
+//     const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
+//     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
+//     const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
+//     const axiosSecure = useAxiosSecure();
+//     const { user } = useAuth();
+//     // console.log(user);
 
-//   // Modal states
-//   const [modals, setModals] = useState({
-//     manage: false,
-//     address: false,
-//     price: false,
-//     reschedule: false,
-//     payment: false,
-//     addressUpdate: false
-//   });
+//     const { register, handleSubmit, formState: { errors }, setValue } = useForm({
+//         mode: "onChange"
+//     });
+//     const [selectedType, setSelectedType] = useState("Apartment");
+//     const propertyTypes = ["Apartment", "Villa", "Office", "Other"];
 
-//   // Form states
-//   const [selectedDay, setSelectedDay] = useState(null);
-//   const [selectedTime, setSelectedTime] = useState(null);
-//   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(item?.Data?.paymentMethod || "Cash");
-//   const [isUpdating, setIsUpdating] = useState(false);
-//   const [selectedType, setSelectedType] = useState("Apartment");
-
-//   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
-//     mode: "onChange"
-//   });
-
-//   const propertyTypes = ["Apartment", "Villa", "Office", "Other"];
-
-//   // Fetch available dates
-//   const { data: dateTime, isLoading } = useQuery({
-//     queryKey: ['date-time-user'],
-//     queryFn: async () => {
-//       const res = await axiosSecure.get(`/date-time`);
-//       if (!res?.data?.success) {
-//         throw new Error("Failed to fetch date-time");
-//       }
-//       return res?.data;
+//     const handelReschudeleFun = () => {
+//         setModalRescudle(true);
 //     }
-//   });
 
-//   // Helper functions
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "";
-//     try {
-//       const date = new Date(dateString);
-//       return date.toLocaleDateString('en-US', {
-//         weekday: 'short',
-//         month: 'short',
-//         day: 'numeric',
-//         year: 'numeric'
-//       });
-//     } catch {
-//       return dateString;
+//     // console.log(item.Data);
+
+//     // const handleAddInstructions = () => {
+//     //     // console.log("Instructions saved:", instructions);
+//     //     setOpenInstructionsModal(false);
+//     //     setInstructions("");
+//     // }
+
+//     const handelAddressDetails = item => {
+//         setModalAddress(true);
+//         // console.log(item);
 //     }
-//   };
 
-//   const extractAddressParts = (addressString) => {
-//     if (!addressString) return { apartmentNo: "", buildingName: "", area: "", city: "", type: "Apartment" };
-//     const parts = addressString.split(" - ").map(part => part.trim());
-//     return {
-//       apartmentNo: parts[0] || "",
-//       buildingName: parts[1] || "",
-//       area: parts[2] || "",
-//       city: parts[3] || "",
-//       type: "Apartment"
+//     const handelTotalPay = item => {
+//         setModalPrice(true);
+//         // console.log(item);
+//     }
+
+//     const handleChangePaymentMethod = () => {
+//         setModalPaymentMethod(true);
 //     };
-//   };
 
-//   const getAvailableDays = () => {
-//     if (!dateTime?.Data || !Array.isArray(dateTime.Data)) return [];
+//     // Extract address parts from the string
+//     const extractAddressParts = (addressString) => {
+//         if (!addressString) {
+//             return {
+//                 apartmentNo: "",
+//                 buildingName: "",
+//                 area: "",
+//                 city: "",
+//                 type: "Apartment"
+//             };
+//         }
 
-//     const dateMap = new Map();
-//     dateTime.Data.forEach(item => {
-//       const date = item.date;
-//       if (dateMap.has(date)) {
-//         const existing = dateMap.get(date);
-//         item.time.forEach(slot => {
-//           if (!existing.timeSlots.includes(slot)) existing.timeSlots.push(slot);
-//         });
-//       } else {
-//         dateMap.set(date, {
-//           date,
-//           short: formatDate(date).split(',').slice(0, 2).join(','),
-//           timeSlots: [...item.time]
-//         });
-//       }
+//         const parts = addressString.split(" - ").map(part => part.trim());
+//         return {
+//             apartmentNo: parts[0] || "",
+//             buildingName: parts[1] || "",
+//             area: parts[2] || "",
+//             city: parts[3] || "",
+//             type: "Apartment"
+//         };
+//     };
+
+//     // Get address parts from the item data
+//     const addressParts = extractAddressParts(item?.Data?.address);
+
+//     const { data: dateTime, isLoading } = useQuery({
+//         queryKey: ['date-time-user'],
+//         queryFn: async () => {
+//             const res = await axiosSecure.get(`/date-time`);
+//             // console.log(res?.data?.success);
+
+//             if (!res?.data?.success) {
+//                 throw new Error("Failed to fetch date-time");
+//             }
+//             return res?.data;
+//         }
 //     });
 
-//     return Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
-//   };
+//     const formatDateForDisplay = (dateString) => {
+//         if (!dateString) return "";
+//         try {
+//             const date = new Date(dateString);
+//             return date.toLocaleDateString('en-US', {
+//                 weekday: 'short',
+//                 month: 'short',
+//                 day: 'numeric'
+//             });
+//         } catch (error) {
+//             console.error("Date formatting error:", error);
+//             return dateString;
+//         }
+//     };
 
-//   const availableDays = getAvailableDays();
-//   const availableTimes = selectedDay
-//     ? availableDays.find(day => day.date === selectedDay)?.timeSlots.sort() || []
-//     : [];
+//     // Prepare days data from API - Merge duplicate dates
+//     const getAvailableDays = () => {
+//         if (!dateTime?.Data || !Array.isArray(dateTime.Data)) {
+//             return [];
+//         }
 
-//   const addressParts = extractAddressParts(item?.Data?.address);
+//         const dateMap = new Map();
+//         dateTime.Data.forEach(item => {
+//             const date = item.date;
+//             const timeSlots = item.time || [];
 
-//   // Handlers
-//   const toggleModal = (modalName, value) => {
-//     setModals(prev => ({ ...prev, [modalName]: value }));
-//   };
+//             if (dateMap.has(date)) {
+//                 const existing = dateMap.get(date);
+//                 timeSlots.forEach(slot => {
+//                     if (!existing.timeSlots.includes(slot)) {
+//                         existing.timeSlots.push(slot);
+//                     }
+//                 });
+//             } else {
+//                 dateMap.set(date, {
+//                     id: item.id,
+//                     date: date,
+//                     short: formatDateForDisplay(date),
+//                     label: getFullDateLabel(date),
+//                     timeSlots: [...timeSlots]
+//                 });
+//             }
+//         });
 
-//   const handleReschedule = async () => {
-//     if (!selectedDay || !selectedTime) {
-//       toast.error("Please select both date and time");
-//       return;
-//     }
+//         const daysArray = Array.from(dateMap.values()).sort((a, b) =>
+//             new Date(a.date) - new Date(b.date)
+//         );
+//         return daysArray;
+//     };
 
-//     setIsUpdating(true);
-//     try {
-//       const res = await axiosSecure.patch(`/booking/userBooking/${item?.Data?.id}`, {
-//         date: selectedDay,
-//         time: selectedTime,
-//       });
+//     const getFullDateLabel = (dateString) => {
+//         if (!dateString) return "";
+//         try {
+//             const date = new Date(dateString);
+//             return date.toLocaleDateString('en-US', {
+//                 month: 'short',
+//                 day: 'numeric',
+//                 year: 'numeric'
+//             });
+//         } catch (error) {
+//             console.error("Date formatting error:", error);
+//             return dateString;
+//         }
+//     };
 
-//       if (res?.data?.success) {
-//         toast.success("Booking rescheduled successfully!");
-//         toggleModal('reschedule', false);
-//       }
-//     } catch (error) {
-//       toast.error("Failed to reschedule booking");
-//     } finally {
-//       setIsUpdating(false);
-//     }
-//   };
+//     // Get available time slots for selected day
+//     const getAvailableTimes = () => {
+//         if (!selectedDay) return [];
 
-//   const handlePaymentUpdate = async () => {
-//     setIsUpdating(true);
-//     try {
-//       const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
-//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
-//         paymentMethod: paymentMethodValue
-//       });
+//         const selectedDayData = getAvailableDays().find(day => day.date === selectedDay);
+//         if (!selectedDayData || !selectedDayData.timeSlots) return [];
 
-//       if (res?.data?.success) {
-//         toast.success("Payment method updated successfully!");
-//         toggleModal('payment', false);
-//       }
-//     } catch (error) {
-//       toast.error("Failed to update payment method");
-//     } finally {
-//       setIsUpdating(false);
-//     }
-//   };
+//         return selectedDayData.timeSlots.sort((a, b) => {
+//             return a.localeCompare(b);
+//         });
+//     };
 
-//   const handleAddressUpdate = async (data) => {
-//     setIsUpdating(true);
-//     try {
-//       const formattedAddress = `${data.apartmentNo || ''} - ${data.buildingName || ''} - ${data.area || ''} - ${data.city || ''}`;
-//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
-//         address: formattedAddress
-//       });
+//     const scroll = (dir) => {
+//         if (!scrollerRef.current) return;
+//         const amount = 200;
 
-//       if (res?.data?.success) {
-//         toast.success("Address updated successfully!");
-//         toggleModal('addressUpdate', false);
-//       }
-//     } catch (error) {
-//       toast.error("Failed to update address");
-//     } finally {
-//       setIsUpdating(false);
-//     }
-//   };
+//         scrollerRef.current.scrollBy({
+//             left: dir === "left" ? -amount : amount,
+//             behavior: "smooth"
+//         });
+//     };
 
-//   const handleCancelBooking = async () => {
-//     if (!window.confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) return;
+//     const availableDays = getAvailableDays();
+//     const availableTimes = getAvailableTimes();
 
-//     try {
-//       const res = await axiosSecure.patch(`/booking/update/${item?.Data?.id}`, {
-//         status: 'Cancelled'
-//       });
+//     // Format display address
+//     const formatDisplayAddress = (type, data) => {
+//         switch (type) {
+//             case "Apartment":
+//             case "Office":
+//                 return `${data.apartmentNo || ''} - ${data.buildingName || ''} - ${data.area || ''} - ${data.city || ''}`;
 
-//       if (res?.data?.success) {
-//         toast.success("Booking cancelled successfully!");
-//         toggleModal('manage', false);
-//       }
-//     } catch (error) {
-//       toast.error("Failed to cancel booking");
-//     }
-//   };
+//             case "Villa":
+//                 return `${data.villaNo || ''} - ${data.community || ''} - ${data.area || ''} - ${data.city || ''}`;
 
-//   const scroll = (direction) => {
-//     if (!scrollerRef.current) return;
-//     const amount = 200;
-//     scrollerRef.current.scrollBy({
-//       left: direction === "left" ? -amount : amount,
-//       behavior: "smooth"
-//     });
-//   };
+//             case "Other":
+//                 return `${data.otherNo || ''} - ${data.streetName || ''} - ${data.area || ''} - ${data.city || ''}`;
 
-//   // Auto-select first date
-//   useEffect(() => {
-//     if (availableDays.length > 0 && !selectedDay) {
-//       setSelectedDay(availableDays[0].date);
-//     }
-//   }, [availableDays, selectedDay]);
+//             default:
+//                 return `${data.area || ''} - ${data.city || ''}`;
+//         }
+//     };
 
-//   return (
-//     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-6 lg:px-8">
-//       <div className="max-w-7xl mx-auto">
-//         {/* Header */}
-//         <div className="mb-6 sm:mb-8">
-//           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Booking Details</h1>
-//           <p className="text-sm sm:text-base text-gray-600">Manage your booking and view all details</p>
-//         </div>
+//     // Handle type change
+//     const handleTypeChange = (type) => {
+//         setSelectedType(type);
+//         if (type === "Villa") {
+//             setValue("buildingName", "");
+//             setValue("apartmentNo", "");
+//         } else if (type === "Other") {
+//             setValue("buildingName", "");
+//             setValue("apartmentNo", "");
+//             setValue("community", "");
+//             setValue("villaNo", "");
+//         } else {
+//             setValue("community", "");
+//             setValue("villaNo", "");
+//             setValue("streetName", "");
+//             setValue("otherNo", "");
+//             setValue("nickname", "");
+//         }
+//     };
 
-//         {/* Main Grid */}
-//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-//           {/* Left Column */}
-//           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-//             {/* Confirmation Card */}
-//             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl sm:rounded-2xl shadow-sm border border-blue-100 p-4 sm:p-6">
-//               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-//                 <div className="flex items-start gap-3">
-//                   <div className="w-10 h-10 rounded-full bg-white border border-blue-200 flex items-center justify-center shrink-0">
-//                     <BsClock className="text-blue-600 text-lg" />
-//                   </div>
-//                   <div>
-//                     <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Booking Confirmed</h2>
-//                     <p className="text-xs sm:text-sm text-gray-600">Booking ID: {item?.Data?.id || "N/A"}</p>
-//                     <p className="text-sm sm:text-base text-gray-700 mt-2">
-//                       Your booking is confirmed for {formatDate(item?.Data?.date)} at {item?.Data?.time}
-//                     </p>
-//                   </div>
+//     // Handle address update submission
+//     const handleAddressUpdate = async (data) => {
+//         const bookingId = item?.Data?.id;
+
+//         if (!bookingId) {
+//             return false;
+//         }
+//         const formattedAddress = formatDisplayAddress(selectedType, data);
+
+//         const updateData = {
+//             address: formattedAddress
+//         };
+
+//         // console.log("Updating address with data:", updateData);
+//         setIsUpdatingAddress(true);
+
+//         try {
+//             const res = await axiosSecure.patch(`/booking/update/${bookingId}`, updateData);
+
+//             if (res?.data?.success) {
+//                 toast.success('Address update successfully');
+//                 setModalAddressUpdate(false);
+//             } else {
+//                 toast.error('Something is wrong');
+//             }
+//             // eslint-disable-next-line no-unused-vars
+//         } catch (error) {
+//             toast.error('Something is wrong');
+//         } finally {
+//             setIsUpdatingAddress(false);
+//         }
+//         return true;
+//     };
+
+//     // Handle payment method update - Updated to work with your backend
+//     const handlePaymentMethodUpdate = async () => {
+//         const bookingId = item?.Data?.id;
+
+//         if (!bookingId) {
+//             toast.error("Booking ID not found!");
+//             return;
+//         }
+
+//         setIsUpdatingPayment(true);
+
+//         try {
+//             // Format the payment method to match your backend expectation
+//             // 'Cash' for Cash On Delivery, 'Online' for Ziina/Card payment
+//             const paymentMethodValue = selectedPaymentMethod === "Cash" ? "CashOnDelivery" : "Online";
+
+//             const updateData = {
+//                 paymentMethod: paymentMethodValue
+//             };
+
+//             // Make the API call using axiosSecure
+//             const response = await axiosSecure.patch(`/booking/update/${bookingId}`, updateData);
+
+//             if (response?.data?.success) {
+//                 toast.success(`Payment method updated to ${selectedPaymentMethod === "Cash" ? "Cash On Delivery" : "Online Payment"} successfully!`);
+//                 setModalPaymentMethod(false);
+
+//                 // Optional: Refresh the booking data or update local state
+//                 // You might want to refetch the booking data here
+//             } else {
+//                 toast.error(response?.data?.message || "Failed to update payment method");
+//             }
+//         } catch (error) {
+//             console.error("Error updating payment method:", error);
+//             toast.error(error?.response?.data?.message || "Network error. Please try again.");
+//         } finally {
+//             setIsUpdatingPayment(false);
+//         }
+//     };
+
+//     // Handle payment method update
+//     // const handlePaymentMethodUpdate = async () => {
+//     //     const bookingId = item?.Data?.id;
+
+//     //     if (!bookingId) {
+//     //         alert("Booking ID not found!");
+//     //         return false;
+//     //     }
+
+//     //     // console.log("Updating payment method to:", selectedPaymentMethod);
+//     //     setIsUpdatingPayment(true);
+
+//     //     try {
+//     //         const endpoints = [
+//     //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/userBooking/${bookingId}`,
+//     //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/${bookingId}`,
+//     //             `${import.meta.env.VITE_BACKEND_API_URL}/userBooking/${bookingId}`,
+//     //             `${import.meta.env.VITE_BACKEND_API_URL}/booking/updatePayment/${bookingId}`
+//     //         ];
+
+//     //         let response = null;
+//     //         let success = false;
+
+//     //         for (const endpoint of endpoints) {
+//     //             try {
+//     //                 // console.log("Trying endpoint:", endpoint);
+//     //                 response = await fetch(endpoint, {
+//     //                     method: "PATCH",
+//     //                     headers: {
+//     //                         "Content-Type": "application/json",
+//     //                     },
+//     //                     body: JSON.stringify({
+//     //                         paymentMethod: selectedPaymentMethod
+//     //                     }),
+//     //                 });
+
+//     //                 if (response.ok) {
+//     //                     success = true;
+//     //                     break;
+//     //                 }
+//     //             } catch (err) {
+//     //                 // console.log("Failed with endpoint:", endpoint, err);
+//     //             }
+//     //         }
+
+//     //         if (success && response) {
+//     //             const result = await response.json();
+//     //             // console.log("Payment method updated successfully:", result);
+//     //             alert(`Payment method changed to ${selectedPaymentMethod} successfully!`);
+//     //             setModalPaymentMethod(false);
+//     //         } else {
+//     //             alert("Failed to update payment method. Please try a different endpoint or contact support.");
+//     //         }
+//     //     } catch (error) {
+//     //         console.error("Error updating payment method:", error);
+//     //         alert("Network error. Please check your connection and try again.");
+//     //     } finally {
+//     //         setIsUpdatingPayment(false);
+//     //     }
+//     // };
+
+//     // Load current address into form when modal opens
+//     useEffect(() => {
+//         if (modalAddressUpdate && item?.Data?.address) {
+//             const parts = item.Data.address.split(" - ");
+//             if (parts.length >= 4) {
+//                 const formData = {
+//                     apartmentNo: parts[0] || "",
+//                     buildingName: parts[1] || "",
+//                     area: parts[2] || "",
+//                     city: parts[3] || ""
+//                 };
+
+//                 setValue("apartmentNo", formData.apartmentNo);
+//                 setValue("buildingName", formData.buildingName);
+//                 setValue("area", formData.area);
+//                 setValue("city", formData.city);
+
+//                 setSelectedType("Apartment");
+//             }
+//         }
+//     }, [modalAddressUpdate, item?.Data?.address, setValue]);
+
+//     // Reschedule function
+//     const handleRescheduleSubmit = async (id) => {
+//         const bookingId = id;
+//         if (!selectedDay) {
+//             alert("Please select a day");
+//             return;
+//         }
+//         if (!selectedTime) {
+//             alert("Please select a time slot");
+//             return;
+//         }
+//         const updatedData = {
+//             date: selectedDay,
+//             time: selectedTime,
+//         };
+
+//         try {
+//             const resReshudle = await axiosSecure.patch(`/booking/userBooking/${bookingId}`, updatedData);
+//             if (resReshudle?.data?.success) {
+//                 setModalRescudle(false);
+//                 toast.success("Booking rescheduled successfully!");
+//             } else {
+//                 console.error("Failed:", resReshudle);
+//                 toast.error(`Failed to reschedule: ${resReshudle.message || `Error ${resReshudle.status}`}`);
+//             }
+//         } catch (error) {
+//             console.error("Error:", error);
+//             toast.error("Network error. Please check your connection and try again.");
+//         }
+//     };
+
+//     // Auto-select first date
+//     useEffect(() => {
+//         if (dateTime?.Data && dateTime.Data.length > 0 && !selectedDay) {
+//             const days = getAvailableDays();
+//             if (days.length > 0) {
+//                 const firstDay = days[0].date;
+//                 setSelectedDay(firstDay);
+//             }
+//         }
+//         // eslint-disable-next-line react-hooks/exhaustive-deps
+//     }, [dateTime, selectedDay]);
+
+//     const handleUserUpdateBookingStatus = async (id) => {
+//         const updateData = {
+//             status: 'Cancelled'
+//         }
+
+//         try {
+//             const resStatus = await axiosSecure.patch(`/booking/update/${id}`, updateData);
+//             if (resStatus?.data?.success) {
+//                 toast.success("Booking cancelled successfully!");
+//             } else {
+//                 toast.error("Failed to cancel booking");
+//             }
+//         } catch (error) {
+//             console.error("Update error:", error);
+//             toast.error("Something went wrong!");
+//         }
+//     };
+
+//     return (
+//         <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+//             <div className="max-w-5xl mx-auto">
+//                 {/* Header Section */}
+//                 <div className="mb-8">
+//                     <h1 className="text-3xl font-semibold text-gray-900 mb-2">Booking Details</h1>
+//                     <p className="text-gray-600">Manage your booking and view all details</p>
 //                 </div>
-//               </div>
-//             </div>
 
-//             {/* Rating */}
-//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-//                 <BsTag className="text-blue-600" />
-//                 Rate Your Experience
-//               </h3>
-//               <div className="flex gap-2">
-//                 {[1, 2, 3, 4, 5].map((star) => (
-//                   <button key={star} className="text-2xl sm:text-3xl text-orange-400 hover:scale-110 transition">
-//                     <BsStar />
-//                   </button>
-//                 ))}
-//               </div>
-//             </div>
+//                 {/* Main Content Grid */}
+//                 <div className="  grid grid-cols-1 lg:grid-cols-3 gap-8 h-screen overflow-y-auto lg:h-auto lg:overflow-visible">
+//                     {/* Left Column - Booking Info */}
+//                     <div className="lg:col-span-2 space-y-6">
+//                         {/* Confirmation Card */}
+//                         <div className="bg-linear-to-r from-blue-50 to-cyan-50 rounded-2xl shadow-sm border border-blue-100 p-6">
+//                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+//                                 <div>
+//                                     <div className="flex items-center gap-3 mb-2">
+//                                         <div className="w-10 h-10 rounded-full bg-white border border-blue-200 flex items-center justify-center">
+//                                             <BsClock className="text-blue-600 text-lg" />
+//                                         </div>
+//                                         <div>
+//                                             <h2 className="text-xl font-semibold text-gray-900">Booking Confirmed</h2>
+//                                             <p className="text-sm text-gray-600">Booking ID: {item?.Data?.id || "N/A"}</p>
+//                                         </div>
+//                                     </div>
+//                                     <p className="text-gray-700 mt-3">
+//                                         Your booking is confirmed and will be delivered as per the booked date and time
+//                                     </p>
+//                                     <div className="flex items-center gap-3 mt-4">
+//                                         <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center">
+//                                             <FaUser className="text-gray-700" />
+//                                         </div>
+//                                         <div>
+//                                             <p className="font-medium text-gray-900">Al Mandhar Pest Control</p>
+//                                             <p className="text-sm text-gray-600">Service Provider</p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
 
-//             {/* Job Details */}
-//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-//                 <MdInfo className="text-blue-600" />
-//                 Job Details
-//               </h3>
-//               <div className="space-y-3">
-//                 <InfoCard
-//                   icon={MdCalendarToday}
-//                   title="Date & Time"
-//                   value={`${formatDate(item?.Data?.date)} at ${item?.Data?.time}`}
-//                   bgColor="bg-blue-50"
-//                   iconColor="text-blue-600"
-//                 />
-//                 <div className="flex items-center justify-between gap-3">
-//                   <InfoCard
-//                     icon={MdLocationOn}
-//                     title="Address"
-//                     value={item?.Data?.address || "No address provided"}
-//                     bgColor="bg-green-50"
-//                     iconColor="text-green-600"
-//                   />
-//                   <button
-//                     onClick={() => toggleModal('address', true)}
-//                     className="shrink-0 p-3 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-//                   >
-//                     <IoIosArrowForward className="text-xl" />
-//                   </button>
-//                 </div>
-//               </div>
-//             </div>
+//                         {/* Rating Section */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+//                                 <BsTag className="text-blue-600" />
+//                                 Rate Your Experience
+//                             </h3>
+//                             <div className="rating rating-lg">
+//                                 {[1, 2, 3, 4, 5].map((star) => (
+//                                     <input
+//                                         key={star}
+//                                         type="radio"
+//                                         name="rating-9"
+//                                         className="mask mask-star-2 bg-orange-400"
+//                                         aria-label={`${star} star`}
+//                                     />
+//                                 ))}
+//                             </div>
+//                             <p className="text-sm text-gray-500 mt-2">Share your experience to help us improve</p>
+//                         </div>
 
-//             {/* Service Details */}
-//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-//                 <HiBuildingOffice className="text-blue-600" />
-//                 Service Details
-//               </h3>
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-//                 <div className="p-4 bg-gray-50 rounded-xl">
-//                   <p className="text-sm text-gray-600">Service Type</p>
-//                   <p className="font-medium text-gray-900">{item?.Data?.serviceName || "N/A"}</p>
-//                 </div>
-//                 <div className="p-4 bg-gray-50 rounded-xl">
-//                   <p className="text-sm text-gray-600">Quantity</p>
-//                   <p className="font-medium text-gray-900">1</p>
-//                 </div>
-//                 <div className="p-4 bg-gray-50 rounded-xl sm:col-span-2">
-//                   <div className="flex items-center justify-between">
-//                     <span className="text-gray-600">Service Fee</span>
-//                     <div className="flex items-center gap-1">
-//                       <img src={dirhum} alt="OMR" className="w-4 h-4" />
-//                       <span className="font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
+//                         {/* Job Details Card */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+//                                 <MdInfo className="text-blue-600" />
+//                                 Job Details
+//                             </h3>
+//                             <div className="space-y-5">
+//                                 <div className="flex justify-between items-center py-3 border-b border-gray-100">
+//                                     <div className="flex items-center gap-3">
+//                                         <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+//                                             <MdCalendarToday className="text-blue-600" />
+//                                         </div>
+//                                         <div>
+//                                             <p className="font-medium text-gray-700">Start Time</p>
+//                                             <p className="text-sm text-gray-500">{item?.Data?.date}, {item?.Data?.time}</p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+
+//                                 <div className="flex justify-between items-center py-3 border-b border-gray-100">
+//                                     <div className="flex items-center gap-3">
+//                                         <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+//                                             <MdLocationOn className="text-green-600" />
+//                                         </div>
+//                                         <div>
+//                                             <p className="font-medium text-gray-700">Address</p>
+//                                             <p className="text-sm text-gray-500">{item?.Data?.address}</p>
+//                                         </div>
+//                                     </div>
+//                                     <button
+//                                         onClick={() => handelAddressDetails(item)}
+//                                         className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+//                                     >
+//                                         View
+//                                         <IoIosArrowForward />
+//                                     </button>
+//                                 </div>
+//                             </div>
+//                         </div>
+
+//                         {/* Service Details Card */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+//                                 <HiBuildingOffice className="text-blue-600" />
+//                                 Service Details
+//                             </h3>
+//                             <div className="space-y-4">
+//                                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                     <div>
+//                                         {/* <p className="font-medium text-gray-900">Studio - General</p> */}
+//                                         <p className="text-sm text-gray-600">Quantity: 1</p>
+//                                     </div>
+//                                     <div className="text-right">
+//                                         <p className="text-sm text-gray-600">Service Type</p>
+//                                         <p className="font-sm text-gray-900">{item?.Data?.serviceName}</p>
+//                                     </div>
+//                                 </div>
+//                                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                     <div className="flex items-center gap-2">
+//                                         <BsTag className="text-gray-600" />
+//                                         <span className="font-medium text-gray-700">Service Fee</span>
+//                                     </div>
+//                                     <div className="flex items-center gap-2">
+//                                         <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                         <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
 //                     </div>
-//                   </div>
+
+//                     {/* Right Column - Payment & Actions */}
+//                     <div className="space-y-6">
+//                         {/* Payment Summary Card */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+//                                 <TbReceipt className="text-blue-600" />
+//                                 Payment Summary
+//                             </h3>
+//                             <div className="space-y-4">
+//                                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+//                                     <div className="flex items-center gap-2">
+//                                         <MdPayment className="text-gray-600" />
+//                                         <span className="font-medium text-gray-700">Payment Method</span>
+//                                     </div>
+//                                     <span className="font-medium text-gray-900">{item?.Data?.paymentMethod}</span>
+//                                 </div>
+//                                 <div className="flex justify-between items-center p-3 bg-linear-to-r from-blue-50 to-cyan-50 rounded-lg">
+//                                     <div>
+//                                         <p className="font-semibold text-gray-900">Total to Pay</p>
+//                                         <p className="text-sm text-gray-600">Inclusive of all charges</p>
+//                                     </div>
+//                                     <div className="text-right">
+//                                         <div className="flex items-center gap-1">
+//                                             <img src={dirhum} alt="Currency" className="w-6 h-6" />
+//                                             <span className="text-2xl font-bold text-gray-900">{item.Data?.totalPay}</span>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                                 <button
+//                                     onClick={() => handelTotalPay(item)}
+//                                     className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition flex items-center justify-center gap-2"
+//                                 >
+//                                     View Detailed Breakdown
+//                                     <IoIosArrowForward />
+//                                 </button>
+//                             </div>
+//                         </div>
+
+//                         {/* Manage Booking Card */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-6">Manage Booking</h3>
+//                             <div className="space-y-3">
+//                                 <button
+//                                     onClick={() => setOpenModal(true)}
+//                                     className="w-full py-3.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl transition shadow-md hover:shadow-lg"
+//                                 >
+//                                     Manage Booking Options
+//                                 </button>
+//                                 <p className="text-sm text-gray-500 text-center mt-2">
+//                                     Reschedule, add instructions, or make changes to your booking
+//                                 </p>
+//                             </div>
+//                         </div>
+
+//                         {/* Quick Actions */}
+//                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+//                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+//                             <div className="grid grid-cols-2 gap-3">
+//                                 <button
+//                                     onClick={handelReschudeleFun}
+//                                     className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition flex flex-col items-center gap-2"
+//                                 >
+//                                     <MdCalendarToday className="text-xl" />
+//                                     <span className="text-sm font-medium">Reschedule</span>
+//                                 </button>
+//                                 {/* <button
+//                                     onClick={() => setOpenInstructionsModal(true)}
+//                                     className="p-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition flex flex-col items-center gap-2"
+//                                 >
+//                                     <FiMessageCircle className="text-xl" />
+//                                     <span className="text-sm font-medium">Instructions</span>
+//                                 </button> */}
+//                                 <button
+//                                     onClick={() => setModalAddressUpdate(true)}
+//                                     className="p-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition flex flex-col items-center gap-2"
+//                                 >
+//                                     <MdLocationOn className="text-xl" />
+//                                     <span className="text-sm font-medium">Address</span>
+//                                 </button>
+//                                 <button
+//                                     onClick={handleChangePaymentMethod}
+//                                     className="p-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition flex flex-col items-center gap-2"
+//                                 >
+//                                     <MdPayment className="text-xl" />
+//                                     <span className="text-sm font-medium">Payment</span>
+//                                 </button>
+//                             </div>
+//                         </div>
+//                     </div>
 //                 </div>
-//               </div>
-//             </div>
-//           </div>
 
-//           {/* Right Column */}
-//           <div className="space-y-4 sm:space-y-6">
-//             {/* Payment Summary */}
-//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-//                 <TbReceipt className="text-blue-600" />
-//                 Payment Summary
-//               </h3>
-//               <div className="space-y-3">
-//                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-//                   <span className="text-gray-600">Payment Method</span>
-//                   <span className="font-medium text-gray-900">{item?.Data?.paymentMethod}</span>
-//                 </div>
-//                 <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
-//                   <div>
-//                     <p className="font-semibold text-gray-900">Total</p>
-//                     <p className="text-xs text-gray-600">All charges included</p>
-//                   </div>
-//                   <div className="flex items-center gap-1">
-//                     <img src={dirhum} alt="OMR" className="w-5 h-5" />
-//                     <span className="text-xl sm:text-2xl font-bold text-gray-900">{item.Data?.totalPay}</span>
-//                   </div>
-//                 </div>
-//                 <button
-//                   onClick={() => toggleModal('price', true)}
-//                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition text-sm"
-//                 >
-//                   View Breakdown
-//                 </button>
-//               </div>
-//             </div>
-
-//             {/* Quick Actions */}
-//             <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-//               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-//               <div className="grid grid-cols-2 gap-2 sm:gap-3">
-//                 <ActionButton
-//                   icon={MdCalendarToday}
-//                   label="Reschedule"
-//                   onClick={() => toggleModal('reschedule', true)}
-//                   color="blue"
-//                 />
-//                 <ActionButton
-//                   icon={MdLocationOn}
-//                   label="Address"
-//                   onClick={() => toggleModal('addressUpdate', true)}
-//                   color="purple"
-//                 />
-//                 <ActionButton
-//                   icon={MdPayment}
-//                   label="Payment"
-//                   onClick={() => toggleModal('payment', true)}
-//                   color="amber"
-//                 />
-//                 <ActionButton
-//                   icon={BsTag}
-//                   label="Manage"
-//                   onClick={() => toggleModal('manage', true)}
-//                   color="green"
-//                 />
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Modals */}
-
-//         {/* Address View Modal */}
-//         <Modal
-//           isOpen={modals.address}
-//           onClose={() => toggleModal('address', false)}
-//           title="Address Details"
-//         >
-//           <div className="space-y-4">
-//             <InfoCard icon={MdLocationOn} title="City" value={addressParts.city || "Not specified"} bgColor="bg-blue-50" />
-//             <InfoCard icon={MdLocationOn} title="Area" value={addressParts.area || "Not specified"} bgColor="bg-green-50" />
-//             <InfoCard icon={HiBuildingOffice} title="Building" value={addressParts.buildingName || "Not specified"} bgColor="bg-purple-50" />
-//             <InfoCard icon={HiBuildingOffice} title="Apartment" value={addressParts.apartmentNo || "Not specified"} bgColor="bg-amber-50" />
-//           </div>
-//         </Modal>
-
-//         {/* Price Breakdown Modal */}
-//         <Modal
-//           isOpen={modals.price}
-//           onClose={() => toggleModal('price', false)}
-//           title="Payment Breakdown"
-//           subtitle="Detailed breakdown of all charges"
-//         >
-//           <div className="space-y-3">
-//             {[
-//               { label: "Service Charge", value: item?.Data?.serviceCharge },
-//               { label: "Service Fee", value: item?.Data?.serviceFee },
-//               { label: "Discount", value: item?.Data?.discount },
-//               { label: "VAT (5%)", value: item?.Data?.vat },
-//               { label: "Cash on Delivery", value: item?.Data?.cashOnDelivery },
-//             ].map((item, index) => (
-//               <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-//                 <span className="text-gray-700">{item.label}</span>
-//                 <div className="flex items-center gap-1">
-//                   <img src={dirhum} alt="OMR" className="w-4 h-4" />
-//                   <span className="font-semibold">{item.value || 0}</span>
-//                 </div>
-//               </div>
-//             ))}
-//             <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl mt-4">
-//               <span className="font-semibold text-gray-900">Total to Pay</span>
-//               <div className="flex items-center gap-1">
-//                 <img src={dirhum} alt="OMR" className="w-5 h-5" />
-//                 <span className="text-2xl font-bold text-gray-900">{item?.Data?.totalPay}</span>
-//               </div>
-//             </div>
-//           </div>
-//         </Modal>
-
-//         {/* Reschedule Modal */}
-//         <Modal
-//           isOpen={modals.reschedule}
-//           onClose={() => toggleModal('reschedule', false)}
-//           title="Reschedule Booking"
-//           subtitle="Select a new date and time"
-//         >
-//           <div className="space-y-6">
-//             {/* Date Selector */}
-//             <div>
-//               <h3 className="font-medium text-gray-900 mb-3">Select Date</h3>
-//               {isLoading ? (
-//                 <div className="flex justify-center py-8">
-//                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-//                 </div>
-//               ) : (
-//                 <div className="relative">
-//                   <button
-//                     onClick={() => scroll("left")}
-//                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
-//                   >
-//                     <IoIosArrowBack className="text-2xl text-gray-600" />
-//                   </button>
-//                   <div
-//                     ref={scrollerRef}
-//                     className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-0 md:px-8"
-//                   >
-//                     {availableDays.map((day, index) => (
-//                       <button
-//                         key={index}
-//                         onClick={() => setSelectedDay(day.date)}
-//                         className={`snap-start min-w-[90px] p-3 rounded-lg border transition ${
-//                           selectedDay === day.date
-//                             ? "bg-blue-600 text-white border-blue-600"
-//                             : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-//                         }`}
-//                       >
-//                         <div className="text-sm">{day.short}</div>
-//                       </button>
-//                     ))}
-//                   </div>
-//                   <button
-//                     onClick={() => scroll("right")}
-//                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
-//                   >
-//                     <IoIosArrowForward className="text-2xl text-gray-600" />
-//                   </button>
-//                 </div>
-//               )}
-//             </div>
-
-//             {/* Time Selector */}
-//             {selectedDay && (
-//               <div>
-//                 <h3 className="font-medium text-gray-900 mb-3">Select Time</h3>
-//                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-//                   {availableTimes.map((time, index) => (
-//                     <button
-//                       key={index}
-//                       onClick={() => setSelectedTime(time)}
-//                       className={`p-3 rounded-lg border text-center transition ${
-//                         selectedTime === time
-//                           ? "bg-blue-600 text-white border-blue-600"
-//                           : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-//                       }`}
+//                 {/* Manage Booking Modal */}
+//                 {openModal &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setOpenModal(false)}
 //                     >
-//                       {time}
-//                     </button>
-//                   ))}
-//                 </div>
-//               </div>
-//             )}
+//                         <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <h2 className="text-xl font-bold text-gray-900">Manage Booking</h2>
+//                                     <button
+//                                         onClick={() => setOpenModal(false)}
+//                                         className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                     >
+//                                         <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                                         </svg>
+//                                     </button>
+//                                 </div>
+//                                 <p className="text-gray-600 mt-2">Choose an option to manage your booking</p>
+//                             </div>
 
-//             <button
-//               onClick={handleReschedule}
-//               disabled={!selectedDay || !selectedTime || isUpdating}
-//               className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-//             >
-//               {isUpdating ? "Updating..." : "Confirm Reschedule"}
-//             </button>
-//           </div>
-//         </Modal>
+//                             <div className="divide-y divide-gray-100">
+//                                 <button
+//                                     onClick={handelReschudeleFun}
+//                                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+//                                 >
+//                                     <div className="flex items-center gap-4">
+//                                         <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+//                                             <MdCalendarToday className="text-blue-600 text-xl" />
+//                                         </div>
+//                                         <div className="text-left">
+//                                             <p className="font-medium text-gray-900">Reschedule</p>
+//                                             <p className="text-sm text-gray-600">Change date or time</p>
+//                                         </div>
+//                                     </div>
+//                                     <IoIosArrowForward className="text-gray-400" />
+//                                 </button>
 
-//         {/* Payment Method Modal */}
-//         <Modal
-//           isOpen={modals.payment}
-//           onClose={() => toggleModal('payment', false)}
-//           title="Update Payment Method"
-//           subtitle="Select your preferred payment method"
-//         >
-//           <div className="space-y-4">
-//             <div className="p-4 bg-blue-50 rounded-lg">
-//               <p className="text-sm text-gray-700">
-//                 Current: <span className="font-semibold">{item?.Data?.paymentMethod}</span>
-//               </p>
-//             </div>
+//                                 {/* <button
+//                                     // onClick={() => { setOpenModal(false); setOpenInstructionsModal(true); }}
+//                                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+//                                 >
+//                                     <div className="flex items-center gap-4">
+//                                         <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+//                                             <FiMessageCircle className="text-green-600 text-xl" />
+//                                         </div>
+//                                         <div className="text-left">
+//                                             <p className="font-medium text-gray-900">Add Instructions</p>
+//                                             <p className="text-sm text-gray-600">Special requirements</p>
+//                                         </div>
+//                                     </div>
+//                                     <IoIosArrowForward className="text-gray-400" />
+//                                 </button> */}
 
-//             <div className="space-y-3">
-//               {/* Online Payment */}
-//               <div
-//                 onClick={() => setSelectedPaymentMethod("Online")}
-//                 className={`border rounded-xl p-4 cursor-pointer transition ${
-//                   selectedPaymentMethod === "Online" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
-//                 }`}
-//               >
-//                 <div className="flex items-center justify-between">
-//                   <div className="flex items-center gap-3">
-//                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-//                       selectedPaymentMethod === "Online" ? "border-blue-600" : "border-gray-400"
-//                     }`}>
-//                       {selectedPaymentMethod === "Online" && <div className="w-3 h-3 rounded-full bg-blue-600"></div>}
+//                                 <button
+//                                     onClick={() => setModalAddressUpdate(true)}
+//                                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+//                                 >
+//                                     <div className="flex items-center gap-4">
+//                                         <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+//                                             <MdLocationOn className="text-purple-600 text-xl" />
+//                                         </div>
+//                                         <div className="text-left">
+//                                             <p className="font-medium text-gray-900">Change Address</p>
+//                                             <p className="text-sm text-gray-600">Update location</p>
+//                                         </div>
+//                                     </div>
+//                                     <IoIosArrowForward className="text-gray-400" />
+//                                 </button>
+
+//                                 <button
+//                                     onClick={handleChangePaymentMethod}
+//                                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+//                                 >
+//                                     <div className="flex items-center gap-4">
+//                                         <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+//                                             <MdPayment className="text-amber-600 text-xl" />
+//                                         </div>
+//                                         <div className="text-left">
+//                                             <p className="font-medium text-gray-900">Payment Method</p>
+//                                             <p className="text-sm text-gray-600">Update payment details</p>
+//                                         </div>
+//                                     </div>
+//                                     <IoIosArrowForward className="text-gray-400" />
+//                                 </button>
+
+//                                 <button
+//                                     onClick={() => handleUserUpdateBookingStatus(item?.Data?.id)}
+//                                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-red-50 transition text-red-600"
+//                                 >
+//                                     <div className="flex items-center gap-4">
+//                                         <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+//                                             <svg className="text-red-600 text-xl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                                             </svg>
+//                                         </div>
+//                                         <div className="text-left">
+//                                             <p className="font-medium">Cancel Booking</p>
+//                                             <p className="text-sm text-red-500">This action cannot be undone</p>
+//                                         </div>
+//                                     </div>
+//                                     <IoIosArrowForward className="text-red-400" />
+//                                 </button>
+//                             </div>
+
+//                             <div className="p-6 border-t border-gray-200">
+//                                 <button
+//                                     onClick={() => setOpenModal(false)}
+//                                     className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium"
+//                                 >
+//                                     Close
+//                                 </button>
+//                             </div>
+//                         </div>
 //                     </div>
-//                     <span className="font-medium">Pay Online (Ziina)</span>
-//                   </div>
-//                   <div className="flex gap-1">
-//                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
-//                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-4" />
-//                   </div>
-//                 </div>
-//               </div>
+//                 }
 
-//               {/* Cash on Delivery */}
-//               <div
-//                 onClick={() => setSelectedPaymentMethod("Cash")}
-//                 className={`border rounded-xl p-4 cursor-pointer transition ${
-//                   selectedPaymentMethod === "Cash" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
-//                 }`}
-//               >
-//                 <div className="flex items-center justify-between">
-//                   <div className="flex items-center gap-3">
-//                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-//                       selectedPaymentMethod === "Cash" ? "border-blue-600" : "border-gray-400"
-//                     }`}>
-//                       {selectedPaymentMethod === "Cash" && <div className="w-3 h-3 rounded-full bg-blue-600"></div>}
+//                 {/* Add Instructions Modal */}
+//                 {/* {openInstructionsModal &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setOpenInstructionsModal(false)}
+//                     >
+//                         <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <h2 className="text-xl font-bold text-gray-900">Add Instructions</h2>
+//                                     <button
+//                                         onClick={() => setOpenInstructionsModal(false)}
+//                                         className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                     >
+//                                         <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                                         </svg>
+//                                     </button>
+//                                 </div>
+//                                 <p className="text-gray-600 mt-2">Add special instructions for the service provider</p>
+//                             </div>
+
+//                             <div className="p-6">
+//                                 <div className="mb-6">
+//                                     <label className="block text-sm font-medium text-gray-700 mb-3">
+//                                         Additional Instructions
+//                                     </label>
+//                                     <textarea
+//                                         rows="6"
+//                                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+//                                         placeholder="Please provide any additional instructions for the service provider (e.g., specific requirements, access codes, parking information, etc.)..."
+//                                         value={instructions}
+//                                         onChange={(e) => setInstructions(e.target.value)}
+//                                     />
+//                                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+//                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                                         </svg>
+//                                         These instructions will be shared with your service provider.
+//                                     </div>
+//                                 </div>
+
+//                                 <div className="flex justify-end gap-3">
+//                                     <button
+//                                         onClick={() => setOpenInstructionsModal(false)}
+//                                         className="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition"
+//                                     >
+//                                         Cancel
+//                                     </button>
+//                                     <button
+//                                         onClick={handleAddInstructions}
+//                                         disabled={!instructions.trim()}
+//                                         className="px-6 py-2.5 text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl font-medium transition"
+//                                     >
+//                                         Save Instructions
+//                                     </button>
+//                                 </div>
+//                             </div>
+//                         </div>
 //                     </div>
-//                     <span className="font-medium">Cash on Delivery</span>
-//                   </div>
-//                   <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">+5% fee</span>
-//                 </div>
-//               </div>
+//                 } */}
+
+//                 {/* ADDRESS MODAL - View Current Address */}
+//                 {modalAddress &&
+//                     <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 md:items-center md:pt-0 bg-black/50"
+//                         onClick={() => setModalAddress(false)}
+//                     >
+//                         <div className="relative w-full max-w-[600px] mx-4 bg-white rounded-lg shadow-xl h-[90vh] sm:h-[85vh] md:h-[80vh] flex flex-col"
+//                             onClick={(e) => e.stopPropagation()}>
+
+//                             <div className="shrink-0 flex items-center justify-center p-4 sm:p-5 border-b border-gray-200 relative">
+//                                 <button className="absolute right-4 cursor-pointer text-gray-500 hover:text-gray-700 p-1.5"
+//                                     onClick={() => setModalAddress(false)}>
+//                                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+//                                         <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+//                                     </svg>
+//                                 </button>
+
+//                                 <h2 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
+//                                     Address Details
+//                                 </h2>
+//                             </div>
+
+//                             <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
+//                                 <div className="space-y-4 mb-6">
+//                                     {/* Address Info Cards for Mobile */}
+//                                     <div className="md:hidden space-y-3">
+//                                         <div className="bg-gray-50 p-3 rounded-lg">
+//                                             <p className="text-sm text-gray-600 mb-1">City</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.city || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gray-50 p-3 rounded-lg">
+//                                             <p className="text-sm text-gray-600 mb-1">Area</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.area || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gray-50 p-3 rounded-lg">
+//                                             <p className="text-sm text-gray-600 mb-1">Building Name</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.buildingName || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gray-50 p-3 rounded-lg">
+//                                             <p className="text-sm text-gray-600 mb-1">Apartment No.</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.apartmentNo || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+
+//                                     {/* Address Info for Desktop */}
+//                                     <div className="hidden md:grid md:grid-cols-2 md:gap-4">
+//                                         <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+//                                             <p className="text-base text-gray-700">City</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.city || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         {/* <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+//                                             <p className="text-base text-gray-700">Type</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.type}
+//                                             </p>
+//                                         </div> */}
+//                                         <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+//                                             <p className="text-base text-gray-700">Area</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.area || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+//                                             <p className="text-base text-gray-700">Building Name</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.buildingName || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                         <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+//                                             <p className="text-base text-gray-700">Apartment No.</p>
+//                                             <p className="text-base font-medium text-gray-900">
+//                                                 {addressParts.apartmentNo || "Not specified"}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 }
+
+
+//                 {/* PRICE MODAL */}
+//                 {modalPrice &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setModalPrice(false)}
+//                     >
+//                         <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <h2 className="text-xl font-bold text-gray-900">Payment Breakdown</h2>
+//                                     <button
+//                                         onClick={() => setModalPrice(false)}
+//                                         className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                     >
+//                                         <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                                         </svg>
+//                                     </button>
+//                                 </div>
+//                                 <p className="text-gray-600 mt-2">Detailed breakdown of all charges</p>
+//                             </div>
+
+//                             <div className="flex-1 overflow-y-auto p-6">
+//                                 <div className="space-y-4">
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">Service Charges</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceCharge}</span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">Service Fee</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceFee}</span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">Discount</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.discount}</span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">Sub Total</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.serviceCharge} + {item?.Data?.serviceFee} = <p className="flex items-center justify-center"><img src={dirhum} alt="Currency" className="w-5 h-5" /> {item?.Data?.subTotal}</p></span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">VAT (5%)</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.vat}</span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+//                                         <span className="font-medium text-gray-700">Cash on Delivery Charges</span>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-5 h-5" />
+//                                             <span className="text-lg font-semibold text-gray-900">{item?.Data?.cashOnDelivery}</span>
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between items-center p-4 bg-linear-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 mt-6">
+//                                         <div>
+//                                             <span className="font-semibold text-gray-900 text-lg">Total to Pay</span>
+//                                             <p className="text-sm text-gray-600">Final amount including all taxes</p>
+//                                         </div>
+//                                         <div className="flex items-center gap-2">
+//                                             <img src={dirhum} alt="Currency" className="w-6 h-6" />
+//                                             <span className="text-2xl font-bold text-gray-900">{item?.Data?.totalPay}</span>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 }
+
+//                 {/* RESCHEDULE MODAL */}
+//                 {/* RESCHEDULE MODAL - Updated to match DateTime component */}
+//                 {modalRescudle &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setModalRescudle(false)}
+//                     >
+//                         <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <div className="flex items-center gap-3">
+//                                         <button
+//                                             onClick={() => setModalRescudle(false)}
+//                                             className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                         >
+//                                             <LuArrowLeft className="text-xl" />
+//                                         </button>
+//                                         <div>
+//                                             <h2 className="text-xl font-semibold text-gray-900">Reschedule Booking</h2>
+//                                             <p className="text-gray-600">Select a new date and time for your service</p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+
+//                             <div className="flex-1 overflow-y-auto p-6">
+//                                 <div className="space-y-8">
+//                                     {/* Day Selector - Updated to match DateTime component */}
+//                                     <div>
+//                                         <h3 className="text-lg font-semibold mb-4">
+//                                             Which day would you like us to come?
+//                                         </h3>
+//                                         {isLoading && (
+//                                             <div className="text-center py-12">
+//                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+//                                                 <p className="mt-4 text-gray-600">Loading available dates...</p>
+//                                             </div>
+//                                         )}
+//                                         {availableDays.length === 0 && !isLoading ? (
+//                                             <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+//                                                 <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+//                                                 </svg>
+//                                                 <p className="text-gray-600 font-medium">No available dates</p>
+//                                                 <p className="text-sm text-gray-500 mt-1">Please check back later for available slots</p>
+//                                             </div>
+//                                         ) : (
+//                                             <>
+//                                                 <div className="relative max-w-[300px] mx-auto md:max-w-4xl">
+//                                                     {/* Left Scroll Button */}
+//                                                     <button
+//                                                         onClick={() => scroll("left")}
+//                                                         className="hidden absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 md:flex items-center justify-center"
+//                                                     >
+//                                                         <IoIosArrowBack className="text-3xl font-bold" />
+//                                                     </button>
+
+//                                                     {/* Day List */}
+//                                                     <div
+//                                                         ref={scrollerRef}
+//                                                         className="flex gap-3 overflow-x-auto no-scrollbar py-2 px-10"
+//                                                     >
+//                                                         {availableDays.map((day, index) => {
+//                                                             const isActive = selectedDay === day.date;
+
+//                                                             return (
+//                                                                 <div
+//                                                                     key={`${day.date}-${index}`}
+//                                                                     onClick={() => setSelectedDay(day.date)}
+//                                                                     className={`snap-start min-w-[100px] md:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
+//                                                         ${isActive ? "bg-[#B2D7DE] border-transparent shadow" : "bg-white border-gray-200 hover:bg-gray-50"}
+//                                                     `}
+//                                                                 >
+//                                                                     <div className="text-sm text-gray-600">{day.short}</div>
+//                                                                     <div className="text-sm font-medium">{day.label}</div>
+//                                                                     {day.timeSlots && day.timeSlots.length > 0 && (
+//                                                                         <div className="text-xs text-green-600 mt-1">
+//                                                                             {day.timeSlots.length} slot{day.timeSlots.length !== 1 ? 's' : ''}
+//                                                                         </div>
+//                                                                     )}
+//                                                                 </div>
+//                                                             );
+//                                                         })}
+//                                                     </div>
+
+//                                                     {/* Right Scroll Button */}
+//                                                     <button
+//                                                         onClick={() => scroll("right")}
+//                                                         className="hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 md:flex items-center justify-center cursor-pointer"
+//                                                     >
+//                                                         <IoIosArrowForward className="text-3xl font-bold" />
+//                                                     </button>
+//                                                 </div>
+//                                             </>
+//                                         )}
+//                                     </div>
+
+//                                     {/* Time Selector - Updated to match DateTime component */}
+//                                     {selectedDay && (
+//                                         <>
+//                                             <h3 className="text-lg font-semibold mt-8 mb-4">
+//                                                 What time would you like us to arrive?
+//                                             </h3>
+
+//                                             {availableTimes.length === 0 ? (
+//                                                 <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+//                                                     <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                                                     </svg>
+//                                                     <p className="text-gray-600">No time slots available for this date</p>
+//                                                 </div>
+//                                             ) : (
+//                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//                                                     {availableTimes.map((timeSlot, index) => (
+//                                                         <button
+//                                                             key={index}
+//                                                             onClick={() => setSelectedTime(timeSlot)}
+//                                                             className={`w-full text-left rounded-lg border px-6 py-4 transition
+//                                                 ${selectedTime === timeSlot ? "bg-[#E6F6F6] border-teal-300 shadow-sm" : "bg-white border-gray-200 hover:bg-gray-50"}
+//                                             `}
+//                                                         >
+//                                                             <span className="text-sm font-medium">{timeSlot}</span>
+//                                                         </button>
+//                                                     ))}
+//                                                 </div>
+//                                             )}
+//                                         </>
+//                                     )}
+
+//                                     {/* Note Section - Updated to match DateTime component */}
+//                                     <div className="mt-8 p-4 bg-gray-50 border rounded-md flex gap-4 text-sm text-gray-700">
+//                                         <svg className="w-5 h-5 text-gray-500 mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+//                                             <path d="M12 9v2m0 4h.01M21 12A9 9 0 1112 3a9 9 0 019 9z" strokeWidth="1.5" />
+//                                         </svg>
+
+//                                         <div>
+//                                             Free cancellation up to 6 hours before your booking start time.{" "}
+//                                             <a href="#" className="text-teal-600 underline">View cancellation policy</a>
+//                                         </div>
+//                                     </div>
+
+//                                     {/* Confirm Button - Updated styling */}
+//                                     <div className="sticky bottom-0 bg-white pt-6 border-t">
+//                                         <button
+//                                             onClick={() => handleRescheduleSubmit(item.Data.id)}
+//                                             disabled={!selectedDay || !selectedTime}
+//                                             className={`w-full py-4 text-white font-semibold rounded-lg transition ${!selectedDay || !selectedTime
+//                                                 ? "bg-gray-400 cursor-not-allowed"
+//                                                 : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl"
+//                                                 }`}
+//                                         >
+//                                             {selectedDay && selectedTime ? (
+//                                                 `Confirm Reschedule`
+//                                             ) : (
+//                                                 "Select date and time to continue"
+//                                             )}
+//                                         </button>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 }
+
+//                 {/* PAYMENT METHOD CHANGE MODAL */}
+//                 {modalPaymentMethod &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setModalPaymentMethod(false)}
+//                     >
+//                         <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <div className="flex items-center gap-3">
+//                                         <button
+//                                             onClick={() => setModalPaymentMethod(false)}
+//                                             className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                         >
+//                                             <LuArrowLeft className="text-xl" />
+//                                         </button>
+//                                         <div>
+//                                             <h2 className="text-xl font-bold text-gray-900">Update Payment Method</h2>
+//                                             <p className="text-gray-600">Select your preferred payment method</p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+
+//                             <div className="flex-1 overflow-y-auto p-6">
+//                                 <div className="space-y-6">
+//                                     <div className="bg-blue-50 rounded-xl p-4 mb-6">
+//                                         <p className="text-gray-700">
+//                                             Current method: <span className="font-semibold text-gray-900">{item?.Data?.paymentMethod || "Not specified"}</span>
+//                                         </p>
+//                                     </div>
+
+//                                     {/* Payment Method Options - Updated to match Confirmation component */}
+//                                     <div className="space-y-3">
+//                                         {/* Card (Online Payment) - Ziina */}
+//                                         <div
+//                                             onClick={() => setSelectedPaymentMethod("Online")}
+//                                             className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+//                                 ${selectedPaymentMethod === "Online" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+//                                         >
+//                                             <div className="flex items-center justify-between w-full">
+//                                                 <div className="flex items-center gap-3">
+//                                                     {/* Custom Radio Button */}
+//                                                     <div className="relative flex items-center justify-center">
+//                                                         <input
+//                                                             type="radio"
+//                                                             name="paymentMethod"
+//                                                             checked={selectedPaymentMethod === "Online"}
+//                                                             readOnly
+//                                                             className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+//                                                         />
+//                                                         <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+//                                                     </div>
+
+//                                                     <span className="text-[#1A1A1A] font-medium md:text-lg">
+//                                                         Pay by card with Ziina
+//                                                     </span>
+//                                                 </div>
+
+//                                                 {/* Card Logos */}
+//                                                 <div className="flex items-center gap-2">
+//                                                     <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+//                                                         <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3" />
+//                                                     </div>
+//                                                     <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center">
+//                                                         <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+//                                                     </div>
+//                                                     <div className="bg-white border border-gray-200 rounded px-1.5 py-1 h-8 flex items-center flex-col justify-center leading-none">
+//                                                         <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
+//                                                         <span className="text-[6px] font-bold italic text-blue-900">DEBIT</span>
+//                                                     </div>
+//                                                 </div>
+//                                             </div>
+//                                         </div>
+
+//                                         {/* Cash On Delivery */}
+//                                         <div
+//                                             onClick={() => setSelectedPaymentMethod("Cash")}
+//                                             className={`border rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all
+//                                 ${selectedPaymentMethod === "Cash" ? "border-[#C6724D] bg-[#FDF5F3]" : "border-gray-200 hover:bg-gray-50"}`}
+//                                         >
+//                                             <div className="flex items-center justify-between w-full">
+//                                                 <div className="flex items-center gap-3">
+//                                                     {/* Custom Radio Button */}
+//                                                     <div className="relative flex items-center justify-center">
+//                                                         <input
+//                                                             type="radio"
+//                                                             name="paymentMethod"
+//                                                             checked={selectedPaymentMethod === "Cash"}
+//                                                             readOnly
+//                                                             className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+//                                                         />
+//                                                         <div className="absolute w-2.5 h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+//                                                     </div>
+
+//                                                     <span className="text-[#1A1A1A] font-medium md:text-lg">
+//                                                         Cash On Delivery
+//                                                     </span>
+//                                                 </div>
+
+//                                                 {/* Fee Badge */}
+//                                                 <div className="bg-[#FFEDD5] text-[#C6724D] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#FDBA74]">
+//                                                     +5% FEE
+//                                                 </div>
+//                                             </div>
+//                                         </div>
+//                                     </div>
+
+//                                     {/* Important Note */}
+//                                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+//                                         <div className="flex gap-3">
+//                                             <div className="flex-shrink-0">
+//                                                 <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                                                 </svg>
+//                                             </div>
+//                                             <div>
+//                                                 <h4 className="font-semibold text-amber-900 mb-2">Important Information</h4>
+//                                                 <ul className="text-sm text-amber-800 space-y-2">
+//                                                     <li className="flex items-start gap-2">
+//                                                         <span className="text-amber-600">•</span>
+//                                                         Changing payment method may affect the total amount due
+//                                                     </li>
+//                                                     <li className="flex items-start gap-2">
+//                                                         <span className="text-amber-600">•</span>
+//                                                         Cash on Delivery includes an additional 5% fee
+//                                                     </li>
+//                                                     <li className="flex items-start gap-2">
+//                                                         <span className="text-amber-600">•</span>
+//                                                         Online payments are processed securely via Ziina
+//                                                     </li>
+//                                                 </ul>
+//                                             </div>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+
+//                             {/* Action Buttons */}
+//                             <div className="border-t p-6">
+//                                 <div className="flex gap-3">
+//                                     <button
+//                                         type="button"
+//                                         onClick={() => setModalPaymentMethod(false)}
+//                                         className="flex-1 px-6 py-3.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition"
+//                                         disabled={isUpdatingPayment}
+//                                     >
+//                                         Cancel
+//                                     </button>
+//                                     <button
+//                                         type="button"
+//                                         onClick={handlePaymentMethodUpdate}
+//                                         className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+//                                         disabled={isUpdatingPayment}
+//                                     >
+//                                         {isUpdatingPayment ? (
+//                                             <span className="flex items-center justify-center">
+//                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+//                                                 Updating...
+//                                             </span>
+//                                         ) : "Update Payment Method"}
+//                                     </button>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 }
+
+//                 {/* ADDRESS UPDATE MODAL */}
+//                 {modalAddressUpdate &&
+//                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm"
+//                         onClick={() => setModalAddressUpdate(false)}
+//                     >
+//                         <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+//                             onClick={(e) => e.stopPropagation()}>
+//                             <div className="p-6 border-b border-gray-200">
+//                                 <div className="flex items-center justify-between">
+//                                     <div className="flex items-center gap-3">
+//                                         <button
+//                                             onClick={() => setModalAddressUpdate(false)}
+//                                             className="p-2 hover:bg-gray-100 rounded-lg transition"
+//                                         >
+//                                             <LuArrowLeft className="text-xl" />
+//                                         </button>
+//                                         <div>
+//                                             <h2 className="text-xl font-semibold text-gray-900">Update Address</h2>
+//                                             <p className="text-gray-600">Update your service location details</p>
+//                                         </div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+
+//                             <div className="flex-1 overflow-y-auto p-6">
+//                                 <form onSubmit={handleSubmit(handleAddressUpdate)} className="space-y-6">
+//                                     <div className="flex space-x-3 mb-6 overflow-x-auto">
+//                                         {propertyTypes.map(btn => (
+//                                             <button
+//                                                 key={btn}
+//                                                 onClick={() => handleTypeChange(btn)}
+//                                                 type="button"
+//                                                 className={`flex items-center px-4 py-2 rounded-full transition duration-300 border cursor-pointer
+//                                     ${selectedType === btn ? "bg-teal-600 text-white shadow-md" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}
+//                                             >
+//                                                 {btn}
+//                                             </button>
+//                                         ))}
+//                                     </div>
+
+//                                     {/* FORM FIELDS - Updated to match Address component */}
+//                                     <div className="space-y-6">
+//                                         {/* City */}
+//                                         <div>
+//                                             <label className="block text-gray-700 font-medium mb-1">City</label>
+//                                             <input
+//                                                 {...register("city", { required: "City is required" })}
+//                                                 type="text"
+//                                                 placeholder="Enter City"
+//                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                             />
+//                                             {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
+//                                         </div>
+
+//                                         {/* Area */}
+//                                         <div>
+//                                             <label className="block text-gray-700 font-medium mb-1">Area</label>
+//                                             <input
+//                                                 {...register("area", { required: "Area is required" })}
+//                                                 type="text"
+//                                                 placeholder="Enter Area"
+//                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                             />
+//                                             {errors.area && <p className="text-red-500 text-sm mt-1">{errors.area.message}</p>}
+//                                         </div>
+
+//                                         {/* Dynamic Fields based on Property Type */}
+//                                         {selectedType === "Villa" && (
+//                                             <>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Community / Street Name</label>
+//                                                     <input
+//                                                         {...register("community", { required: "Community is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Community / Street Name"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.community && <p className="text-red-500 text-sm mt-1">{errors.community.message}</p>}
+//                                                 </div>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Villa No</label>
+//                                                     <input
+//                                                         {...register("villaNo", { required: "Villa number is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Villa Number"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.villaNo && <p className="text-red-500 text-sm mt-1">{errors.villaNo.message}</p>}
+//                                                 </div>
+//                                             </>
+//                                         )}
+
+//                                         {selectedType === "Other" && (
+//                                             <>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Street / Building Name</label>
+//                                                     <input
+//                                                         {...register("streetName", { required: "Street/Building name is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Street / Building Name"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.streetName && <p className="text-red-500 text-sm mt-1">{errors.streetName.message}</p>}
+//                                                 </div>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Apartment / Villa No</label>
+//                                                     <input
+//                                                         {...register("otherNo", { required: "Apartment/Villa number is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Apartment / Villa No"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.otherNo && <p className="text-red-500 text-sm mt-1">{errors.otherNo.message}</p>}
+//                                                 </div>
+//                                             </>
+//                                         )}
+
+//                                         {selectedType !== "Villa" && selectedType !== "Other" && (
+//                                             <>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Building Name</label>
+//                                                     <input
+//                                                         {...register("buildingName", { required: "Building name is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Building Name"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.buildingName && <p className="text-red-500 text-sm mt-1">{errors.buildingName.message}</p>}
+//                                                 </div>
+//                                                 <div>
+//                                                     <label className="block text-gray-700 font-medium mb-1">Apartment No</label>
+//                                                     <input
+//                                                         {...register("apartmentNo", { required: "Apartment number is required" })}
+//                                                         type="text"
+//                                                         placeholder="Enter Apartment No"
+//                                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+//                                                     />
+//                                                     {errors.apartmentNo && <p className="text-red-500 text-sm mt-1">{errors.apartmentNo.message}</p>}
+//                                                 </div>
+//                                             </>
+//                                         )}
+
+//                                         {/* Submit Buttons */}
+//                                         <div className="pt-6 border-t">
+//                                             <div className="flex gap-3">
+//                                                 <button
+//                                                     type="button"
+//                                                     onClick={() => setModalAddressUpdate(false)}
+//                                                     className="flex-1 px-6 py-3.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
+//                                                     disabled={isUpdatingAddress}
+//                                                 >
+//                                                     Cancel
+//                                                 </button>
+//                                                 <button
+//                                                     type="submit"
+//                                                     className="flex-1 px-6 py-3.5 text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg font-medium transition shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+//                                                     disabled={isUpdatingAddress}
+//                                                 >
+//                                                     {isUpdatingAddress ? (
+//                                                         <span className="flex items-center justify-center gap-2">
+//                                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+//                                                             Updating...
+//                                                         </span>
+//                                                     ) : "Update Address"}
+//                                                 </button>
+//                                             </div>
+//                                         </div>
+//                                     </div>
+//                                 </form>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 }
 //             </div>
-
-//             <button
-//               onClick={handlePaymentUpdate}
-//               disabled={isUpdating}
-//               className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
-//             >
-//               {isUpdating ? "Updating..." : "Update Payment Method"}
-//             </button>
-//           </div>
-//         </Modal>
-
-//         {/* Address Update Modal */}
-//         <Modal
-//           isOpen={modals.addressUpdate}
-//           onClose={() => toggleModal('addressUpdate', false)}
-//           title="Update Address"
-//           subtitle="Update your service location"
-//         >
-//           <form onSubmit={handleSubmit(handleAddressUpdate)} className="space-y-4">
-//             <div className="flex gap-2 overflow-x-auto pb-2">
-//               {propertyTypes.map(type => (
-//                 <button
-//                   key={type}
-//                   type="button"
-//                   onClick={() => setSelectedType(type)}
-//                   className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${
-//                     selectedType === type
-//                       ? "bg-blue-600 text-white"
-//                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-//                   }`}
-//                 >
-//                   {type}
-//                 </button>
-//               ))}
-//             </div>
-
-//             <div className="space-y-4">
-//               <input
-//                 {...register("city", { required: "City is required" })}
-//                 placeholder="City"
-//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-//               />
-//               {errors.city && <p className="text-red-500 text-sm">{errors.city.message}</p>}
-
-//               <input
-//                 {...register("area", { required: "Area is required" })}
-//                 placeholder="Area"
-//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-//               />
-//               {errors.area && <p className="text-red-500 text-sm">{errors.area.message}</p>}
-
-//               <input
-//                 {...register("buildingName")}
-//                 placeholder="Building Name"
-//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-//               />
-
-//               <input
-//                 {...register("apartmentNo")}
-//                 placeholder="Apartment/Villa No"
-//                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-//               />
-//             </div>
-
-//             <div className="flex gap-3 pt-4">
-//               <button
-//                 type="button"
-//                 onClick={() => toggleModal('addressUpdate', false)}
-//                 className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-//               >
-//                 Cancel
-//               </button>
-//               <button
-//                 type="submit"
-//                 disabled={isUpdating}
-//                 className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
-//               >
-//                 {isUpdating ? "Updating..." : "Update Address"}
-//               </button>
-//             </div>
-//           </form>
-//         </Modal>
-
-//         {/* Manage Booking Modal */}
-//         <Modal
-//           isOpen={modals.manage}
-//           onClose={() => toggleModal('manage', false)}
-//           title="Manage Booking"
-//           subtitle="Choose an option to manage your booking"
-//         >
-//           <div className="divide-y divide-gray-100">
-//             <button
-//               onClick={() => { toggleModal('manage', false); toggleModal('reschedule', true); }}
-//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
-//             >
-//               <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-//                 <MdCalendarToday className="text-blue-600" />
-//               </div>
-//               <div className="text-left">
-//                 <p className="font-medium text-gray-900">Reschedule</p>
-//                 <p className="text-sm text-gray-600">Change date or time</p>
-//               </div>
-//             </button>
-
-//             <button
-//               onClick={() => { toggleModal('manage', false); toggleModal('addressUpdate', true); }}
-//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
-//             >
-//               <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-//                 <MdLocationOn className="text-purple-600" />
-//               </div>
-//               <div className="text-left">
-//                 <p className="font-medium text-gray-900">Change Address</p>
-//                 <p className="text-sm text-gray-600">Update location</p>
-//               </div>
-//             </button>
-
-//             <button
-//               onClick={() => { toggleModal('manage', false); toggleModal('payment', true); }}
-//               className="w-full py-4 flex items-center gap-4 hover:bg-gray-50 transition px-2"
-//             >
-//               <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-//                 <MdPayment className="text-amber-600" />
-//               </div>
-//               <div className="text-left">
-//                 <p className="font-medium text-gray-900">Payment Method</p>
-//                 <p className="text-sm text-gray-600">Update payment details</p>
-//               </div>
-//             </button>
-
-//             <button
-//               onClick={handleCancelBooking}
-//               className="w-full py-4 flex items-center gap-4 hover:bg-red-50 transition px-2 text-red-600"
-//             >
-//               <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-//                 <MdClose className="text-red-600" />
-//               </div>
-//               <div className="text-left">
-//                 <p className="font-medium">Cancel Booking</p>
-//                 <p className="text-sm text-red-500">This action cannot be undone</p>
-//               </div>
-//             </button>
-//           </div>
-//         </Modal>
-//       </div>
-//     </div>
-//   );
-// }
-
+//         </div>
+//     );
+// };

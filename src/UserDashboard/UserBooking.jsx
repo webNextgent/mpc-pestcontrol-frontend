@@ -142,7 +142,7 @@ export default function UserBooking() {
   };
 
   return (
-    <div className="border border-[#E5E7EB] px-2 md:px-6 py-4 rounded-lg bg-white w-full max-w-4xl mx-auto">
+    <div className="px-2 md:px-6 py-4 rounded-lg bg-white w-full max-w-4xl mx-auto">
       <h2 className="flex items-center gap-2.5 text-xl font-semibold border-b border-[#E5E7EB] pb-3 text-[#5D4F52]">
         <FaCalendarAlt className="text-[#01788E]" /> My Bookings
       </h2>

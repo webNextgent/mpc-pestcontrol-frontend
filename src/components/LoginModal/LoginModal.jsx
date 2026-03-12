@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
@@ -538,6 +539,13 @@ const LoginModal = ({ open, onClose }) => {
 };
 
 export default LoginModal;
+
+
+
+
+
+
+
 
 
 
