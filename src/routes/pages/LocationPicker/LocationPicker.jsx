@@ -305,7 +305,7 @@ export default function LocationPicker() {
                     key={addr.id}
                     onClick={() => handleAddressSelect(addr)}
                     className={`
-                                            relative flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer
+                                            relative flex items-start gap-4 p-4 rounded border-2 cursor-pointer
                                             transition-all duration-200 group
                                             ${
                                               isSelected
@@ -403,7 +403,7 @@ export default function LocationPicker() {
                 }}
                 className="
                                     mt-2 w-full flex items-center justify-center gap-2
-                                    border-2 border-dashed border-[#01788E]/30 rounded-xl
+                                    border-2 border-dashed border-[#01788E]/30 rounded
                                     py-3 text-[#01788E] text-sm font-medium
                                     hover:border-[#01788E] hover:bg-[#01788E]/5
                                     transition-all duration-200
@@ -442,7 +442,7 @@ export default function LocationPicker() {
                         placeholder="Search for your address…"
                         className="
                                                     w-full pl-10 pr-4 py-2.5 text-sm
-                                                    border border-gray-200 rounded-xl
+                                                    border border-gray-200 rounded
                                                     focus:outline-none focus:ring-2 focus:ring-[#01788E]/30 focus:border-[#01788E]
                                                     transition-all
                                                 "
@@ -455,7 +455,7 @@ export default function LocationPicker() {
                   {showCurrentAddressOption && (
                     <div
                       ref={dropdownRef}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 overflow-hidden"
+                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-30 overflow-hidden"
                     >
                       <button
                         onClick={handleCurrentAddressClick}
@@ -505,7 +505,8 @@ export default function LocationPicker() {
                   }}
                 >
                   <img
-                    src="https://servicemarket.com/dist/images/map-marker.svg"
+                    // src="https://servicemarket.com/dist/images/map-marker.svg"
+                    src="https://i.postimg.cc/yYL8WmWL/Chat-GPT-Image-Mar-12-2026-10-47-03-AM-removebg-preview.png"
                     alt="center marker"
                     className="pointer-events-none"
                     style={{
@@ -514,7 +515,7 @@ export default function LocationPicker() {
                       left: "50%",
                       transform: "translate(-50%, -100%)",
                       width: "80px",
-                      height: "80px",
+                      height: "85px",
                       zIndex: 20,
                     }}
                   />
@@ -567,7 +568,7 @@ export default function LocationPicker() {
                 {/* Location permission overlay */}
                 {showMapForNew && showMapOverlay && (
                   <div className="absolute inset-0 z-30 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-                    <div className="bg-white rounded-2xl p-6 w-[85%] max-w-xs text-center shadow-2xl">
+                    <div className="bg-white rounded p-6 w-[85%] max-w-xs text-center shadow-2xl">
                       <div className="w-14 h-14 bg-[#01788E]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaLocationCrosshairs className="text-[#01788E] text-2xl" />
                       </div>
@@ -593,7 +594,7 @@ export default function LocationPicker() {
                             }
                           }}
                           className={`
-                                                        flex-1 py-2.5 rounded-xl text-sm font-semibold
+                                                        flex-1 py-2.5 rounded text-sm font-semibold
                                                         flex items-center justify-center gap-2
                                                         transition-all duration-200
                                                         ${
@@ -619,7 +620,7 @@ export default function LocationPicker() {
                           disabled={isLocationLoading}
                           onClick={() => setShowMapOverlay(false)}
                           className="
-                                                        flex-1 py-2.5 rounded-xl text-sm font-medium
+                                                        flex-1 py-2.5 rounded text-sm font-medium
                                                         border border-gray-200 text-gray-600
                                                         hover:bg-gray-50 active:scale-[0.98]
                                                         disabled:opacity-40 transition-all duration-200

@@ -188,7 +188,7 @@ const Services = () => {
                                 {/* Search input */}
                                 <div className="absolute top-full left-0 w-full z-50 px-2.5">
                                     <input
-                                        className="py-3 px-4 border border-[#01788E] w-full rounded-md focus:outline-none shadow-lg"
+                                        className="py-2 px-4 border border-[#01788E] w-full rounded focus:outline-none shadow-lg"
                                         type="text"
                                         placeholder="Search services..."
                                         value={query}
@@ -367,9 +367,9 @@ const Services = () => {
                                                         className={`
                                                             snap-start shrink-0 whitespace-nowrap
                                                             px-2 md:px-3 py-1 md:py-1.5 rounded-full border
-                                                            flex items-center gap-2 transition-colors text-sm
+                                                            flex items-center gap-2 cursor-pointer transition-colors text-sm
                                                             ${activeId === b.id
-                                                                ? "text-[#ED6329] border-[#ED6329] border-2 bg-[#FFF2EE]"
+                                                                ? "text-red-600 border-red-600 border-2 bg-[#FFF2EE]"
                                                                 : "text-[#01788E] border-[#01788E] bg-white"
                                                             }
                                                         `}
@@ -442,8 +442,8 @@ const Services = () => {
 
             {/* ── MOBILE BOTTOM BAR ── */}
             {itemSummary === undefined ? null : itemSummary.length === 0 ? (
-                <div className="lg:hidden fixed bottom-0 left-0 w-full z-40 bg-[#d9ecee] text-center shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
-                    <p className="text-[#056677] py-1.5 font-normal text-[16px]">Add an item to continue.</p>
+                <div className="lg:hidden fixed bottom-0 left-0 w-full z-40 bg-red-100 text-center shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+                    <p className="text-red-600 py-1.5 font-normal text-[16px]">Add an item to continue.</p>
                 </div>
             ) : (
                 <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.08)] border-t border-gray-200 z-40">

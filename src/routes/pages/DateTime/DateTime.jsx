@@ -234,19 +234,19 @@ const DateTime = () => {
 
       <div className="flex gap-8 mt-5">
         <div className="md:w-[60%] mb-4 space-y-4 w-full">
-          <div className="px-6 md:px-9 py-3 bg-white rounded-lg shadow-sm">
+          <div className="px-6 md:px-9 py-3 bg-white rounded shadow-sm">
             {/* ── Toggle Tabs ── */}
             <div className="mb-5 flex gap-2 sm:gap-3">
               <button
                 onClick={() => setShowManualInput(false)}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition-colors
                                     ${!showManualInput ? "bg-[#01788E] text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
               >
                 Available Slots
               </button>
               <button
                 onClick={() => setShowManualInput(true)}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition-colors
                                     ${showManualInput ? "bg-[#01788E] text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
               >
                 Custom Date & Time
@@ -260,7 +260,7 @@ const DateTime = () => {
                 </h3>
 
                 {availableDays.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                  <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded">
                     <FaCalendarAlt className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm font-semibold text-gray-500">
                       No available dates
@@ -290,7 +290,7 @@ const DateTime = () => {
                             <div
                               key={`${day.date}-${index}`}
                               onClick={() => setSelectedDay(day.date)}
-                              className={`snap-start min-w-20 sm:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
+                              className={`snap-start min-w-20 sm:min-w-[85px] px-2 py-1 rounded border cursor-pointer flex flex-col items-center gap-1 transition
                                                                 ${isActive ? "bg-[#B2D7DE] border-transparent shadow" : "bg-white border-gray-200 hover:bg-gray-50"}`}
                             >
                               <div className="text-center py-1.5 sm:py-2">
@@ -322,7 +322,7 @@ const DateTime = () => {
                         </h3>
 
                         {availableTimes.length === 0 ? (
-                          <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
+                          <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded">
                             <FaClock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                             <p className="text-sm text-gray-500">
                               No time slots available for this date
@@ -334,7 +334,7 @@ const DateTime = () => {
                               <button
                                 key={index}
                                 onClick={() => setSelectedTime(timeSlot)}
-                                className={`w-full text-left rounded-lg border px-4 sm:px-6 py-3 sm:py-4 transition
+                                className={`w-full text-left rounded border px-4 sm:px-6 py-3 sm:py-4 transition
                                                                     ${
                                                                       selectedTime ===
                                                                       timeSlot
@@ -375,7 +375,7 @@ const DateTime = () => {
                         value={manualDate}
                         onChange={(e) => setManualDate(e.target.value)}
                         min={getTomorrowDate()}
-                        className="w-full p-2.5 sm:p-3 pl-10 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#01788E]/20 focus:border-[#01788E] outline-none transition-all"
+                        className="w-full p-2.5 sm:p-3 pl-10 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-[#01788E]/20 focus:border-[#01788E] outline-none transition-all"
                       />
                       <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                     </div>
@@ -393,7 +393,7 @@ const DateTime = () => {
                         type="time"
                         value={manualTime}
                         onChange={(e) => setManualTime(e.target.value)}
-                        className="w-full p-2.5 sm:p-3 pl-10 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#01788E]/20 focus:border-[#01788E] outline-none transition-all"
+                        className="w-full p-2.5 sm:p-3 pl-10 border border-gray-200 -xl text-sm focus:ring-2 focus:ring-[#01788E]/20 focus:border-[#01788E] outline-none transition-all"
                       />
                       <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                     </div>
@@ -404,7 +404,7 @@ const DateTime = () => {
 
                   {/* Info note */}
                   <div
-                    className="p-3 sm:p-4 rounded-xl border"
+                    className="p-3 sm:p-4 rounded border"
                     style={{
                       background: "rgba(1,120,142,0.05)",
                       borderColor: "rgba(1,120,142,0.2)",
@@ -438,7 +438,7 @@ const DateTime = () => {
             )}
 
             {/* ── Cancellation note ── */}
-            <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-gray-50 border border-gray-100 rounded-xl flex gap-3 text-xs sm:text-sm text-gray-600">
+            <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-gray-50 border border-gray-100 rounded flex gap-3 text-xs sm:text-sm text-gray-600">
               <svg
                 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0"
                 viewBox="0 0 24 24"
@@ -464,89 +464,73 @@ const DateTime = () => {
           </div>
         </div>
 
-        {/* ── Cancellation Policy Modal ── */}
-        {modalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-            onClick={() => setModalOpen(false)}
-          >
-            <div
-              className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal header */}
-              <div
-                className="h-1 w-full"
-                style={{
-                  background: "linear-gradient(to right, #01788E, #015f70)",
-                }}
-              />
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100">
-                <h2 className="text-sm sm:text-base font-semibold text-gray-900">
-                  Cancellation Policy
-                </h2>
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <IoClose className="w-4 h-4" />
-                </button>
-              </div>
+ {/* Cancellation Policy  */}
+       {modalOpen && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    onClick={() => setModalOpen(false)}
+  >
+    <div
+      className="w-full max-w-md bg-white rounded shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Modal header — fixed, never scrolls */}
+      <div
+        className="h-1 w-full shrink-0"
+        style={{ background: "linear-gradient(to right, #01788E, #015f70)" }}
+      />
+      <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 shrink-0">
+        <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+          Cancellation Policy
+        </h2>
+        <button
+          onClick={() => setModalOpen(false)}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+        >
+          <IoClose className="w-4 h-4" />
+        </button>
+      </div>
 
-              {/* Table header */}
-              <div className="flex justify-between px-5 sm:px-6 py-3 bg-gray-50 border-b border-gray-100">
-                <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Type
-                </span>
-                <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Fee
-                </span>
-              </div>
+      {/* Scrollable area */}
+      <div className="overflow-y-auto flex-1 min-h-0">
 
-              {/* Rows */}
-              {[
-                {
-                  label: "Within 15 min of placing the booking",
-                  fee: "Free",
-                  feeColor: "text-emerald-600",
-                },
-                {
-                  label: "6+ hours before the booking",
-                  fee: "Free",
-                  feeColor: "text-emerald-600",
-                },
-                {
-                  label: "Less than 6 hours before the booking",
-                  fee: "100% of price\n(Max AED 150)",
-                  feeColor: "text-red-500",
-                },
-              ].map(({ label, fee, feeColor }, i) => (
-                <div key={i}>
-                  <div className="flex items-center justify-between px-5 sm:px-6 py-4 gap-4">
-                    <p className="text-xs sm:text-sm text-gray-700 leading-snug max-w-[60%]">
-                      {label}
-                    </p>
-                    <p
-                      className={`text-xs sm:text-sm font-semibold text-right whitespace-pre-line ${feeColor}`}
-                    >
-                      {fee}
-                    </p>
-                  </div>
-                  {i < 2 && <div className="h-px bg-gray-100 mx-5 sm:mx-6" />}
-                </div>
-              ))}
+        {/* Table header */}
+        <div className="flex justify-between px-5 sm:px-6 py-3 bg-gray-50 border-b border-gray-100">
+          <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Type
+          </span>
+          <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Fee
+          </span>
+        </div>
 
-              {/* Footer */}
-              <div className="px-5 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/60">
-                <p className="text-[11px] sm:text-xs text-gray-400 leading-relaxed">
-                  Cancellations must be submitted through the app or by
-                  contacting support. Refunds are processed within 5–7 business
-                  days.
-                </p>
-              </div>
+        {/* Rows */}
+        {[
+          { label: "Within 15 min of placing the booking", fee: "Free", feeColor: "text-emerald-600" },
+          { label: "6+ hours before the booking", fee: "Free", feeColor: "text-emerald-600" },
+          { label: "Less than 6 hours before the booking", fee: "100% of price\n(Max AED 150)", feeColor: "text-red-500" },
+        ].map(({ label, fee, feeColor }, i) => (
+          <div key={i}>
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 gap-4">
+              <p className="text-xs sm:text-sm text-gray-700 leading-snug max-w-[60%]">{label}</p>
+              <p className={`text-xs sm:text-sm font-semibold text-right whitespace-pre-line ${feeColor}`}>{fee}</p>
             </div>
+            {i < 2 && <div className="h-px bg-gray-100 mx-5 sm:mx-6" />}
           </div>
-        )}
+        ))}
+
+        {/* Footer */}
+        <div className="px-5 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+          <p className="text-[11px] sm:text-xs text-gray-400 leading-relaxed">
+            Cancellations must be submitted through the app or by contacting
+            support. Refunds are processed within 5–7 business days.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
 
         <Summery
           serviceTitle={serviceTitle}
@@ -569,7 +553,7 @@ const DateTime = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setOpen(true)}
-              className="cursor-pointer select-none active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-[#01788E]/30 focus:ring-offset-2 rounded-lg px-1"
+              className="cursor-pointer select-none active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-[#01788E]/30 focus:ring-offset-2 rounded px-1"
             >
                   <p className="text-[10px] text-gray-600 font-medium uppercase">View Summary</p>
                    <div className="flex items-center gap-0.5 justify-center">
@@ -933,19 +917,19 @@ export default DateTime;
 
 //             <div className="flex gap-8 mt-5">
 //                 <div className="md:w-[60%] mb-4 space-y-4">
-//                     <div className="p-6 bg-white rounded-lg shadow-sm">
+//                     <div className="p-6 bg-white rounded shadow-sm">
 //                         {/* Option Toggle */}
 //                         <div className="mb-6">
 //                             <div className="flex gap-4 mb-4">
 //                                 <button
 //                                     onClick={() => setShowManualInput(false)}
-//                                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${!showManualInput ? 'bg-[#01788E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+//                                     className={`px-4 py-2 rounded font-medium transition-colors ${!showManualInput ? 'bg-[#01788E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
 //                                 >
 //                                     Select from Available Slots
 //                                 </button>
 //                                 <button
 //                                     onClick={() => setShowManualInput(true)}
-//                                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${showManualInput ? 'bg-[#01788E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+//                                     className={`px-4 py-2 rounded font-medium transition-colors ${showManualInput ? 'bg-[#01788E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
 //                                 >
 //                                     Choose Custom Date & Time
 //                                 </button>
@@ -960,7 +944,7 @@ export default DateTime;
 //                                 </h3>
 
 //                                 {availableDays.length === 0 ? (
-//                                     <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+//                                     <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded">
 //                                         <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 //                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 //                                         </svg>
@@ -990,7 +974,7 @@ export default DateTime;
 //                                                         <div
 //                                                             key={`${day.date}-${index}`}
 //                                                             onClick={() => setSelectedDay(day.date)}
-//                                                             className={`snap-start min-w-[100px] md:min-w-[85px] px-2 py-1 rounded-lg border cursor-pointer flex flex-col items-center gap-1 transition
+//                                                             className={`snap-start min-w-[100px] md:min-w-[85px] px-2 py-1 rounded border cursor-pointer flex flex-col items-center gap-1 transition
 //                                                                 ${isActive ? "bg-[#B2D7DE] border-transparent shadow" : "bg-white border-gray-200 hover:bg-gray-50"}`}
 //                                                         >
 //                                                             {/* <div className="text-sm text-gray-600 text-center">{day.short}</div> */}
@@ -1031,7 +1015,7 @@ export default DateTime;
 //                                                 </h3>
 
 //                                                 {availableTimes.length === 0 ? (
-//                                                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+//                                                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded">
 //                                                         <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 //                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 //                                                         </svg>
@@ -1043,7 +1027,7 @@ export default DateTime;
 //                                                             <button
 //                                                                 key={index}
 //                                                                 onClick={() => setSelectedTime(timeSlot)}
-//                                                                 className={`w-full text-left rounded-lg border px-6 py-4 transition
+//                                                                 className={`w-full text-left rounded border px-6 py-4 transition
 //                                                                     ${selectedTime === timeSlot ? "bg-[#E6F6F6] border-teal-300 shadow-sm" : "bg-white border-gray-200 hover:bg-gray-50"}`}
 //                                                             >
 //                                                                 <span className="text-sm font-medium">{timeSlot}</span>
@@ -1078,7 +1062,7 @@ export default DateTime;
 //                                                 value={manualDate}
 //                                                 onChange={(e) => setManualDate(e.target.value)}
 //                                                 min={getTomorrowDate()}
-//                                                 className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#01788E] focus:border-[#01788E] outline-none"
+//                                                 className="w-full p-3 pl-10 border border-gray-300 rounded focus:ring-2 focus:ring-[#01788E] focus:border-[#01788E] outline-none"
 //                                             />
 //                                             <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
 //                                         </div>
@@ -1097,7 +1081,7 @@ export default DateTime;
 //                                                 type="time"
 //                                                 value={manualTime}
 //                                                 onChange={(e) => setManualTime(e.target.value)}
-//                                                 className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#01788E] focus:border-[#01788E] outline-none"
+//                                                 className="w-full p-3 pl-10 border border-gray-300 rounded focus:ring-2 focus:ring-[#01788E] focus:border-[#01788E] outline-none"
 //                                             />
 //                                             <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
 //                                         </div>
@@ -1110,7 +1094,7 @@ export default DateTime;
 //                                     {/* <button
 //                                         onClick={handleManualDateSelect}
 //                                         disabled={!isManualInputValid()}
-//                                         className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${isManualInputValid()
+//                                         className={`w-full py-3 px-4 rounded font-medium transition-colors ${isManualInputValid()
 //                                                 ? 'bg-[#01788E] hover:bg-[#01677A] text-white'
 //                                                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
 //                                             }`}
@@ -1119,7 +1103,7 @@ export default DateTime;
 //                                     </button> */}
 
 //                                     {/* Info Note */}
-//                                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+//                                     <div className="p-4 bg-blue-50 border border-blue-100 rounded">
 //                                         <div className="flex items-start gap-3">
 //                                             <div className="mt-0.5">
 //                                                 <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1237,7 +1221,7 @@ export default DateTime;
 //                                 active:scale-[0.98] transition-transform
 //                                 focus:outline-none focus:ring-2
 //                                 focus:ring-blue-500 focus:ring-offset-2
-//                                 rounded-lg px-1"
+//                                 rounded px-1"
 //                         >
 //                             <p className="text-[10px] text-gray-500 font-medium uppercase">
 //                                 View Summary

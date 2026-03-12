@@ -226,7 +226,7 @@ export default function Confirmation() {
                     </div>
 
                     {/* Map */}
-                    <div className="mt-4 w-full h-40 md:h-56 rounded-xl overflow-hidden border border-gray-100">
+                    <div className="mt-4 w-full h-40 md:h-56 rounded overflow-hidden border border-gray-100">
                         <iframe
                             width="100%"
                             height="100%"
@@ -245,7 +245,7 @@ export default function Confirmation() {
                             <h2 className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wider mb-3">
                                 Offer Applied
                             </h2>
-                            <div className="flex items-center justify-between p-3 bg-[#FFF8F5] rounded-xl border border-[#FCDFD5]">
+                            <div className="flex items-center justify-between p-3 bg-[#FFF8F5] rounded border border-[#FCDFD5]">
                                 <span className="text-xs md:text-sm font-medium text-gray-600">Discount</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs md:text-sm bg-[#FCDFD5] text-[#ED6329] px-3 py-1 rounded-lg font-semibold flex items-center gap-1">
@@ -264,7 +264,7 @@ export default function Confirmation() {
                             {!showInput ? (
                                 <button
                                     onClick={() => setShowInput(true)}
-                                    className="w-full py-2.5 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#01788E] hover:text-[#01788E] transition-colors"
+                                    className="w-full py-2.5 border border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-[#01788E] hover:text-[#01788E] transition-colors"
                                 >
                                     + Add Promo Code
                                 </button>
@@ -274,11 +274,11 @@ export default function Confirmation() {
                                         type="text"
                                         ref={promoInputRef}
                                         placeholder="Enter promo code"
-                                        className="flex-1 border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-1 focus:ring-[#01788E] focus:border-transparent outline-none"
+                                        className="flex-1 border border-gray-300 rounded px-3 py-2.5 text-sm focus:ring-1 focus:ring-red-600 focus:border-transparent outline-none"
                                     />
                                     <button
                                         onClick={handleApplyPromo}
-                                        className="bg-[#01788E] text-white px-4 py-2.5 rounded-xl hover:bg-[#016a7a] transition-colors text-sm font-medium"
+                                        className="bg-red-500 text-white px-4 py-2.5 rounded hover:bg-red-600 transition-colors text-sm font-medium"
                                     >
                                         Apply
                                     </button>
@@ -298,9 +298,9 @@ export default function Confirmation() {
                         {/* Card Payment */}
                         <div
                             onClick={() => { setOpenModal(true); setPaymentMethod("Card"); }}
-                            className={`border rounded-xl p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
+                            className={`border rounded p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
                                 ${paymentMethod === "Card"
-                                    ? "border-[#C6724D] bg-[#FDF5F3]"
+                                    ? "border-red-600 bg-red-100"
                                     : "border-gray-200 hover:bg-gray-50"}`}
                         >
                             <div className="flex items-center gap-3">
@@ -310,9 +310,9 @@ export default function Confirmation() {
                                         name="payment"
                                         checked={paymentMethod === "Card"}
                                         readOnly
-                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-red-600 checked:border-red-600 transition-all"
                                     />
-                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-red-600 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
                                 </div>
                                 <span className="text-sm md:text-base font-medium text-gray-600">
                                     Pay by card with Ziina
@@ -335,9 +335,9 @@ export default function Confirmation() {
                         {/* Cash on Delivery */}
                         <div
                             onClick={() => setPaymentMethod("Cash")}
-                            className={`border rounded-xl p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
+                            className={`border rounded p-3 md:p-4 flex items-center justify-between cursor-pointer transition-all
                                 ${paymentMethod === "Cash"
-                                    ? "border-[#C6724D] bg-[#FDF5F3]"
+                                    ? "border-red-600 bg-red-100"
                                     : "border-gray-200 hover:bg-gray-50"}`}
                         >
                             <div className="flex items-center gap-3">
@@ -347,15 +347,15 @@ export default function Confirmation() {
                                         name="payment"
                                         checked={paymentMethod === "Cash"}
                                         readOnly
-                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-[#A3735E] checked:border-[#A3735E] transition-all"
+                                        className="peer h-4 w-4 md:h-5 md:w-5 cursor-pointer appearance-none rounded-full border-2 border-red-600 checked:border-red-600 transition-all"
                                     />
-                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-[#A3735E] rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                    <div className="absolute w-2 h-2 md:w-2.5 md:h-2.5 bg-red-600 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
                                 </div>
                                 <span className="text-sm md:text-base font-medium text-gray-600">
                                     Cash On Delivery
                                 </span>
                             </div>
-                            <span className="bg-[#FFEDD5] text-[#C6724D] text-[10px] md:text-xs font-bold px-2 md:px-2.5 py-1 rounded-lg border border-[#FDBA74]">
+                            <span className="bg-[#FFEDD5] text-red-600 text-[10px] md:text-xs font-bold px-2 md:px-2.5 py-1 rounded-lg border border-[#FDBA74]">
                                 +5 AED FEE
                             </span>
                         </div>
@@ -378,10 +378,10 @@ export default function Confirmation() {
                             { label: "VAT (5%)", value: vatAmount },
                         ].filter(Boolean).map((row) => (
                             <div key={row.label} className="flex justify-between items-center">
-                                <span className={`text-xs md:text-sm ${row.accent ? "text-[#C6724D] font-semibold" : "text-gray-600 font-medium"}`}>
+                                <span className={`text-xs md:text-sm ${row.accent ? "text-red-600 font-semibold" : "text-gray-600 font-medium"}`}>
                                     {row.label}
                                 </span>
-                                <span className={`flex items-center gap-0.5 text-xs md:text-sm font-semibold ${row.accent ? "text-[#C6724D]" : "text-gray-600"}`}>
+                                <span className={`flex items-center gap-0.5 text-xs md:text-sm font-semibold ${row.accent ? "text-red-600" : "text-gray-600"}`}>
                                     <img className="h-2.5 w-2.5 md:h-3 md:w-3 mt-0.5" src={dirhum} alt="" />
                                     {row.value}
                                 </span>
@@ -417,8 +417,8 @@ export default function Confirmation() {
                     <button
                         onClick={handleBookingConfirmation}
                         disabled={loading}
-                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-sm font-semibold text-white w-[90%] md:w-[60%] lg:w-60
-                            ${loading ? "bg-gray-300 cursor-not-allowed" : "bg-[#ED6329] hover:bg-[#d4541f] cursor-pointer"}`}
+                        className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-sm font-semibold text-white w-[90%] md:w-[60%] lg:w-60
+                            ${loading ? "bg-gray-300 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 cursor-pointer"}`}
                     >
                         {loading ? "Processing..." : "Book Now"} <span className="text-xl">→</span>
                     </button>
@@ -428,7 +428,7 @@ export default function Confirmation() {
             {/* ── Online Payment Modal ── */}
             {openModal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl relative overflow-hidden">
+                    <div className="bg-white rounded w-full max-w-sm shadow-xl relative overflow-hidden">
 
                         {/* Modal Header */}
                         <div className="bg-[#01788E] px-5 py-4 flex items-center justify-between">
@@ -444,7 +444,7 @@ export default function Confirmation() {
                                 You will be redirected to Ziina payment gateway to complete your payment securely.
                             </p>
 
-                            <div className="flex items-start gap-2 bg-[#e8f4f6] text-[#01788E] text-xs md:text-sm p-3 rounded-xl mt-4">
+                            <div className="flex items-start gap-2 bg-[#e8f4f6] text-[#01788E] text-xs md:text-sm p-3 rounded mt-4">
                                 <span className="shrink-0 mt-0.5">ℹ️</span>
                                 <span>Your payment will be processed securely by Ziina.</span>
                             </div>
@@ -452,13 +452,13 @@ export default function Confirmation() {
                             <div className="flex gap-3 mt-5">
                                 <button
                                     onClick={() => { setOpenModal(false); setPaymentMethod(""); }}
-                                    className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                                    className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded text-sm font-semibold hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={() => { setPaymentMethod("Card"); setOpenModal(false); }}
-                                    className="flex-1 bg-[#ED6329] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-[#d4571f] transition-colors"
+                                    className="flex-1 bg-red-500 text-white py-2.5 rounded text-sm font-semibold hover:bg-red-600 transition-colors"
                                 >
                                     Confirm
                                 </button>

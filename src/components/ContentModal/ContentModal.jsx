@@ -99,11 +99,10 @@ const ContentModal = ({ setShowModal, property }) => {
                     </div>
 
                     {/* ── Items List — scrollable ── */}
-                    <div className="flex-1 overflow-y-auto px-6 sm:px-4">
+                    <div className="flex-1 overflow-y-auto px-6 md:px-8">
                         {items.length > 0 ? (
                             <div className="space-y-0">
                                 {items.map((item) => {
-                                    // BUG FIX: _id fallback
                                     const itemId = item.id || item._id;
                                     const qty = quantities[itemId] || 0;
                                     return (
@@ -198,7 +197,7 @@ const ContentModal = ({ setShowModal, property }) => {
                     <div className="shrink-0 border-t border-gray-100 md:rounded-b-xl px-4 sm:px-6 py-3">
                         <button
                             onClick={() => setShowModal(false)}
-                            className="w-full bg-[#ED6329] hover:bg-[#e0551f] active:scale-[0.98] text-white font-semibold py-3 rounded text-sm sm:text-base tracking-wide transition-all duration-200"
+                            className="w-full bg-red-500 hover:bg-red-600 cursor-pointer active:scale-[0.98] text-white font-semibold py-3 rounded text-sm sm:text-base tracking-wide transition-all duration-200"
                         >
                             Continue
                         </button>

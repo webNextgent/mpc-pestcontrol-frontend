@@ -42,7 +42,7 @@ const NextBtn = ({ name = "Next", disabled, onClick }) => {
                 onClick={handleClick}
                 disabled={isDisabled}
                 className={`flex items-center justify-center gap-2 px-6 py-3 rounded-sm font-semibold text-white w-[90%] md:w-[60%] lg:w-60
-            ${isDisabled ? "bg-gray-300 cursor-not-allowed" : "bg-[#ED6329] hover:bg-[#d4541f] cursor-pointer"}`}
+            ${isDisabled ? "bg-gray-300 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 cursor-pointer"}`}
             >
                 {name} <span className="text-xl">→</span>
             </button>
