@@ -365,7 +365,7 @@ const LoginModal = ({ open, onClose }) => {
                             <button
                                 onClick={() => handleContinue('whatsapp')}
                                 disabled={loading || !phoneNumber}
-                                className={`w-full flex items-center justify-center gap-2 py-3 rounded-sm text-[15px] font-bold text-white border-none transition-colors ${loading || !phoneNumber ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#f16522] hover:bg-[#d9561a] cursor-pointer'}`}
+                                className={`w-full flex items-center justify-center gap-2 py-3 rounded-sm text-[15px] font-bold text-white border-none transition-colors ${loading || !phoneNumber ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 cursor-pointer'}`}
                             >
                                 {loading ? (
                                     <>

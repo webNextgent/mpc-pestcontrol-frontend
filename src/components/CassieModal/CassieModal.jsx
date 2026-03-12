@@ -145,7 +145,7 @@ const CassieModal = ({ open, onClose }) => {
                         className={`w-full py-3 rounded font-semibold text-sm text-white transition-colors
                             ${isSubmitting
                                 ? "bg-gray-300 cursor-not-allowed"
-                                : "bg-[#ED6329] hover:bg-[#d4541f] cursor-pointer"
+                                : "bg-red-600 hover:bg-red-600 cursor-pointer"
                             }`}
                     >
                         {isSubmitting ? "Submitting..." : "Continue →"}

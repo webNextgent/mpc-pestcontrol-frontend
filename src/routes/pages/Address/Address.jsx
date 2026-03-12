@@ -75,7 +75,7 @@ const Address = () => {
                 {...register(name, rules)}
                 type="text"
                 placeholder={placeholder}
-                className={`w-full px-4 py-3 border rounded-xl text-sm transition-all duration-200
+                className={`w-full px-4 py-3 border rounded text-sm transition-all duration-200
                     focus:outline-none focus:ring-2 focus:ring-[#01788E]/40 focus:border-[#01788E]
                     ${errors[name] ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50 hover:border-gray-300"}`}
             />
@@ -88,7 +88,7 @@ const Address = () => {
     );
 
     return (
-        <div>
+        <div className="min-h-screen bg-white">
             <div className="hidden md:block mt-10 md:mt-0">
                 <ServiceDetails title="Address" currentStep={2} />
             </div>
