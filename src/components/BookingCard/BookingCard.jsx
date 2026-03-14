@@ -80,7 +80,7 @@ const BookingCard = ({ item }) => {
                                     {serviceType}
                                     {titles.length > 0 && (
                                         <span className="font-normal text-gray-500">
-                                            {" — "}{titles.join(" _ ")}
+                                            {" — "}{titles.join(", ")}
                                         </span>
                                     )}
                                 </p>

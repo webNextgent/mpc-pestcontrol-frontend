@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import dirhum from "../../../assets/icon/dirhum.png";
 import toast from "react-hot-toast";
 import { IoIosArrowUp } from "react-icons/io";
+import { createPortal } from "react-dom";
 
 const containerStyle = { width: "100%", height: "460px" };
 const defaultCenter = { lat: 25.2048, lng: 55.2708 };
@@ -26,7 +27,7 @@ export default function LocationPicker() {
     libraries: ["places"],
   });
 
-  const [showMapOverlay, setShowMapOverlay] = useState(false);
+  const [showMapOverlay, setShowMapOverlay] = useState(true);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
 
   const {
@@ -63,6 +64,7 @@ export default function LocationPicker() {
   const [mapType, setMapType] = useState("roadmap");
   const [open, setOpen] = useState(false);
   const [showMapForNew, setShowMapForNew] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState(null);
 
   const autocompleteRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -92,6 +94,17 @@ export default function LocationPicker() {
       setIsNextDisabled(true);
     }
   }, [saveAddress]);
+
+  // ─── Scroll হলে dropdown বন্ধ করো ────────────────────────────
+useEffect(() => {
+    const handleScroll = () => {
+        if (showCurrentAddressOption) {
+            setShowCurrentAddressOption(false);
+        }
+    };
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+}, [showCurrentAddressOption]);
 
   const getAddressFromLatLng = (lat, lng) => {
     const geocoder = new window.google.maps.Geocoder();
@@ -446,41 +459,49 @@ export default function LocationPicker() {
                                                     focus:outline-none focus:ring-2 focus:ring-[#01788E]/30 focus:border-[#01788E]
                                                     transition-all
                                                 "
-                        onClick={() => setShowCurrentAddressOption(true)}
+                        onClick={() => {
+    setShowMapOverlay(false);
+    const rect = autocompleteRef.current?.getBoundingClientRect();
+    setDropdownRect(rect);
+    setShowCurrentAddressOption(true);
+}}
                       />
                     </div>
                   </Autocomplete>
 
                   {/* Current location dropdown */}
-                  {showCurrentAddressOption && (
-                    <div
-                      ref={dropdownRef}
-                      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-30 overflow-hidden"
-                    >
-                      <button
-                        onClick={handleCurrentAddressClick}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#01788E]/5 transition-colors text-left"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center shrink-0">
-                          {isGettingCurrentAddress ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#01788E]" />
-                          ) : (
-                            <FaLocationCrosshairs className="text-[#01788E] w-3.5 h-3.5" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">
-                            Use Current Location
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {isGettingCurrentAddress
-                              ? "Detecting your location…"
-                              : "Detect via GPS"}
-                          </p>
-                        </div>
-                      </button>
-                    </div>
-                  )}
+{showCurrentAddressOption && dropdownRect && createPortal(
+    <div
+        ref={dropdownRef}
+        className="fixed bg-white border border-gray-200 rounded shadow-lg overflow-hidden"
+        style={{
+            zIndex: 99999,
+            top: dropdownRect.bottom + 4,
+            left: dropdownRect.left,
+            width: dropdownRect.width,
+        }}
+    >
+        <button
+            onClick={handleCurrentAddressClick}
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#01788E]/5 transition-colors text-left"
+        >
+            <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center shrink-0">
+                {isGettingCurrentAddress ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#01788E]" />
+                ) : (
+                    <FaLocationCrosshairs className="text-[#01788E] w-3.5 h-3.5" />
+                )}
+            </div>
+            <div>
+                <p className="text-sm font-medium text-gray-800">Use Current Location</p>
+                <p className="text-xs text-gray-500">
+                    {isGettingCurrentAddress ? "Detecting your location…" : "Detect via GPS"}
+                </p>
+            </div>
+        </button>
+    </div>,
+    document.body
+)}
                 </div>
               </div>
 

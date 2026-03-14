@@ -49,7 +49,7 @@ const Card = ({ service }) => {
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl w-full max-w-md shadow-xl relative overflow-hidden"
+                        className="bg-white rounded w-full max-w-md shadow-xl relative overflow-hidden"
                     >
                         {/* Modal Header */}
                         <div className="bg-[#01788E] px-5 py-4 flex items-center justify-between">

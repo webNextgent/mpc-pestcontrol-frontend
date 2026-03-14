@@ -28,18 +28,22 @@ const Services = () => {
     } = useSummary();
 
     const [services] = useAllServices();
-    const { addItem, removeItem } = useItem();
+    const { addItem, removeItem, data } = useItem();
     const sectionRefs = useRef({});
     const buttonSliderRefs = useRef({});
     const [propertyItem] = useDashboardPropertyItem();
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState([]);
-    const [quantities, setQuantities] = useState({});
     const [showBackdrop, setShowBackdrop] = useState(false);
     const [open, setOpen] = useState(false);
     const isManualClick = useRef(false);
     const [searchOpen, setSearchOpen] = useState(false);
-    
+    const [quantities, setQuantities] = useState(() => {
+    try {
+        const saved = JSON.parse(localStorage.getItem("item")) || [];
+        return saved.reduce((acc, id) => ({ ...acc, [id]: 1 }), {});
+    } catch { return {}; }
+});
 
     // ── Scroll active button into view (scroll-spy driven) ──────────────────
     useEffect(() => {
@@ -91,6 +95,12 @@ const Services = () => {
         return () => observer.disconnect();
     }, [content]);
 
+    useEffect(() => {
+    const synced = {};
+    data.forEach(id => { synced[id] = 1; });
+    setQuantities(synced);
+     }, [data]);
+
     // ── Handlers ─────────────────────────────────────────────────────────────
     const handleAdd = (id) => {
         setQuantities((prev) => ({ ...prev, [id]: 1 }));
@@ -106,23 +116,26 @@ const Services = () => {
         removeItem(id);
     };
 
-    const handleChange = (e) => {
-        const value = e.target.value;
-        setQuery(value);
 
-        if (value.trim() === "") {
-            setSuggestions([]);
-            setShowBackdrop(false);
-            return;
-        }
+const handleChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
 
-        const filtered = propertyItem.filter((item) =>
-            item?.title?.toLowerCase().includes(value.toLowerCase())
-        );
-        setSuggestions(filtered);
-        setShowBackdrop(filtered.length > 0);
-        if (filtered.length > 0) setSearchOpen(true);
-    };
+    if (value.trim() === "") {
+        // query খালি হলে সব দেখাও
+        setSuggestions(propertyItem);
+        setShowBackdrop(true);
+        return;
+    }
+
+    const filtered = propertyItem.filter((item) =>
+        item?.title?.toLowerCase().includes(value.toLowerCase())
+    );
+    setSuggestions(filtered);
+    setShowBackdrop(filtered.length > 0);
+    if (filtered.length > 0) setSearchOpen(true);
+};
+
 
     const closeSuggestions = () => {
         setSuggestions([]);
@@ -171,7 +184,12 @@ const Services = () => {
                             >
                                 {searchOpen
                                     ? <RxCross2 className="text-2xl font-bold" />
-                                    : <CiSearch className="text-2xl font-bold" />
+                                    : <CiSearch 
+                                        onClick={() => {
+        setSuggestions(propertyItem);
+        setShowBackdrop(true);
+    }}
+                                    className="text-2xl font-bold" />
                                 }
                             </button>
                         </div>
@@ -223,7 +241,6 @@ const Services = () => {
                                                                     <button
                                                                         onClick={() => {
                                                                             handleAdd(item.id);
-                                                                            setSearchOpen(false);
                                                                             setQuery("");
                                                                         }}
                                                                         className="text-xs border border-[#01788E] text-[#01788E] px-3 py-1 rounded hover:bg-blue-50"
@@ -231,8 +248,23 @@ const Services = () => {
                                                                         Add
                                                                     </button>
                                                                 ) : (
-                                                                    <span className="text-xs font-semibold text-gray-700">Added ✓</span>
-                                                                )}
+                                                                   <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => handleRemove(item.id)}
+                                                                            className="text-[#01788E] border rounded-full font-bold text-lg px-[7px] cursor-pointer"
+                                                                        >
+                                                                            −
+                                                                        </button>
+                                                                        <span className="font-semibold text-gray-700 text-sm">{qty}</span>
+                                                                        <button
+                                                                            disabled
+                                                                            className="text-gray-400 font-bold text-lg px-2 cursor-not-allowed border rounded-full border-[#014855]"
+                                                                            title="Maximum quantity reached"
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                  )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -254,6 +286,10 @@ const Services = () => {
                                 placeholder="Search services..."
                                 value={query}
                                 onChange={handleChange}
+                                onClick={() => {
+        setSuggestions(propertyItem);
+        setShowBackdrop(true);
+    }}
                             />
 
                             {showBackdrop && (

@@ -192,6 +192,8 @@ export default function BookingDetails() {
         ['buildingName','apartmentNo','community','villaNo','streetName','otherNo','nickname'].forEach(f => setValue(f, ""));
     };
 
+    console.log(item);
+
     // Load address into form
     useEffect(() => {
         if (modalAddressUpdate && item?.Data?.address) {
@@ -282,12 +284,12 @@ export default function BookingDetails() {
     const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none transition-all";
 
     return (
-        <div className="min-h-screen py-6 sm:py-8 px-4">
+        <div className="min-h-screen py-12 sm:py-8 px-5 md:px-0">
             <div className="max-w-5xl mx-auto">
 
                 {/* ── Page Header ── */}
                 <div className="mb-6">
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Booking Details</h1>
+                    <h1 className="text-xl sm:text-2xl font-semibold text-gray-700">Booking Details</h1>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">
                         ID: <span className="font-medium text-gray-700">{bookingData?.id || 'N/A'}</span>
                     </p>
@@ -299,7 +301,7 @@ export default function BookingDetails() {
                     <div className="lg:col-span-2 space-y-4">
 
                         {/* ── Status Banner ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-white rounded-t-md shadow-sm border border-gray-100 overflow-hidden">
                             <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
                             <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
@@ -322,7 +324,7 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Schedule & Address ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 p-4 sm:p-5">
                             <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
                                 Booking Info
                             </h3>
@@ -361,30 +363,30 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Service Details ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 p-4 sm:p-5">
                             <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                                 <HiBuildingOffice className="text-gray-400" /> Service Details
                             </h3>
 
                             {/* Grouped items */}
                             {groupedItems && Object.keys(groupedItems).length > 0 ? (
-                                <div className="space-y-2 mb-4">
+                            <div className="space-y-0.5 mb-4">
                                     {Object.entries(groupedItems).map(([serviceType, titles]) => (
-                                        <div key={serviceType} className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100">
-                                            <span className="mt-0.5 text-sm" style={{ color: '#01788E' }}>•</span>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-800">{serviceType}</p>
-                                                {titles.length > 0 && (
-                                                    <p className="text-xs text-gray-500 mt-0.5">{titles.join(' _ ')}</p>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <p key={serviceType} className="text-sm font-semibold text-gray-900 leading-snug">
+                                            <span style={{ color: '#01788E' }}>•</span>{" "}
+                                            {serviceType}
+                                            {titles.length > 0 && (
+                                                <span className="font-normal text-gray-500">
+                                                    {" — "}{titles.join(", ")}
+                                                </span>
+                                            )}
+                                        </p>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="p-3 rounded-xl border border-gray-100 mb-4">
-                                    <p className="text-sm font-semibold text-gray-800">{bookingData?.serviceName || 'N/A'}</p>
-                                </div>
+                                <h2 className="text-sm font-semibold text-gray-900 leading-snug mb-4">
+                                    {bookingData?.serviceName || 'N/A'}
+                                </h2>
                             )}
 
                             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(1,120,142,0.05)' }}>
@@ -400,7 +402,7 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Map ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
                             <div className="h-40 sm:h-52">
                                 <iframe
                                     width="100%" height="100%"
@@ -413,7 +415,7 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Rating ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 p-4 sm:p-5">
                             <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                                 Rate Your Experience
                             </h3>
@@ -431,7 +433,7 @@ export default function BookingDetails() {
                     <div className="space-y-4">
 
                         {/* ── Payment Summary ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-white rounded-t-md shadow-sm border border-gray-100 overflow-hidden">
                             <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #01788E, #015f70)' }} />
                             <div className="p-4 sm:p-5">
                                 <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -450,7 +452,9 @@ export default function BookingDetails() {
                                     <p className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total to Pay</p>
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <img src={dirhum} alt="Currency" className="w-4 h-4 sm:w-5 sm:h-5" />
-                                        <span className="text-xl sm:text-2xl font-bold text-gray-900">{bookingData?.totalPay}</span>
+                                       <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                                            {(bookingData?.totalPay ?? 0).toFixed(2)}
+                                       </span>
                                     </div>
                                     <p className="text-[10px] text-gray-400 mt-0.5">Inclusive of all charges</p>
                                 </div>
@@ -465,7 +469,7 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Manage Booking ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 p-4 sm:p-5">
                             <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                                 Manage Booking
                             </h3>
@@ -499,7 +503,7 @@ export default function BookingDetails() {
                         </div>
 
                         {/* ── Service Provider ── */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="bg-white rounded shadow-sm border border-gray-100 p-4 sm:p-5">
                             <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                                 Service Provider
                             </h3>
@@ -602,7 +606,7 @@ export default function BookingDetails() {
                                 <span className="text-xs sm:text-sm text-gray-600">{label}</span>
                                 <div className="flex items-center gap-1">
                                     <img src={dirhum} alt="" className="w-3.5 h-3.5" />
-                                    <span className="text-sm font-semibold text-gray-900">{value ?? '0'}</span>
+                                    <span className="text-sm font-semibold text-gray-900">{(value ?? '0').toFixed(2)}</span>
                                 </div>
                             </div>
                         ))}
@@ -616,7 +620,7 @@ export default function BookingDetails() {
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <img src={dirhum} alt="" className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-lg sm:text-xl font-bold" style={{ color: '#01788E' }}>{bookingData?.totalPay}</span>
+                                <span className="text-lg sm:text-xl font-bold" style={{ color: '#01788E' }}>{(bookingData?.totalPay ?? 0).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -769,7 +773,7 @@ export default function BookingDetails() {
                                 </div>
                                 <div className="flex gap-1.5">
                                     <div className="border border-gray-200 rounded px-1.5 py-1 h-7 flex items-center bg-white">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2.5" />
+                                        <img src="https://i.postimg.cc/KYj6NrYX/visa.jpg" alt="Visa" className="h-2.5" />
                                     </div>
                                     <div className="border border-gray-200 rounded px-1.5 py-1 h-7 flex items-center bg-white">
                                         <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-4" />

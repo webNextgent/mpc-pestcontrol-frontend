@@ -46,7 +46,7 @@ export default function Summary({
                                 <div className="flex items-start gap-2 flex-1">
                                     <button
                                         onClick={() => removeItem(item.id)}
-                                        className="w-5 h-5 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors text-[10px] mt-0.5 shrink-0"
+                                        className="w-5 h-5 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-200 transition-colors text-[10px] mt-0.5 shrink-0"
                                     >✕</button>
                                     <div className="min-w-0">
                                         <p className="font-medium text-gray-800 text-sm truncate">{item.title}</p>

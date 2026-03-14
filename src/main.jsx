@@ -17,7 +17,17 @@ createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <ItemProvider>
           <SummaryProvider>
-              <Toaster position="top-center" reverseOrder={false} />
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    zIndex: 99999,
+                  },
+                }}
+                containerStyle={{
+                  zIndex: 99999,
+                }}
+              />
               <RouterProvider router={router}></RouterProvider>
           </SummaryProvider>
         </ItemProvider>

@@ -10,7 +10,7 @@ import { RiLogoutCircleLine } from "react-icons/ri";
 import { RiMacbookFill } from "react-icons/ri";
 import { SiServerless } from "react-icons/si";
 import { LuProportions } from "react-icons/lu";
-import { IoMdTime } from "react-icons/io";
+import { MdWatchLater } from "react-icons/md";
 import { SiProton } from "react-icons/si";
 import useAuth from "../hooks/useAuth";
 import { useState } from "react";
@@ -50,7 +50,7 @@ const UserDashboard = () => {
                     }`
                 }
             >
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" />
                 <span>{label}</span>
             </NavLink>
         </li>
@@ -73,7 +73,7 @@ const UserDashboard = () => {
         { to: "/dashboard/add-property-item", icon: FaCalendarAlt, label: "Property Item" },
         { to: "/dashboard/user-management", icon: FaUsers, label: "User Management" },
         { to: "/dashboard/add-promo-code", icon: SiProton, label: "Promo Codes" },
-        { to: "/dashboard/admin-date-time", icon: IoMdTime, label: "Date & Time Slot" },
+        { to: "/dashboard/admin-date-time", icon: MdWatchLater, label: "Date & Time Slot" },
     ];
 
     // ── Sidebar content ───────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ const UserDashboard = () => {
 
                 {/* User badge */}
                 <div className="mt-4 flex items-center gap-2.5 p-2.5 bg-[#01788E]/5 rounded-xl border border-[#01788E]/10">
-                    <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[#01788E]/10 flex items-center justify-center shrink-0">
                         <FaUser className="w-3.5 h-3.5 text-[#01788E]" />
                     </div>
                     <div className="min-w-0">

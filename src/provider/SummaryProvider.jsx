@@ -431,7 +431,7 @@ export const SummaryProvider = ({ children }) => {
     //     }
     // };
 
-
+    // for promo code
     const handleApply = async (promoCode) => {
         try {
             const res = await axiosSecure.post(
