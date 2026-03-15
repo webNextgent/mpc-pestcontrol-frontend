@@ -101,12 +101,12 @@ const UserProfile = () => {
     <div className="px-2 md:px-6 py-4 rounded-lg bg-white w-full max-w-4xl mx-auto">
 
       {/* ── Header ── */}
-      <h2 className="flex items-center gap-2.5 text-xl font-semibold border-b border-[#E5E7EB] pb-3 text-[#5D4F52]">
+      <h2 className="hidden md:flex items-center gap-2.5 text-xl font-semibold border-b border-[#E5E7EB] pb-3 text-[#5D4F52]">
         <FaUser className="text-[#01788E]" /> Contact Information
       </h2>
 
       {/* ── Avatar ── */}
-      <div className="mt-8 flex flex-col items-center gap-3">
+      <div className="md:mt-8 flex flex-col items-center gap-3">
         <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0"
           style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}>
           {formData.firstName?.[0]?.toUpperCase() || <FaUser className="text-2xl" />}

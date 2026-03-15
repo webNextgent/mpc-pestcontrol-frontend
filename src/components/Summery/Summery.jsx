@@ -108,11 +108,11 @@ export default function Summary({
                             type="text"
                             ref={promoRef}
                             placeholder="Enter promo code"
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#01788E] focus:border-transparent outline-none"
+                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-[#01788E] focus:border-transparent outline-none"
                         />
                         <button
                             onClick={handleApplyPromo}
-                            className="bg-[#01788E] text-white px-4 py-2 rounded-lg hover:bg-[#016a7a] transition-colors text-sm"
+                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-[#016a7a] transition-colors text-sm"
                         >Apply</button>
                     </div>
                 )}

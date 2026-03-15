@@ -14,6 +14,8 @@ import { MdWatchLater } from "react-icons/md";
 import { SiProton } from "react-icons/si";
 import useAuth from "../hooks/useAuth";
 import { useState } from "react";
+import { RiDeleteBin5Fill } from "react-icons/ri";
+
 
 const UserDashboard = () => {
     const { user, logOut } = useAuth();
@@ -62,7 +64,7 @@ const UserDashboard = () => {
         { to: "/dashboard/profile", icon: FaUser, label: "My Profile" },
         { to: "/dashboard/saved-locations", icon: FaLocationDot, label: "Saved Locations" },
         { to: "/dashboard/wallet", icon: FaWallet, label: "My Wallet" },
-        { to: "/dashboard/delete-account", icon: MdDeleteSweep, label: "Delete Account" },
+        { to: "/dashboard/delete-account", icon: RiDeleteBin5Fill, label: "Delete Account" },
     ];
 
     const adminNavItems = [

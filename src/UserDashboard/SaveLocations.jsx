@@ -154,12 +154,12 @@ export default function SavedLocations() {
     };
 
     // ── Shared input class ────────────────────────────────────────────────────
-    const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:border-[#01788E] focus:ring-1 focus:ring-[#01788E]/20";
+    const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded text-sm outline-none transition-all focus:border-[#01788E] focus:ring-1 focus:ring-[#01788E]/20";
 
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <>
-            <div className="px-2 md:px-6 py-4 rounded-lg bg-white w-full max-w-4xl mx-auto">
+            <div className="px-2 md:px-6 py-4 rounded bg-white w-full max-w-4xl mx-auto">
 
                 {/* ── Header ── */}
                 <h2 className="flex items-center gap-2.5 text-xl font-semibold border-b border-[#E5E7EB] pb-3 text-[#5D4F52]">
@@ -169,7 +169,7 @@ export default function SavedLocations() {
 
                 {/* ── Empty State ── */}
                 {savedAddresses.length === 0 ? (
-                    <div className="mt-10 flex flex-col items-center py-16 border border-[#E5E7EB] rounded-md">
+                    <div className="mt-10 flex flex-col items-center py-16 border border-[#E5E7EB] rounded">
                         <FiMapPin size={40} className="text-gray-300 mb-4" />
                         <p className="font-semibold text-[#5D4F52] text-lg">No saved addresses yet</p>
                         <p className="text-sm text-gray-400 mt-2 max-w-xs text-center">
@@ -177,7 +177,7 @@ export default function SavedLocations() {
                         </p>
                         <button
                             onClick={handleAddNew}
-                            className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-semibold text-white transition-all active:scale-[0.98]"
+                            className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded text-sm font-semibold text-white transition-all active:scale-[0.98]"
                             style={{ background: 'linear-gradient(135deg, #01788E, #015f70)' }}
                         >
                             <FiPlus size={16} /> Add Your First Address
@@ -188,12 +188,12 @@ export default function SavedLocations() {
                         {savedAddresses.map((item) => (
                             <div
                                 key={item.id}
-                                className="border border-gray-100 rounded-xl p-4 hover:shadow-sm transition-shadow"
+                                className="border border-gray-100 rounded p-4 hover:shadow-sm transition-shadow"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-start gap-3 flex-1 min-w-0">
                                         {/* Icon */}
-                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                        <div className="w-9 h-9 rounded flex items-center justify-center shrink-0"
                                             style={{ background: 'rgba(1,120,142,0.08)' }}>
                                             {getTypeIcon(item.type)}
                                         </div>
@@ -231,7 +231,7 @@ export default function SavedLocations() {
                                     <div className="flex items-center gap-1 shrink-0">
                                         <button
                                             onClick={() => handleEdit(item)}
-                                            className="p-2 rounded-lg transition-colors hover:bg-gray-100"
+                                            className="p-2 rounded transition-colors hover:bg-gray-100"
                                             style={{ color: '#01788E' }}
                                             title="Edit address"
                                         >
@@ -239,7 +239,7 @@ export default function SavedLocations() {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(item.id)}
-                                            className="p-2 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                                            className="p-2 rounded text-red-400 hover:bg-red-50 transition-colors"
                                             title="Delete address"
                                         >
                                             <FiTrash2 size={15} />
@@ -252,7 +252,7 @@ export default function SavedLocations() {
                         {/* Add New Address */}
                         <button
                             onClick={handleAddNew}
-                            className="mt-2 w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#01788E]/30 rounded-xl py-3 text-sm font-medium hover:border-[#01788E] hover:bg-[#01788E]/5 transition-all duration-200"
+                            className="mt-2 w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#01788E]/30 rounded py-3 text-sm font-medium hover:border-[#01788E] hover:bg-[#01788E]/5 transition-all duration-200"
                             style={{ color: '#01788E' }}
                         >
                             <FiPlus size={16} /> Add New Address
@@ -277,7 +277,7 @@ export default function SavedLocations() {
                     onClick={handleCloseModal}
                 >
                     <div
-                        className="relative w-full sm:max-w-lg bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] rounded-t-2xl"
+                        className="relative w-full sm:max-w-lg bg-white sm:rounded shadow-2xl overflow-hidden flex flex-col max-h-[92vh] rounded-t-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Teal top strip */}
@@ -295,7 +295,7 @@ export default function SavedLocations() {
                             </div>
                             <button
                                 onClick={handleCloseModal}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                             >
                                 <IoClose className="w-4 h-4" />
                             </button>
