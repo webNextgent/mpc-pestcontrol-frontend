@@ -86,10 +86,18 @@ const LoginModal = ({ open, onClose }) => {
                 body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso || 'ae', countryName: country?.name, via })
             });
             const data = await res.json();
+            console.log('data from sms inside',data);
+
+
+
+
+
+
+            
 
             if (data?.success === false) {
                 // toast.error(data?.message || 'Failed to send OTP. Please try again.');
-                toast.error('Please enter a valid whatsapp number');
+                toast.error('Something is wrong. Please try again later.');
             } else {
                 setOtpMethod(via); setOtpSent(true); setTimer(15); setResendDisabled(true);
                 // toast.success(`OTP sent via ${via === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
