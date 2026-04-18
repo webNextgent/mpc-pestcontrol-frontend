@@ -300,7 +300,7 @@ const handleChange = (e) => {
                             )}
 
                             {suggestions.length > 0 && (
-                                <div className="absolute top-full left-0 w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 z-50 max-h-[90vh] overflow-y-auto p-8">
+                                <div className="absolute top-full left-0 w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 z-40 max-h-[90vh] overflow-y-auto p-8">
                                     {suggestions.map((item) => {
                                         const qty = quantities[item.id] || 0;
                                         return (

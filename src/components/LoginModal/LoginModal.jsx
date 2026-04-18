@@ -10,7 +10,6 @@ const LoginModal = ({ open, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [verifyingOtp, setVerifyingOtp] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
-    const [otpMethod, setOtpMethod] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [fullPhoneNumber, setFullPhoneNumber] = useState("");
     const [otp, setOtp] = useState(['', '', '', '']);
@@ -22,7 +21,7 @@ const LoginModal = ({ open, onClose }) => {
     const [country, setCountry] = useState({ name: 'United Arab Emirates', code: '+971', iso: 'ae' });
 
     const inputRefs = useRef([]);
-    const { setUser } = useAuth();
+    const {user, setUser } = useAuth();
     const isUAE = country.iso === 'ae';
 
     const countryValidationRules = {
@@ -38,7 +37,7 @@ const LoginModal = ({ open, onClose }) => {
     useEffect(() => {
         if (!open) {
             setPhoneNumber(""); setFullPhoneNumber(""); setOtp(['', '', '', '']);
-            setOtpSent(false); setOtpMethod(null); setValidationError("");
+            setOtpSent(false); setValidationError("");
             setOpenCountryModal(false); setCountrySearch("");
             setCountry({ name: 'United Arab Emirates', code: '+971', iso: 'ae' });
         }
@@ -74,37 +73,64 @@ const LoginModal = ({ open, onClose }) => {
         return country.code + n;
     };
 
-    const handleContinue = async (via) => {
+    // UAE: send OTP via both WhatsApp AND SMS simultaneously
+    // Other countries: send via WhatsApp only
+    const handleContinue = async () => {
         if (!validatePhone()) return;
         setLoading(true);
         const fullPhone = buildFullPhone();
         setFullPhoneNumber(fullPhone);
-        const endpoint = via === 'sms' ? '/auth/send-otp-by-sms' : '/auth/send-otp'; 
+
         try {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}${endpoint}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso || 'ae', countryName: country?.name, via })
-            });
-            const data = await res.json();
-            console.log('data from sms inside',data);
+            if (isUAE) {
+                // Fire both requests in parallel
+                const [whatsappRes, smsRes] = await Promise.all([
+                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+                    }),
+                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp-by-sms`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'sms' })
+                    })
+                ]);
 
+                const [whatsappData, smsData] = await Promise.all([
+                    whatsappRes.json(),
+                    smsRes.json()
+                ]);
 
-
-
-
-
-            
-
-            if (data?.success === false) {
-                // toast.error(data?.message || 'Failed to send OTP. Please try again.');
-                toast.error('Something is wrong. Please try again later.');
+                // If at least one succeeds, proceed
+                const anySuccess = whatsappData?.success !== false || smsData?.success !== false;
+                if (!anySuccess) {
+                    toast.error('Something is wrong. Try again later.');
+                } else {
+                    setOtpSent(true); setTimer(15); setResendDisabled(true);
+                    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+                }
             } else {
-                setOtpMethod(via); setOtpSent(true); setTimer(15); setResendDisabled(true);
-                // toast.success(`OTP sent via ${via === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
-                setTimeout(() => inputRefs.current[0]?.focus(), 100);
+                // Non-UAE: WhatsApp only
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+                });
+                const data = await res.json();
+
+                if (data?.success === false) {
+                    toast.error('Something is wrong. Try again later.');
+                } else {
+                    setOtpSent(true); setTimer(15); setResendDisabled(true);
+                    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+                }
             }
-        } catch { toast.error('Network error. Please check your connection.'); }
-        finally { setLoading(false); }
+        } catch {
+            toast.error('Network error. Please check your connection.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleVerifyOtp = async () => {
@@ -117,13 +143,11 @@ const LoginModal = ({ open, onClose }) => {
                 body: JSON.stringify({ phone: fullPhoneNumber, otp: otpString })
             });
             const data = await res.json();
-            console.log('error rorm rakib',data);
-            
             if (data?.Data?.success === true) {
                 const token = data?.Data?.token;
                 if (token) {
                     localStorage.setItem('access-token', token);
-                    toast.success("Verification successful! Welcome!");
+                     toast.success(`Welcome!`);
                     onClose();
                     setUser(jwtDecode(token));
                 }
@@ -136,20 +160,42 @@ const LoginModal = ({ open, onClose }) => {
         finally { setVerifyingOtp(false); }
     };
 
+    // UAE resend: both channels again simultaneously
+    // Other: WhatsApp only
     const handleResendOtp = async () => {
         if (resendDisabled) return;
         setResendDisabled(true); setTimer(15); setOtp(['', '', '', '']);
-        const endpoint = otpMethod === 'sms' ? '/auth/resend-otp-by-sms' : '/auth/resend-otp';
+
         try {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}${endpoint}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: fullPhoneNumber, via: otpMethod })
-            });
-            const data = await res.json();
-            console.log('rakib',data);
-            if (data?.success === false) { toast.error(data?.message || 'Failed to resend OTP'); setResendDisabled(false); }
-            // else { toast.success(`OTP resent via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`); inputRefs.current[0]?.focus(); }
-        } catch { toast.error('Failed to resend OTP'); setResendDisabled(false); }
+            if (isUAE) {
+                await Promise.all([
+                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
+                    }),
+                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp-by-sms`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: fullPhoneNumber, via: 'sms' })
+                    })
+                ]);
+                inputRefs.current[0]?.focus();
+            } else {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
+                });
+                const data = await res.json();
+                if (data?.success === false) {
+                    toast.error(data?.message || 'Failed to resend OTP');
+                    setResendDisabled(false);
+                } else {
+                    inputRefs.current[0]?.focus();
+                }
+            }
+        } catch {
+            toast.error('Failed to resend OTP');
+            setResendDisabled(false);
+        }
     };
 
     const handleOtpChange = (index, value) => {
@@ -279,7 +325,6 @@ const LoginModal = ({ open, onClose }) => {
 
     return (
         <>
-            {/* Spin keyframe — only thing that needs a <style> tag */}
             <style>{`@keyframes lm-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
             {/* ── OVERLAY ── */}
@@ -296,7 +341,6 @@ const LoginModal = ({ open, onClose }) => {
                     {/* ════════════════ PHONE SCREEN ════════════════ */}
                     {!otpSent && (
                         <>
-                            {/* Header */}
                             <div className="flex items-center justify-between mb-3">
                                 <h2 className="text-[20px] font-semibold text-[#1a1a1a] leading-tight m-0">
                                     Log in or sign up
@@ -321,18 +365,12 @@ const LoginModal = ({ open, onClose }) => {
 
                             {/* Phone input row */}
                             <div className={`flex items-center w-full min-w-0 overflow-hidden h-[52px] px-3 rounded-md border bg-white ${validationError ? 'border-red-500' : 'border-gray-300'} ${validationError ? 'mb-1.5' : 'mb-3'}`}>
-
-                                {/* Country selector */}
                                 <div
                                     onClick={() => setOpenCountryModal(true)}
                                     className="flex items-center gap-1.5 pr-2.5 border-r border-gray-200 mr-2.5 cursor-pointer shrink-0 select-none"
                                 >
                                     <div className="w-6 h-[17px] overflow-hidden rounded-sm shrink-0">
-                                        <img
-                                            src={`https://flagcdn.com/w40/${country.iso}.png`}
-                                            alt={country.name}
-                                            className="w-full h-full object-cover"
-                                        />
+                                        <img src={`https://flagcdn.com/w40/${country.iso}.png`} alt={country.name} className="w-full h-full object-cover" />
                                     </div>
                                     <span className="text-[15px] font-medium text-[#1a1a1a] whitespace-nowrap">{country.code}</span>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -340,34 +378,30 @@ const LoginModal = ({ open, onClose }) => {
                                     </svg>
                                 </div>
 
-                                {/* Number input — flex:1 min-w-0 prevents overflow */}
                                 <input
                                     type="tel"
                                     value={phoneNumber}
                                     onChange={e => {
                                         let digits = e.target.value.replace(/\D/g, '');
                                         if (['bd', 'pk', 'in', 'lk', 'np'].includes(country?.iso) && e.target.value.startsWith('0')) {
-                                            // toast.error("Please don't include the leading zero", { duration: 3000, icon: '⚠️' });
                                             digits = digits.replace(/^0+/, '');
                                         }
                                         setPhoneNumber(digits);
                                         setValidationError("");
                                     }}
-                                    onKeyDown={e => { if (e.key === 'Enter' && phoneNumber && !loading) handleContinue('whatsapp'); }}
+                                    onKeyDown={e => { if (e.key === 'Enter' && phoneNumber && !loading) handleContinue(); }}
                                     placeholder="Phone Number"
                                     inputMode="numeric"
                                     autoComplete="tel"
                                     className="flex-1 min-w-0 w-0 text-[15px] text-[#1a1a1a] outline-none border-none bg-transparent placeholder-gray-400"
                                 />
 
-                                {/* Phone icon */}
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 ml-1.5">
                                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
                                     <line x1="12" y1="18" x2="12.01" y2="18" />
                                 </svg>
                             </div>
 
-                            {/* Validation error */}
                             {validationError && (
                                 <p className="flex items-center gap-1 text-[13px] text-red-500 mb-3.5">
                                     <svg fill="currentColor" viewBox="0 0 20 20" className="w-3.5 h-3.5 shrink-0">
@@ -377,9 +411,8 @@ const LoginModal = ({ open, onClose }) => {
                                 </p>
                             )}
 
-                            {/* Continue button */}
                             <button
-                                onClick={() => handleContinue('whatsapp')}
+                                onClick={handleContinue}
                                 disabled={loading || !phoneNumber}
                                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-sm text-[15px] font-bold text-white border-none transition-colors ${loading || !phoneNumber ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 cursor-pointer'}`}
                             >
@@ -399,7 +432,6 @@ const LoginModal = ({ open, onClose }) => {
                     {/* ════════════════ OTP SCREEN ════════════════ */}
                     {otpSent && (
                         <div className="h-60">
-                            {/* Header */}
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <button
@@ -422,9 +454,12 @@ const LoginModal = ({ open, onClose }) => {
                                 </button>
                             </div>
 
+                            {/* Dynamic message based on country */}
                             <p className="text-[15px] text-[#444] leading-relaxed mb-2.5">
-                                We've sent an OTP via {otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'} to{' '}
-                                <span className="font-bold text-[#1a1a1a]">{fullPhoneNumber}</span>.
+                                {isUAE
+                                    ? <>We've sent an OTP via <span className="font-bold text-[#1a1a1a]">WhatsApp & SMS</span> to <span className="font-bold text-[#1a1a1a]">{fullPhoneNumber}</span>.</>
+                                    : <>We've sent an OTP via <span className="font-bold text-[#1a1a1a]">WhatsApp</span> to <span className="font-bold text-[#1a1a1a]">{fullPhoneNumber}</span>.</>
+                                }
                                 <br />Please enter that below.
                             </p>
 
@@ -443,45 +478,27 @@ const LoginModal = ({ open, onClose }) => {
                                         onKeyDown={e => handleOtpKeyDown(index, e)}
                                         onFocus={e => e.target.select()}
                                         disabled={verifyingOtp}
-                                        className={`w-[50px] h-[50px] text-[18px] font-semibold text-center rounded-[10px] outline-none bg-gray-50 text-[#1a1a1a] transition-all duration-150 border border-gray-300`}
+                                        className="w-[50px] h-[50px] text-[18px] font-semibold text-center rounded-[10px] outline-none bg-gray-50 text-[#1a1a1a] transition-all duration-150 border border-gray-300"
                                         style={{ caretColor: '#f16522' }}
                                     />
                                 ))}
                             </div>
 
                             {/* Timer / Resend */}
-                            <div className=" mb-5">
+                            <div className="mb-5">
                                 {resendDisabled ? (
                                     <p className="text-[15px] text-[#555] m-0">
                                         Resend OTP in{' '}
                                         <span className="font-bold text-[#1a1a1a]">00:{timer.toString().padStart(2, '0')}</span>
                                     </p>
-                                ) : isUAE ? (
-                                    <>
-                                        <p className="text-start text-[12px] font-semibold mb-3">Don't get an OTP? Resend via</p>
-                                        <div className="flex justify-start gap-3">
-                                            <button
-                                                onClick={() => { setOtpMethod('whatsapp'); handleResendOtp(); }}
-                                                className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
-                                            >
-                                                Whatsapp
-                                            </button>
-                                            <button
-                                                onClick={() => { setOtpMethod('sms'); handleResendOtp(); }}
-                                                className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
-                                            >
-                                                SMS
-                                            </button>
-                                        </div>
-                                    </>
                                 ) : (
                                     <div className="text-start">
-                                        <p className="text-start text-[12px] font-semibold mb-3">Don't get an OTP? Resend via</p>
+                                        <p className="text-start text-[12px] font-semibold mb-3">Don't get an OTP? Resend</p>
                                         <button
                                             onClick={handleResendOtp}
                                             className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
                                         >
-                                            Whatsapp
+                                            {isUAE ? 'Resend via WhatsApp & SMS' : 'Resend via WhatsApp'}
                                         </button>
                                     </div>
                                 )}
@@ -505,7 +522,6 @@ const LoginModal = ({ open, onClose }) => {
                             onClick={e => e.stopPropagation()}
                             className="absolute top-9/12 md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[360px] bg-white rounded-sm shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden z-10000"
                         >
-                            {/* Search */}
                             <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-100">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -528,7 +544,6 @@ const LoginModal = ({ open, onClose }) => {
                                 </button>
                             </div>
 
-                            {/* Country list */}
                             <div className="h-[360px] overflow-y-auto">
                                 {filteredCountries.map((c, i) => (
                                     <div
@@ -546,7 +561,6 @@ const LoginModal = ({ open, onClose }) => {
                             </div>
                         </div>
                     )}
-
                 </div>
             </div>
         </>
@@ -554,6 +568,570 @@ const LoginModal = ({ open, onClose }) => {
 };
 
 export default LoginModal;
+
+
+
+
+
+
+
+// secoend time use 
+// /* eslint-disable react-hooks/exhaustive-deps */
+// import { useEffect, useRef, useState } from "react";
+// import useAuth from "../../hooks/useAuth";
+// import toast from "react-hot-toast";
+// import { jwtDecode } from "jwt-decode";
+// import useScrollLock from "../../hooks/useScrollLock";
+
+// const LoginModal = ({ open, onClose }) => {
+//     useScrollLock(open, () => onClose(false));
+//     const [loading, setLoading] = useState(false);
+//     const [verifyingOtp, setVerifyingOtp] = useState(false);
+//     const [otpSent, setOtpSent] = useState(false);
+//     const [otpMethod, setOtpMethod] = useState(null);
+//     const [phoneNumber, setPhoneNumber] = useState("");
+//     const [fullPhoneNumber, setFullPhoneNumber] = useState("");
+//     const [otp, setOtp] = useState(['', '', '', '']);
+//     const [timer, setTimer] = useState(15);
+//     const [resendDisabled, setResendDisabled] = useState(true);
+//     const [validationError, setValidationError] = useState("");
+//     const [openCountryModal, setOpenCountryModal] = useState(false);
+//     const [countrySearch, setCountrySearch] = useState("");
+//     const [country, setCountry] = useState({ name: 'United Arab Emirates', code: '+971', iso: 'ae' });
+
+//     const inputRefs = useRef([]);
+//     const { setUser } = useAuth();
+//     const isUAE = country.iso === 'ae';
+
+//     const countryValidationRules = {
+//         bd: { minLength: 10, maxLength: 10, pattern: /^1[3-9]\d{8}$/, message: "Bangladesh: 10 digits starting with 13-19" },
+//         ae: { minLength: 9, maxLength: 9, pattern: /^[5-9]\d{8}$/, message: "UAE: 9 digits starting with 5-9" },
+//         in: { minLength: 10, maxLength: 10, pattern: /^[6-9]\d{9}$/, message: "India: 10 digits starting with 6-9" },
+//         pk: { minLength: 10, maxLength: 10, pattern: /^3\d{9}$/, message: "Pakistan: 10 digits starting with 3" },
+//         us: { minLength: 10, maxLength: 10, pattern: /^\d{10}$/, message: "US: 10 digits" },
+//         gb: { minLength: 10, maxLength: 10, pattern: /^7\d{9}$/, message: "UK: 10 digits starting with 7" },
+//         default: { minLength: 6, maxLength: 15, pattern: /^\d+$/, message: "Please enter a valid phone number" }
+//     };
+
+//     useEffect(() => {
+//         if (!open) {
+//             setPhoneNumber(""); setFullPhoneNumber(""); setOtp(['', '', '', '']);
+//             setOtpSent(false); setOtpMethod(null); setValidationError("");
+//             setOpenCountryModal(false); setCountrySearch("");
+//             setCountry({ name: 'United Arab Emirates', code: '+971', iso: 'ae' });
+//         }
+//     }, [open]);
+
+//     useEffect(() => {
+//         if (timer > 0 && otpSent) {
+//             const interval = setInterval(() => {
+//                 setTimer(prev => { if (prev <= 1) { setResendDisabled(false); return 0; } return prev - 1; });
+//             }, 1000);
+//             return () => clearInterval(interval);
+//         }
+//     }, [timer, otpSent]);
+
+//     useEffect(() => {
+//         if (otp.join('').length === 4 && otp.every(d => d !== '')) handleVerifyOtp();
+//     }, [otp]);
+
+//     const validatePhone = () => {
+//         if (!phoneNumber.trim()) { setValidationError("Please enter phone number"); return false; }
+//         let d = phoneNumber.replace(/\D/g, '');
+//         if (['bd', 'pk', 'in', 'lk', 'np'].includes(country?.iso)) d = d.replace(/^0+/, '');
+//         const rules = countryValidationRules[country?.iso] || countryValidationRules.default;
+//         if (d.length < rules.minLength || d.length > rules.maxLength || (rules.pattern && !rules.pattern.test(d))) {
+//             setValidationError(rules.message); return false;
+//         }
+//         return true;
+//     };
+
+//     const buildFullPhone = () => {
+//         let n = phoneNumber.replace(/\D/g, '');
+//         if (['bd', 'pk', 'in', 'lk', 'np'].includes(country?.iso)) n = n.replace(/^0+/, '');
+//         return country.code + n;
+//     };
+
+//     const handleContinue = async (via) => {
+//         if (!validatePhone()) return;
+//         setLoading(true);
+//         const fullPhone = buildFullPhone();
+//         setFullPhoneNumber(fullPhone);
+//         const endpoint = via === 'sms' ? '/auth/send-otp-by-sms' : '/auth/send-otp'; 
+//         try {
+//             const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}${endpoint}`, {
+//                 method: 'POST', headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso || 'ae', countryName: country?.name, via })
+//             });
+//             const data = await res.json();
+//             console.log('data from sms inside',data);
+
+
+
+
+
+
+            
+
+//             if (data?.success === false) {
+//                 // toast.error(data?.message || 'Failed to send OTP. Please try again.');
+//                 toast.error('Something is wrong. Try again later.');
+//             } else {
+//                 setOtpMethod(via); setOtpSent(true); setTimer(15); setResendDisabled(true);
+//                 // toast.success(`OTP sent via ${via === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`);
+//                 setTimeout(() => inputRefs.current[0]?.focus(), 100);
+//             }
+//         } catch { toast.error('Network error. Please check your connection.'); }
+//         finally { setLoading(false); }
+//     };
+
+//     const handleVerifyOtp = async () => {
+//         const otpString = otp.join('');
+//         if (otpString.length !== 4) return;
+//         setVerifyingOtp(true);
+//         try {
+//             const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/verify-otp`, {
+//                 method: 'POST', headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ phone: fullPhoneNumber, otp: otpString })
+//             });
+//             const data = await res.json();
+//             console.log('error rorm rakib',data);
+            
+//             if (data?.Data?.success === true) {
+//                 const token = data?.Data?.token;
+//                 if (token) {
+//                     localStorage.setItem('access-token', token);
+//                     toast.success("Verification successful! Welcome!");
+//                     onClose();
+//                     setUser(jwtDecode(token));
+//                 }
+//             } else {
+//                 localStorage.removeItem("access-token"); setUser(null);
+//                 setOtp(['', '', '', '']); inputRefs.current[0]?.focus();
+//                 toast.error(data?.Data?.message || 'Invalid OTP. Please try again.');
+//             }
+//         } catch { toast.error('Verification failed. Please try again.'); }
+//         finally { setVerifyingOtp(false); }
+//     };
+
+//     const handleResendOtp = async () => {
+//         if (resendDisabled) return;
+//         setResendDisabled(true); setTimer(15); setOtp(['', '', '', '']);
+//         const endpoint = otpMethod === 'sms' ? '/auth/resend-otp-by-sms' : '/auth/resend-otp';
+//         try {
+//             const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}${endpoint}`, {
+//                 method: 'POST', headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ phone: fullPhoneNumber, via: otpMethod })
+//             });
+//             const data = await res.json();
+//             console.log('rakib',data);
+//             if (data?.success === false) { toast.error(data?.message || 'Failed to resend OTP'); setResendDisabled(false); }
+//             // else { toast.success(`OTP resent via ${otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}!`); inputRefs.current[0]?.focus(); }
+//         } catch { toast.error('Failed to resend OTP'); setResendDisabled(false); }
+//     };
+
+//     const handleOtpChange = (index, value) => {
+//         if (isNaN(value)) return;
+//         const newOtp = [...otp];
+//         newOtp[index] = value.slice(-1);
+//         setOtp(newOtp);
+//         if (value && index < 3) inputRefs.current[index + 1]?.focus();
+//     };
+
+//     const handleOtpKeyDown = (index, e) => {
+//         if (e.key === 'Backspace') {
+//             e.preventDefault();
+//             const newOtp = [...otp];
+//             if (newOtp[index]) { newOtp[index] = ''; setOtp(newOtp); }
+//             else if (index > 0) { inputRefs.current[index - 1].focus(); newOtp[index - 1] = ''; setOtp(newOtp); }
+//         } else if (e.key === 'ArrowLeft' && index > 0) inputRefs.current[index - 1].focus();
+//         else if (e.key === 'ArrowRight' && index < 3) inputRefs.current[index + 1].focus();
+//     };
+
+//     const handlePaste = (e) => {
+//         e.preventDefault();
+//         const digits = e.clipboardData.getData('text').replace(/\D/g, '').split('').slice(0, 4);
+//         const newOtp = ['', '', '', ''];
+//         digits.forEach((d, i) => { newOtp[i] = d; });
+//         setOtp(newOtp);
+//         inputRefs.current[Math.min(digits.length - 1, 3)]?.focus();
+//     };
+
+//     const handleCountrySelect = (c) => {
+//         setCountry(c); setOpenCountryModal(false); setCountrySearch(""); setPhoneNumber(""); setValidationError("");
+//     };
+
+//     const countries = [
+//         { name: 'Bangladesh', code: '+880', iso: 'bd' },
+//         { name: 'United Arab Emirates', code: '+971', iso: 'ae' },
+//         { name: 'India', code: '+91', iso: 'in' },
+//         { name: 'Pakistan', code: '+92', iso: 'pk' },
+//         { name: 'Afghanistan', code: '+93', iso: 'af' },
+//         { name: 'Albania', code: '+355', iso: 'al' },
+//         { name: 'Algeria', code: '+213', iso: 'dz' },
+//         { name: 'Argentina', code: '+54', iso: 'ar' },
+//         { name: 'Armenia', code: '+374', iso: 'am' },
+//         { name: 'Australia', code: '+61', iso: 'au' },
+//         { name: 'Austria', code: '+43', iso: 'at' },
+//         { name: 'Azerbaijan', code: '+994', iso: 'az' },
+//         { name: 'Bahrain', code: '+973', iso: 'bh' },
+//         { name: 'Belarus', code: '+375', iso: 'by' },
+//         { name: 'Belgium', code: '+32', iso: 'be' },
+//         { name: 'Brazil', code: '+55', iso: 'br' },
+//         { name: 'Canada', code: '+1', iso: 'ca' },
+//         { name: 'Chile', code: '+56', iso: 'cl' },
+//         { name: 'China', code: '+86', iso: 'cn' },
+//         { name: 'Colombia', code: '+57', iso: 'co' },
+//         { name: 'Croatia', code: '+385', iso: 'hr' },
+//         { name: 'Czech Republic', code: '+420', iso: 'cz' },
+//         { name: 'Denmark', code: '+45', iso: 'dk' },
+//         { name: 'Egypt', code: '+20', iso: 'eg' },
+//         { name: 'Ethiopia', code: '+251', iso: 'et' },
+//         { name: 'Finland', code: '+358', iso: 'fi' },
+//         { name: 'France', code: '+33', iso: 'fr' },
+//         { name: 'Germany', code: '+49', iso: 'de' },
+//         { name: 'Ghana', code: '+233', iso: 'gh' },
+//         { name: 'Greece', code: '+30', iso: 'gr' },
+//         { name: 'Hong Kong', code: '+852', iso: 'hk' },
+//         { name: 'Hungary', code: '+36', iso: 'hu' },
+//         { name: 'Indonesia', code: '+62', iso: 'id' },
+//         { name: 'Iran', code: '+98', iso: 'ir' },
+//         { name: 'Iraq', code: '+964', iso: 'iq' },
+//         { name: 'Ireland', code: '+353', iso: 'ie' },
+//         { name: 'Israel', code: '+972', iso: 'il' },
+//         { name: 'Italy', code: '+39', iso: 'it' },
+//         { name: 'Japan', code: '+81', iso: 'jp' },
+//         { name: 'Jordan', code: '+962', iso: 'jo' },
+//         { name: 'Kazakhstan', code: '+7', iso: 'kz' },
+//         { name: 'Kenya', code: '+254', iso: 'ke' },
+//         { name: 'Kuwait', code: '+965', iso: 'kw' },
+//         { name: 'Lebanon', code: '+961', iso: 'lb' },
+//         { name: 'Malaysia', code: '+60', iso: 'my' },
+//         { name: 'Maldives', code: '+960', iso: 'mv' },
+//         { name: 'Mexico', code: '+52', iso: 'mx' },
+//         { name: 'Morocco', code: '+212', iso: 'ma' },
+//         { name: 'Myanmar', code: '+95', iso: 'mm' },
+//         { name: 'Nepal', code: '+977', iso: 'np' },
+//         { name: 'Netherlands', code: '+31', iso: 'nl' },
+//         { name: 'New Zealand', code: '+64', iso: 'nz' },
+//         { name: 'Nigeria', code: '+234', iso: 'ng' },
+//         { name: 'Norway', code: '+47', iso: 'no' },
+//         { name: 'Oman', code: '+968', iso: 'om' },
+//         { name: 'Philippines', code: '+63', iso: 'ph' },
+//         { name: 'Poland', code: '+48', iso: 'pl' },
+//         { name: 'Portugal', code: '+351', iso: 'pt' },
+//         { name: 'Qatar', code: '+974', iso: 'qa' },
+//         { name: 'Romania', code: '+40', iso: 'ro' },
+//         { name: 'Russia', code: '+7', iso: 'ru' },
+//         { name: 'Saudi Arabia', code: '+966', iso: 'sa' },
+//         { name: 'Singapore', code: '+65', iso: 'sg' },
+//         { name: 'South Africa', code: '+27', iso: 'za' },
+//         { name: 'South Korea', code: '+82', iso: 'kr' },
+//         { name: 'Spain', code: '+34', iso: 'es' },
+//         { name: 'Sri Lanka', code: '+94', iso: 'lk' },
+//         { name: 'Sweden', code: '+46', iso: 'se' },
+//         { name: 'Switzerland', code: '+41', iso: 'ch' },
+//         { name: 'Syria', code: '+963', iso: 'sy' },
+//         { name: 'Taiwan', code: '+886', iso: 'tw' },
+//         { name: 'Tanzania', code: '+255', iso: 'tz' },
+//         { name: 'Thailand', code: '+66', iso: 'th' },
+//         { name: 'Tunisia', code: '+216', iso: 'tn' },
+//         { name: 'Turkey', code: '+90', iso: 'tr' },
+//         { name: 'Uganda', code: '+256', iso: 'ug' },
+//         { name: 'Ukraine', code: '+380', iso: 'ua' },
+//         { name: 'United Kingdom', code: '+44', iso: 'gb' },
+//         { name: 'United States', code: '+1', iso: 'us' },
+//         { name: 'Uzbekistan', code: '+998', iso: 'uz' },
+//         { name: 'Venezuela', code: '+58', iso: 've' },
+//         { name: 'Vietnam', code: '+84', iso: 'vn' },
+//         { name: 'Yemen', code: '+967', iso: 'ye' },
+//         { name: 'Zambia', code: '+260', iso: 'zm' },
+//         { name: 'Zimbabwe', code: '+263', iso: 'zw' },
+//     ];
+
+//     const filteredCountries = countries.filter(c =>
+//         c.name.toLowerCase().includes(countrySearch.toLowerCase())
+//     );
+
+//     if (!open) return null;
+
+//     return (
+//         <>
+//             {/* Spin keyframe — only thing that needs a <style> tag */}
+//             <style>{`@keyframes lm-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+//             {/* ── OVERLAY ── */}
+//             <div
+//                 className="fixed inset-0 z-9999 bg-black/45 backdrop-blur-sm flex items-end justify-center md:items-center"
+//                 onClick={onClose}
+//             >
+//                 {/* ── SHEET ── */}
+//                 <div
+//                     className={`bg-white w-full rounded-t-md md:rounded-xl shadow-2xl px-5 pt-4 pb-9 md:px-7 md:pt-7 md:w-[460px] overflow-hidden font-sans ${validationError ? 'h-[300px]' : 'h-[275px]'}`}
+//                     onClick={e => e.stopPropagation()}
+//                 >
+
+//                     {/* ════════════════ PHONE SCREEN ════════════════ */}
+//                     {!otpSent && (
+//                         <>
+//                             {/* Header */}
+//                             <div className="flex items-center justify-between mb-3">
+//                                 <h2 className="text-[20px] font-semibold text-[#1a1a1a] leading-tight m-0">
+//                                     Log in or sign up
+//                                 </h2>
+//                                 <button
+//                                     onClick={onClose}
+//                                     className="bg-transparent border-none cursor-pointer p-1 text-[#1a1a1a] shrink-0 hover:bg-gray-100 rounded-full transition-colors"
+//                                 >
+//                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+//                                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+
+//                             <p className="text-[15px] text-[#444] leading-relaxed mb-3">
+//                                 Please enter your mobile number to proceed.
+//                             </p>
+
+//                             <label className="block text-[15px] font-semibold text-[#1a1a1a] mb-2">
+//                                 Mobile Number
+//                             </label>
+
+//                             {/* Phone input row */}
+//                             <div className={`flex items-center w-full min-w-0 overflow-hidden h-[52px] px-3 rounded-md border bg-white ${validationError ? 'border-red-500' : 'border-gray-300'} ${validationError ? 'mb-1.5' : 'mb-3'}`}>
+
+//                                 {/* Country selector */}
+//                                 <div
+//                                     onClick={() => setOpenCountryModal(true)}
+//                                     className="flex items-center gap-1.5 pr-2.5 border-r border-gray-200 mr-2.5 cursor-pointer shrink-0 select-none"
+//                                 >
+//                                     <div className="w-6 h-[17px] overflow-hidden rounded-sm shrink-0">
+//                                         <img
+//                                             src={`https://flagcdn.com/w40/${country.iso}.png`}
+//                                             alt={country.name}
+//                                             className="w-full h-full object-cover"
+//                                         />
+//                                     </div>
+//                                     <span className="text-[15px] font-medium text-[#1a1a1a] whitespace-nowrap">{country.code}</span>
+//                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+//                                         <polyline points="6 9 12 15 18 9" />
+//                                     </svg>
+//                                 </div>
+
+//                                 {/* Number input — flex:1 min-w-0 prevents overflow */}
+//                                 <input
+//                                     type="tel"
+//                                     value={phoneNumber}
+//                                     onChange={e => {
+//                                         let digits = e.target.value.replace(/\D/g, '');
+//                                         if (['bd', 'pk', 'in', 'lk', 'np'].includes(country?.iso) && e.target.value.startsWith('0')) {
+//                                             // toast.error("Please don't include the leading zero", { duration: 3000, icon: '⚠️' });
+//                                             digits = digits.replace(/^0+/, '');
+//                                         }
+//                                         setPhoneNumber(digits);
+//                                         setValidationError("");
+//                                     }}
+//                                     onKeyDown={e => { if (e.key === 'Enter' && phoneNumber && !loading) handleContinue('whatsapp'); }}
+//                                     placeholder="Phone Number"
+//                                     inputMode="numeric"
+//                                     autoComplete="tel"
+//                                     className="flex-1 min-w-0 w-0 text-[15px] text-[#1a1a1a] outline-none border-none bg-transparent placeholder-gray-400"
+//                                 />
+
+//                                 {/* Phone icon */}
+//                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 ml-1.5">
+//                                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+//                                     <line x1="12" y1="18" x2="12.01" y2="18" />
+//                                 </svg>
+//                             </div>
+
+//                             {/* Validation error */}
+//                             {validationError && (
+//                                 <p className="flex items-center gap-1 text-[13px] text-red-500 mb-3.5">
+//                                     <svg fill="currentColor" viewBox="0 0 20 20" className="w-3.5 h-3.5 shrink-0">
+//                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+//                                     </svg>
+//                                     {validationError}
+//                                 </p>
+//                             )}
+
+//                             {/* Continue button */}
+//                             <button
+//                                 onClick={() => handleContinue('whatsapp')}
+//                                 disabled={loading || !phoneNumber}
+//                                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-sm text-[15px] font-bold text-white border-none transition-colors ${loading || !phoneNumber ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 cursor-pointer'}`}
+//                             >
+//                                 {loading ? (
+//                                     <>
+//                                         <svg style={{ animation: 'lm-spin 1s linear infinite' }} className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24">
+//                                             <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+//                                             <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+//                                         </svg>
+//                                         SENDING...
+//                                     </>
+//                                 ) : 'Continue'}
+//                             </button>
+//                         </>
+//                     )}
+
+//                     {/* ════════════════ OTP SCREEN ════════════════ */}
+//                     {otpSent && (
+//                         <div className="h-60">
+//                             {/* Header */}
+//                             <div className="flex items-center justify-between mb-3">
+//                                 <div className="flex items-center gap-2">
+//                                     <button
+//                                         onClick={() => { setOtpSent(false); setOtp(['', '', '', '']); }}
+//                                         className="bg-transparent border-none cursor-pointer p-0.5 text-[#1a1a1a] flex items-center hover:bg-gray-100 rounded transition-colors"
+//                                     >
+//                                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+//                                             <polyline points="15 18 9 12 15 6" />
+//                                         </svg>
+//                                     </button>
+//                                     <h2 className="text-[18px] font-semibold text-[#1a1a1a] m-0">Verify mobile number</h2>
+//                                 </div>
+//                                 <button
+//                                     onClick={onClose}
+//                                     className="bg-transparent border-none cursor-pointer p-1 text-[#1a1a1a] shrink-0 hover:bg-gray-100 rounded-full transition-colors"
+//                                 >
+//                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+//                                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+
+//                             <p className="text-[15px] text-[#444] leading-relaxed mb-2.5">
+//                                 We've sent an OTP via {otpMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'} to{' '}
+//                                 <span className="font-bold text-[#1a1a1a]">{fullPhoneNumber}</span>.
+//                                 <br />Please enter that below.
+//                             </p>
+
+//                             {/* OTP boxes */}
+//                             <div className="flex gap-3 justify-start mb-4" onPaste={handlePaste}>
+//                                 {otp.map((digit, index) => (
+//                                     <input
+//                                         key={index}
+//                                         ref={el => (inputRefs.current[index] = el)}
+//                                         type="text"
+//                                         inputMode="numeric"
+//                                         pattern="[0-9]*"
+//                                         maxLength={1}
+//                                         value={digit}
+//                                         onChange={e => handleOtpChange(index, e.target.value)}
+//                                         onKeyDown={e => handleOtpKeyDown(index, e)}
+//                                         onFocus={e => e.target.select()}
+//                                         disabled={verifyingOtp}
+//                                         className={`w-[50px] h-[50px] text-[18px] font-semibold text-center rounded-[10px] outline-none bg-gray-50 text-[#1a1a1a] transition-all duration-150 border border-gray-300`}
+//                                         style={{ caretColor: '#f16522' }}
+//                                     />
+//                                 ))}
+//                             </div>
+
+//                             {/* Timer / Resend */}
+//                             <div className=" mb-5">
+//                                 {resendDisabled ? (
+//                                     <p className="text-[15px] text-[#555] m-0">
+//                                         Resend OTP in{' '}
+//                                         <span className="font-bold text-[#1a1a1a]">00:{timer.toString().padStart(2, '0')}</span>
+//                                     </p>
+//                                 ) : isUAE ? (
+//                                     <>
+//                                         <p className="text-start text-[12px] font-semibold mb-3">Don't get an OTP? Resend via</p>
+//                                         <div className="flex justify-start gap-3">
+//                                             <button
+//                                                 onClick={() => { setOtpMethod('whatsapp'); handleResendOtp(); }}
+//                                                 className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
+//                                             >
+//                                                 Whatsapp
+//                                             </button>
+//                                             <button
+//                                                 onClick={() => { setOtpMethod('sms'); handleResendOtp(); }}
+//                                                 className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
+//                                             >
+//                                                 SMS
+//                                             </button>
+//                                         </div>
+//                                     </>
+//                                 ) : (
+//                                     <div className="text-start">
+//                                         <p className="text-start text-[12px] font-semibold mb-3">Don't get an OTP? Resend via</p>
+//                                         <button
+//                                             onClick={handleResendOtp}
+//                                             className="border rounded-4xl px-4 py-1.5 text-[12px] font-medium"
+//                                         >
+//                                             Whatsapp
+//                                         </button>
+//                                     </div>
+//                                 )}
+//                             </div>
+
+//                             {/* Verifying indicator */}
+//                             {otp.every(d => d !== '') && (
+//                                 <div className="flex items-center justify-center gap-1.5 text-[13px] text-gray-500 text-center">
+//                                     <svg style={{ animation: 'lm-spin 1s linear infinite' }} className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                                     </svg>
+//                                     Verifying OTP...
+//                                 </div>
+//                             )}
+//                         </div>
+//                     )}
+
+//                     {/* ════════════════ COUNTRY MODAL ════════════════ */}
+//                     {openCountryModal && (
+//                         <div
+//                             onClick={e => e.stopPropagation()}
+//                             className="absolute top-9/12 md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[360px] bg-white rounded-sm shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden z-10000"
+//                         >
+//                             {/* Search */}
+//                             <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-100">
+//                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+//                                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+//                                 </svg>
+//                                 <input
+//                                     type="text"
+//                                     placeholder="Search country"
+//                                     value={countrySearch}
+//                                     onChange={e => setCountrySearch(e.target.value)}
+//                                     autoFocus
+//                                     className="flex-1 min-w-0 text-[15px] outline-none border-none bg-transparent text-[#1a1a1a] placeholder-gray-400"
+//                                 />
+//                                 <button
+//                                     onClick={() => setOpenCountryModal(false)}
+//                                     className="bg-transparent border-none cursor-pointer text-gray-500 flex shrink-0 hover:text-gray-800 transition-colors"
+//                                 >
+//                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+//                                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+
+//                             {/* Country list */}
+//                             <div className="h-[360px] overflow-y-auto">
+//                                 {filteredCountries.map((c, i) => (
+//                                     <div
+//                                         key={i}
+//                                         onClick={() => handleCountrySelect(c)}
+//                                         className={`flex items-center gap-3 px-4 py-[11px] cursor-pointer transition-colors ${c.iso === country.iso ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+//                                     >
+//                                         <div className="w-[26px] h-[18px] overflow-hidden rounded-sm shrink-0 border border-gray-100">
+//                                             <img src={`https://flagcdn.com/w40/${c.iso}.png`} alt={c.name} className="w-full h-full object-cover" />
+//                                         </div>
+//                                         <span className="text-[15px] text-[#1a1a1a] flex-1">{c.name}</span>
+//                                         <span className="text-[13px] text-gray-400">{c.code}</span>
+//                                     </div>
+//                                 ))}
+//                             </div>
+//                         </div>
+//                     )}
+
+//                 </div>
+//             </div>
+//         </>
+//     );
+// };
+
+// export default LoginModal;
 
 
 
