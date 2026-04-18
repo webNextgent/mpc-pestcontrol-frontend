@@ -21,7 +21,7 @@ const LoginModal = ({ open, onClose }) => {
     const [country, setCountry] = useState({ name: 'United Arab Emirates', code: '+971', iso: 'ae' });
 
     const inputRefs = useRef([]);
-    const {user, setUser } = useAuth();
+    const { setUser } = useAuth();
     const isUAE = country.iso === 'ae';
 
     const countryValidationRules = {
@@ -75,63 +75,63 @@ const LoginModal = ({ open, onClose }) => {
 
     // UAE: send OTP via both WhatsApp AND SMS simultaneously
     // Other countries: send via WhatsApp only
-    const handleContinue = async () => {
-        if (!validatePhone()) return;
-        setLoading(true);
-        const fullPhone = buildFullPhone();
-        setFullPhoneNumber(fullPhone);
+    // const handleContinue = async () => {
+    //     if (!validatePhone()) return;
+    //     setLoading(true);
+    //     const fullPhone = buildFullPhone();
+    //     setFullPhoneNumber(fullPhone);
 
-        try {
-            if (isUAE) {
-                // Fire both requests in parallel
-                const [whatsappRes, smsRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
-                    }),
-                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp-by-sms`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'sms' })
-                    })
-                ]);
+    //     try {
+    //         if (isUAE) {
+    //             // Fire both requests in parallel
+    //             const [whatsappRes, smsRes] = await Promise.all([
+    //                 fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+    //                     method: 'POST',
+    //                     headers: { 'Content-Type': 'application/json' },
+    //                     body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+    //                 }),
+    //                 fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp-by-sms`, {
+    //                     method: 'POST',
+    //                     headers: { 'Content-Type': 'application/json' },
+    //                     body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'sms' })
+    //                 })
+    //             ]);
 
-                const [whatsappData, smsData] = await Promise.all([
-                    whatsappRes.json(),
-                    smsRes.json()
-                ]);
+    //             const [whatsappData, smsData] = await Promise.all([
+    //                 whatsappRes.json(),
+    //                 smsRes.json()
+    //             ]);
 
-                // If at least one succeeds, proceed
-                const anySuccess = whatsappData?.success !== false || smsData?.success !== false;
-                if (!anySuccess) {
-                    toast.error('Something is wrong. Try again later.');
-                } else {
-                    setOtpSent(true); setTimer(15); setResendDisabled(true);
-                    setTimeout(() => inputRefs.current[0]?.focus(), 100);
-                }
-            } else {
-                // Non-UAE: WhatsApp only
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
-                });
-                const data = await res.json();
+    //             // If at least one succeeds, proceed
+    //             const anySuccess = whatsappData?.success !== false || smsData?.success !== false;
+    //             if (!anySuccess) {
+    //                 toast.error('Something is wrong. Try again later.');
+    //             } else {
+    //                 setOtpSent(true); setTimer(15); setResendDisabled(true);
+    //                 setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    //             }
+    //         } else {
+    //             // Non-UAE: WhatsApp only
+    //             const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+    //             });
+    //             const data = await res.json();
 
-                if (data?.success === false) {
-                    toast.error('Something is wrong. Try again later.');
-                } else {
-                    setOtpSent(true); setTimer(15); setResendDisabled(true);
-                    setTimeout(() => inputRefs.current[0]?.focus(), 100);
-                }
-            }
-        } catch {
-            toast.error('Network error. Please check your connection.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    //             if (data?.success === false) {
+    //                 toast.error('Something is wrong. Try again later.');
+    //             } else {
+    //                 setOtpSent(true); setTimer(15); setResendDisabled(true);
+    //                 setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    //             }
+    //         }
+    //     } catch {
+    //         toast.error('Network error. Please check your connection.');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     const handleVerifyOtp = async () => {
         const otpString = otp.join('');
@@ -162,41 +162,198 @@ const LoginModal = ({ open, onClose }) => {
 
     // UAE resend: both channels again simultaneously
     // Other: WhatsApp only
-    const handleResendOtp = async () => {
-        if (resendDisabled) return;
-        setResendDisabled(true); setTimer(15); setOtp(['', '', '', '']);
+    // const handleResendOtp = async () => {
+    //     if (resendDisabled) return;
+    //     setResendDisabled(true); setTimer(15); setOtp(['', '', '', '']);
 
-        try {
-            if (isUAE) {
-                await Promise.all([
-                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
-                    }),
-                    fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp-by-sms`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: fullPhoneNumber, via: 'sms' })
-                    })
-                ]);
-                inputRefs.current[0]?.focus();
+    //     try {
+    //         if (isUAE) {
+    //             await Promise.all([
+    //                 fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+    //                     method: 'POST', headers: { 'Content-Type': 'application/json' },
+    //                     body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
+    //                 }),
+    //                 fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp-by-sms`, {
+    //                     method: 'POST', headers: { 'Content-Type': 'application/json' },
+    //                     body: JSON.stringify({ phone: fullPhoneNumber, via: 'sms' })
+    //                 })
+    //             ]);
+    //             inputRefs.current[0]?.focus();
+    //         } else {
+    //             const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+    //                 method: 'POST', headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
+    //             });
+    //             const data = await res.json();
+    //             if (data?.success === false) {
+    //                 toast.error(data?.message || 'Failed to resend OTP');
+    //                 setResendDisabled(false);
+    //             } else {
+    //                 inputRefs.current[0]?.focus();
+    //             }
+    //         }
+    //     } catch {
+    //         toast.error('Failed to resend OTP');
+    //         setResendDisabled(false);
+    //     }
+    // };
+
+    // UAE: send OTP via both WhatsApp AND SMS simultaneously
+// Other countries: send via WhatsApp only
+const handleContinue = async () => {
+    if (!validatePhone()) return;
+    setLoading(true);
+    const fullPhone = buildFullPhone();
+    setFullPhoneNumber(fullPhone);
+
+    console.group(`📤 OTP Send Attempt — ${new Date().toLocaleTimeString()}`);
+    console.log('📱 Phone Number:', fullPhone);
+    console.log('🌍 Country:', country.name, `(${country.code})`);
+    console.log('🔀 Strategy:', isUAE ? 'WhatsApp + SMS (UAE)' : 'WhatsApp Only');
+    console.groupEnd();
+
+    try {
+        if (isUAE) {
+            console.group('🇦🇪 UAE — Firing both channels in parallel...');
+            console.log('1️⃣  WhatsApp OTP → /auth/send-otp');
+            console.log('2️⃣  SMS OTP     → /auth/send-otp-by-sms');
+            console.groupEnd();
+
+            const [whatsappRes, smsRes] = await Promise.all([
+                fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+                }),
+                fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp-by-sms`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'sms' })
+                })
+            ]);
+
+            const [whatsappData, smsData] = await Promise.all([
+                whatsappRes.json(),
+                smsRes.json()
+            ]);
+
+            console.group('📬 OTP Send Results');
+            console.log('✅ WhatsApp Response:', whatsappData);
+            console.log('✅ SMS Response:      ', smsData);
+
+            const whatsappOk = whatsappData?.success !== false;
+            const smsOk = smsData?.success !== false;
+
+            console.log('WhatsApp sent?', whatsappOk ? '✅ YES' : '❌ NO');
+            console.log('SMS sent?     ', smsOk      ? '✅ YES' : '❌ NO');
+            console.groupEnd();
+
+            const anySuccess = whatsappOk || smsOk;
+            if (!anySuccess) {
+                console.error('❌ Both channels failed!');
+                toast.error('Something is wrong. Try again later.');
             } else {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+                console.log(`🎉 OTP dispatched via: ${[whatsappOk && 'WhatsApp', smsOk && 'SMS'].filter(Boolean).join(' + ')}`);
+                setOtpSent(true); setTimer(15); setResendDisabled(true);
+                setTimeout(() => inputRefs.current[0]?.focus(), 100);
+            }
+        } else {
+            console.group(`🌐 Non-UAE (${country.name}) — WhatsApp only`);
+            console.log('1️⃣  WhatsApp OTP → /auth/send-otp');
+            console.groupEnd();
+
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: fullPhone, countryCode: country?.iso, countryName: country?.name, via: 'whatsapp' })
+            });
+            const data = await res.json();
+
+            console.group('📬 OTP Send Result');
+            console.log('WhatsApp Response:', data);
+            console.log('WhatsApp sent?', data?.success !== false ? '✅ YES' : '❌ NO');
+            console.groupEnd();
+
+            if (data?.success === false) {
+                toast.error('Something is wrong. Try again later.');
+            } else {
+                console.log('🎉 OTP dispatched via: WhatsApp');
+                setOtpSent(true); setTimer(15); setResendDisabled(true);
+                setTimeout(() => inputRefs.current[0]?.focus(), 100);
+            }
+        }
+    } catch (err) {
+        console.error('🔴 Network/fetch error:', err);
+        toast.error('Network error. Please check your connection.');
+    } finally {
+        setLoading(false);
+    }
+};
+
+// UAE resend: both channels again simultaneously
+// Other: WhatsApp only
+const handleResendOtp = async () => {
+    if (resendDisabled) return;
+    setResendDisabled(true); setTimer(15); setOtp(['', '', '', '']);
+
+    console.group(`🔁 OTP Resend Attempt — ${new Date().toLocaleTimeString()}`);
+    console.log('📱 Phone:', fullPhoneNumber);
+    console.log('🔀 Strategy:', isUAE ? 'WhatsApp + SMS (UAE)' : 'WhatsApp Only');
+    console.groupEnd();
+
+    try {
+        if (isUAE) {
+            console.group('🇦🇪 UAE Resend — Firing both channels...');
+            console.log('1️⃣  WhatsApp → /auth/resend-otp');
+            console.log('2️⃣  SMS      → /auth/resend-otp-by-sms');
+            console.groupEnd();
+
+            const [whatsappRes, smsRes] = await Promise.all([
+                fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
-                });
-                const data = await res.json();
-                if (data?.success === false) {
-                    toast.error(data?.message || 'Failed to resend OTP');
-                    setResendDisabled(false);
-                } else {
-                    inputRefs.current[0]?.focus();
-                }
+                }),
+                fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp-by-sms`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: fullPhoneNumber, via: 'sms' })
+                })
+            ]);
+
+            const [whatsappData, smsData] = await Promise.all([
+                whatsappRes.json(),
+                smsRes.json()
+            ]);
+
+            console.group('📬 Resend Results');
+            console.log('WhatsApp:', whatsappData, whatsappData?.success !== false ? '✅' : '❌');
+            console.log('SMS:     ', smsData,      smsData?.success !== false      ? '✅' : '❌');
+            console.groupEnd();
+
+            inputRefs.current[0]?.focus();
+        } else {
+            console.log(`🌐 Non-UAE Resend (${country.name}) — WhatsApp only`);
+
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/auth/resend-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: fullPhoneNumber, via: 'whatsapp' })
+            });
+            const data = await res.json();
+
+            console.log('WhatsApp Resend:', data, data?.success !== false ? '✅' : '❌');
+
+            if (data?.success === false) {
+                toast.error(data?.message || 'Failed to resend OTP');
+                setResendDisabled(false);
+            } else {
+                inputRefs.current[0]?.focus();
             }
-        } catch {
-            toast.error('Failed to resend OTP');
-            setResendDisabled(false);
         }
-    };
+    } catch (err) {
+        console.error('🔴 Resend error:', err);
+        toast.error('Failed to resend OTP');
+        setResendDisabled(false);
+    }
+};
 
     const handleOtpChange = (index, value) => {
         if (isNaN(value)) return;
