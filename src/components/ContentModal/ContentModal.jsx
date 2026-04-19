@@ -140,7 +140,7 @@ const ContentModal = ({ setShowModal, property }) => {
                                                     <div className="flex justify-between mt-3">
                                                         {/* Price */}
                                                         <div className="flex items-center justify-center gap-0 mb-3">
-                                                            <img className="h-3.5 w-4 sm:h-5 sm:w-5 mt-0.5" src={dirhum} alt="AED" />
+                                                            <img className="h-3.5 w-4 mt-0.5" src={dirhum} alt="AED" />
                                                             <span className="text-sm sm:text-base font-semibold text-gray-700">
                                                                 {item.price?.toLocaleString?.() ?? item.price}
                                                             </span>
