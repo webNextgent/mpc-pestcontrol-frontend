@@ -69,7 +69,7 @@ const ContentModal = ({ setShowModal, property }) => {
     const items = Array.isArray(property.propertyItems) ? property.propertyItems : [];
     return (
         <>
-            <div className="fixed inset-0 bg-black/70 z-50 flex md:items-center md:justify-center">
+            <div className="fixed inset-0 bg-black/70 z-99 flex md:items-center md:justify-center">
                 <div className="absolute inset-0" onClick={() => setShowModal(false)} />
 
                 {/* Modal panel */}
@@ -208,7 +208,7 @@ const ContentModal = ({ setShowModal, property }) => {
             {/* ── Detail Modal ── */}
             {showDetailModal && selectedItem && (
                 <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-4"
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-999 p-4"
                     onClick={closeDetailModal}
                 >
                     <div
