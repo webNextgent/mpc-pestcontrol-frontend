@@ -14,9 +14,9 @@ const Cover = ({ content }) => {
                 }}
             />
             <div className="absolute inset-0 flex items-center justify-center px-6">
-                <h1 className="text-white text-2xl font-semibold text-center leading-tight drop-shadow-lg">
+                {/* <h1 className="text-white text-2xl font-semibold text-center leading-tight drop-shadow-lg">
                     {content.title}
-                </h1>
+                </h1> */}
             </div>
 
             <div className="absolute left-0 right-0 bottom-0 h-6 bg-linear-to-t from-black/30 to-transparent rounded-b-md" />
