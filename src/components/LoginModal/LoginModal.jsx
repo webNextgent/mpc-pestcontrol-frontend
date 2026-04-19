@@ -277,7 +277,7 @@ const handleContinue = async () => {
             if (data?.success === false) {
                 toast.error('Something is wrong. Try again later.');
             } else {
-                console.log('🎉 OTP dispatched via: WhatsApp');
+                console.log('object-cover w-full h-80 md:h-64OTP dispatched via: WhatsApp');
                 setOtpSent(true); setTimer(15); setResendDisabled(true);
                 setTimeout(() => inputRefs.current[0]?.focus(), 100);
             }

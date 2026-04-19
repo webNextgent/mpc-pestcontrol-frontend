@@ -28,6 +28,7 @@ const Services = () => {
     } = useSummary();
 
     const [services] = useAllServices();
+    console.log(services);
     const { addItem, removeItem, data } = useItem();
     const sectionRefs = useRef({});
     const buttonSliderRefs = useRef({});
