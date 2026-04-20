@@ -89,7 +89,7 @@ const Card = ({ service }) => {
         <div className="overflow-hidden bg-white relative">
             {/* Image Slider */}
             <div
-                className="relative w-full h-60 md:h-64 overflow-hidden cursor-grab active:cursor-grabbing select-none"
+                className="relative w-full h-60 md:h-72 overflow-hidden cursor-grab active:cursor-grabbing select-none"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 onMouseDown={handleMouseDown}
