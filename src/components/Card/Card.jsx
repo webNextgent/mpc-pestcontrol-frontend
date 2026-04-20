@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaStar } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import useScrollLock from "../../hooks/useScrollLock";
 
 const sliderImages = [
@@ -15,26 +14,33 @@ const Card = ({ service }) => {
     const [showModal, setShowModal] = useState(false);
     const [current, setCurrent] = useState(0);
     const touchStartX = useRef(null);
+    const mouseStartX = useRef(null);
+    const isDragging = useRef(false);
+    const timerRef = useRef(null);
     useScrollLock(showModal, () => setShowModal(false));
 
     const total = sliderImages.length;
 
-    const prev = (e) => {
-        e?.stopPropagation();
-        setCurrent((c) => (c - 1 + total) % total);
+    const goTo = (index) => {
+        setCurrent((index + total) % total);
     };
 
-    const next = (e) => {
-        e?.stopPropagation();
-        setCurrent((c) => (c + 1) % total);
+    const resetTimer = () => {
+        clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+            setCurrent((c) => (c + 1) % total);
+        }, 3000);
     };
+
+    const prev = () => { goTo(current - 1); resetTimer(); };
+    const next = () => { goTo(current + 1); resetTimer(); };
 
     // Auto slide
     useEffect(() => {
-        const timer = setInterval(() => {
+        timerRef.current = setInterval(() => {
             setCurrent((c) => (c + 1) % total);
         }, 3000);
-        return () => clearInterval(timer);
+        return () => clearInterval(timerRef.current);
     }, [total]);
 
     // Touch handlers
@@ -50,13 +56,46 @@ const Card = ({ service }) => {
         touchStartX.current = null;
     };
 
+    // Mouse drag handlers
+    const handleMouseDown = (e) => {
+        mouseStartX.current = e.clientX;
+        isDragging.current = false;
+    };
+
+    const handleMouseMove = (e) => {
+        if (mouseStartX.current === null) return;
+        if (Math.abs(e.clientX - mouseStartX.current) > 5) {
+            isDragging.current = true;
+        }
+    };
+
+    const handleMouseUp = (e) => {
+        if (mouseStartX.current === null) return;
+        const diff = mouseStartX.current - e.clientX;
+        if (isDragging.current) {
+            if (diff > 50) next();
+            else if (diff < -50) prev();
+        }
+        mouseStartX.current = null;
+        isDragging.current = false;
+    };
+
+    const handleMouseLeave = () => {
+        mouseStartX.current = null;
+        isDragging.current = false;
+    };
+
     return (
         <div className="overflow-hidden bg-white relative">
             {/* Image Slider */}
             <div
-                className="relative w-full h-80 md:h-64 overflow-hidden"
+                className="relative w-full h-60 md:h-64 overflow-hidden cursor-grab active:cursor-grabbing select-none"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
             >
                 {/* Slides */}
                 <div
@@ -68,41 +107,35 @@ const Card = ({ service }) => {
                             key={i}
                             src={img}
                             alt={`${title} ${i + 1}`}
-                            className="min-w-full h-full object-cover"
+                            className="min-w-full h-full object-cover pointer-events-none"
                         />
                     ))}
                 </div>
 
-                {/* Arrows */}
-                <button
-                    onClick={prev}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-8 h-8 flex items-center justify-center z-10"
-                >
-                    <MdChevronLeft className="text-xl text-gray-700" />
-                </button>
-                <button
-                    onClick={next}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-8 h-8 flex items-center justify-center z-10"
-                >
-                    <MdChevronRight className="text-xl text-gray-700" />
-                </button>
-
-                {/* Dots */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                    {sliderImages.map((_, i) => (
-                        <button
-                            key={i}
-                            onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
-                            className={`w-2 h-2 rounded-full transition-colors ${
-                                i === current ? "bg-white" : "bg-white/50"
-                            }`}
-                        />
-                    ))}
-                </div>
+                {/* Progress Bar */}
+               <div className="absolute bottom-0 left-0 w-full flex gap-1.5 px-6 pb-3.5 z-10">
+    {sliderImages.map((_, i) => (
+        <div
+            key={i}
+            onClick={(e) => { e.stopPropagation(); goTo(i); resetTimer(); }}
+            className="flex-1 h-[5px] rounded-full cursor-pointer"
+            style={{ backgroundColor: "rgba(1, 120, 142, 0.25)" }}
+        >
+            <div
+                className="h-full rounded-full"
+                style={{
+                    width: i === current ? "100%" : "0%",
+                    backgroundColor: "#01788E",
+                    transition: "width 0.4s ease",
+                }}
+            />
+        </div>
+    ))}
+</div>
             </div>
 
             {/* Content */}
-            <div className="p-4 md:p-6 absolute md:relative top-[220px] md:top-0 rounded-t-3xl md:rounded-t-none w-full bg-white">
+            <div className="p-4 md:p-6 w-full bg-white">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                     <div>
                         <h2 className="text-lg md:text-xl font-bold text-[#1A1A1A] mt-1">
@@ -111,7 +144,7 @@ const Card = ({ service }) => {
                         <div className="flex items-center gap-1.5 mt-1">
                             <FaStar className="text-amber-400 text-xs md:text-sm" />
                             <span className="text-sm md:text-sm font-semibold text-gray-700">{rated}/5</span>
-                            <span className="text-xs md:text-sm text-gray-400">({totalBooking} bookings)</span>
+                            <span className="text-xs md:text-sm text-gray-400">({totalBooking})</span>
                         </div>
                     </div>
 
@@ -174,6 +207,9 @@ export default Card;
 
 
 
+
+
+// main component code 
 // import { useState } from "react";
 // import { FaStar } from "react-icons/fa";
 // import { IoInformationCircleOutline } from "react-icons/io5";
