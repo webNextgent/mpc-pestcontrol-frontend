@@ -20,12 +20,21 @@ import { IoIosArrowUp } from "react-icons/io";
 // ── তোমার manual button images এখানে বসাও ──────────────────────────────────
 // b.title এর সাথে exact match করবে
 const customButtonImages = {
-    "General":        "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
-    "Cockroaches":   "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
-    "Ants":    "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
-    "Mosquitoes":    "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
-    "Bed Bugs":    "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
-    "Commercial Pest Control":    "https://i.postimg.cc/W13MHm7N/wallhaven-yxdrex-3840x2160.png",
+
+//   "General":        "https://i.postimg.cc/Wzz1cP2T/general.avif4",
+//     "Cockroaches":   "https://i.postimg.cc/kMRpgpBV/pexels-nikiemmert-27719617.jpg",
+//     "Ants":    "https://i.postimg.cc/dQGjXPhZ/pexels-saipixels-34556289.jpg",
+//     "Mosquitoes":    "https://i.postimg.cc/G2CHTNbL/pexels-pavel-hajek-2426651-4056767.jpg",
+//     "Bed Bugs":    "https://i.postimg.cc/4xQycPFZ/bed-box.avif",
+//     "Commercial Pest Control":    "https://i.postimg.cc/0QwqY22K/pexels-tima-miroshnichenko-6195963.jpg",
+
+
+    "General":        "https://i.postimg.cc/Wzz1cP2T/general.avif4",
+    "Cockroaches":   "https://i.postimg.cc/MZLWfN6Y/chockros.avif",
+    "Ants":    "https://i.postimg.cc/mrTRGGwK/ants.avif",
+    "Mosquitoes":    "https://i.postimg.cc/qBNNF8gx/mosquitos.avif",
+    "Bed Bugs":    "https://i.postimg.cc/4xQycPFZ/bed-box.avif",
+    "Commercial Pest Control":    "https://i.postimg.cc/0QwqY22K/pexels-tima-miroshnichenko-6195963.jpg",
     // বাকি title গুলো এখানে add করো
 };
 // ─────────────────────────────────────────────────────────────────────────────
