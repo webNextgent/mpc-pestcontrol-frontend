@@ -372,7 +372,7 @@ const Services = () => {
                                 <Card service={service} />
 
                                 {/* BUTTON SLIDER */}
-                                <div className="px-2 md:px-9 bg-white md:py-4 sticky top-16 z-10">
+                                <div className="px-2 md:px-9 bg-white md:pt-2.5 sticky z-10">
                                     <div className="flex items-center justify-center gap-2">
 
                                         <button
