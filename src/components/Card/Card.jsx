@@ -4,9 +4,9 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import useScrollLock from "../../hooks/useScrollLock";
 
 const sliderImages = [
-    "https://i.postimg.cc/kMRpgpBV/pexels-nikiemmert-27719617.jpg",
-    "https://i.postimg.cc/qRRWwBJD/pexels-wilawan-pantukang-108390463-9588928.jpg",
-    "https://i.postimg.cc/3rpQcRjZ/pexels-ekamelev-760086.jpg",
+    "https://i.postimg.cc/sfZGkNTg/3-jpg-(1).jpg",
+    "https://i.postimg.cc/NMcZQV18/2-jpg-(1).jpg",
+    "https://i.postimg.cc/sfZGkNTg/3-jpg-(1).jpg",
 ];
 
 const Card = ({ service }) => {

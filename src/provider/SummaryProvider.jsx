@@ -411,27 +411,6 @@ export const SummaryProvider = ({ children }) => {
     });
 
     // for promo code
-    // old fun 
-    // const handleApply = async (promoCode) => {
-    //     try {
-    //         const res = await axiosSecure.post(`/promo-code/use-promo-code/${user?.id}`, { code: promoCode });
-    //         console.log('niru', res);
-
-    //         if (!res?.data?.success) {
-    //             toast.error(res?.date?.message || "Invalid promo code");
-    //             return;
-    //         }
-    //         setPromo(promoCode);
-    //         setPromoStatus(true);
-    //         setUseDiscount(Number(res?.data?.Data?.discount || 0));
-    //         toast.success(res.data.message || "Promo applied successfully");
-    //     } catch {
-    //         toast.error("Something went wrong");
-    //         // toast.error(res.data.message);
-    //     }
-    // };
-
-    // for promo code
     const handleApply = async (promoCode) => {
         try {
             const res = await axiosSecure.post(

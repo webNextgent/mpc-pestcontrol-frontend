@@ -44,7 +44,7 @@ const CoverContent = ({ content }) => {
                                 <h2 className="text-base md:text-md font-medium mb-1.5 line-clamp-1">
                                     {property.title}
                                 </h2>
-                                <p className="text-xs md:w-[80%] w-[85%] md:font-medium product-item-description">
+                                <p className="text-[13px] md:w-[80%] w-[85%] md:font-medium product-item-description">
                                     {property.description}
                                 </p>
                             </div>

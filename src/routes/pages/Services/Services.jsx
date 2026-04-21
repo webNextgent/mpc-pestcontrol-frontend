@@ -440,7 +440,7 @@ const Services = () => {
                                 </div>
 
                                 {/* CONTENT */}
-                                <div className="px-6 md:px-9 mt-3 space-y-6">
+                                <div className="px-5 md:px-9 mt-3 space-y-6">
                                     {content
                                         ?.filter((c) => c.serviceId === service.id)
                                         .map((c) => (
