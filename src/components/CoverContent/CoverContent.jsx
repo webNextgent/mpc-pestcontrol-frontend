@@ -41,10 +41,10 @@ const CoverContent = ({ content }) => {
                         {/* Content - Compact */}
                         <div className="flex-1">
                             <div className="mb-2">
-                                <h2 className="text-base md:text-md font-medium mb-1.5 line-clamp-1">
+                                <h2 className="text-base text-gray-800 md:text-md font-medium mb-1.5 line-clamp-1">
                                     {property.title}
                                 </h2>
-                                <p className="text-[13px] md:w-[80%] w-[85%] md:font-medium product-item-description">
+                                <p className="text-[13px] md:w-[80%] w-[85%] md:font-medium text-gray-600 product-item-description">
                                     {property.description}
                                 </p>
                             </div>

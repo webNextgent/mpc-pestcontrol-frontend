@@ -35,7 +35,6 @@ const Card = ({ service }) => {
     const prev = () => { goTo(current - 1); resetTimer(); };
     const next = () => { goTo(current + 1); resetTimer(); };
 
-    // Auto slide
     useEffect(() => {
         timerRef.current = setInterval(() => {
             setCurrent((c) => (c + 1) % total);
@@ -43,7 +42,6 @@ const Card = ({ service }) => {
         return () => clearInterval(timerRef.current);
     }, [total]);
 
-    // Touch handlers
     const handleTouchStart = (e) => {
         touchStartX.current = e.touches[0].clientX;
     };
@@ -56,7 +54,6 @@ const Card = ({ service }) => {
         touchStartX.current = null;
     };
 
-    // Mouse drag handlers
     const handleMouseDown = (e) => {
         mouseStartX.current = e.clientX;
         isDragging.current = false;
@@ -89,7 +86,8 @@ const Card = ({ service }) => {
         <div className="overflow-hidden bg-white relative">
             {/* Image Slider */}
             <div
-                className="relative w-full h-60 md:h-72 overflow-hidden cursor-grab active:cursor-grabbing select-none"
+                className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing select-none md:h-72"
+                style={{ height: "clamp(220px, 55vw, 288px)" }}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 onMouseDown={handleMouseDown}
@@ -113,29 +111,29 @@ const Card = ({ service }) => {
                 </div>
 
                 {/* Progress Bar */}
-               <div className="absolute bottom-0 left-0 w-full flex gap-1.5 px-6 pb-3.5 z-10">
-    {sliderImages.map((_, i) => (
-        <div
-            key={i}
-            onClick={(e) => { e.stopPropagation(); goTo(i); resetTimer(); }}
-            className="flex-1 h-[5px] rounded-full cursor-pointer"
-            style={{ backgroundColor: "rgba(1, 120, 142, 0.25)" }}
-        >
-            <div
-                className="h-full rounded-full"
-                style={{
-                    width: i === current ? "100%" : "0%",
-                    backgroundColor: "#01788E",
-                    transition: "width 0.4s ease",
-                }}
-            />
-        </div>
-    ))}
-</div>
+                <div className="absolute bottom-0 left-0 w-full flex gap-1.5 px-6 pb-3.5 z-10">
+                    {sliderImages.map((_, i) => (
+                        <div
+                            key={i}
+                            onClick={(e) => { e.stopPropagation(); goTo(i); resetTimer(); }}
+                            className="flex-1 h-[5px] rounded-full cursor-pointer"
+                            style={{ backgroundColor: "rgba(1, 120, 142, 0.25)" }}
+                        >
+                            <div
+                                className="h-full rounded-full"
+                                style={{
+                                    width: i === current ? "100%" : "0%",
+                                    backgroundColor: "#01788E",
+                                    transition: "width 0.4s ease",
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Content */}
-            <div className="p-4 md:p-6 w-full bg-white">
+            <div className="p-2 md:p-3 w-full bg-white">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                     <div>
                         <h2 className="text-lg md:text-xl font-bold text-[#1A1A1A] mt-1">
@@ -203,7 +201,6 @@ const Card = ({ service }) => {
 };
 
 export default Card;
-
 
 
 
