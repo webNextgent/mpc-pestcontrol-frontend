@@ -129,7 +129,7 @@ const ContentModal = ({ setShowModal, property }) => {
                                                         onClick={() => handelDetails(item)}
                                                         className="cursor-pointer"
                                                     >
-                                                        <h3 className="text-[14px] sm:text-base font-medium line-clamp-1">
+                                                        <h3 className="text-[14px] sm:text-base font-medium line-clamp-1 text-gray-800">
                                                             {item.title}
                                                         </h3>
                                                         <p className="text-gray-800 text-[12px] sm:text-sm mt-1 line-clamp-2">
