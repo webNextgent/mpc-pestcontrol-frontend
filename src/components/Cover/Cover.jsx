@@ -6,17 +6,17 @@ const Cover = ({ content }) => {
             aria-label={content.title}
         >
             {/* শুধু এই একটা div এর opacity পরিবর্তন করো */}
-            {/* <div
+            <div
                 className="absolute inset-0 pointer-events-none"
                 style={{ background: "rgba(0,0,0,0.4)" }}
-            /> */}
+            />
 
             {/* Title */}
-            {/* <div className="absolute inset-0 flex items-center justify-center px-6">
+            <div className="absolute inset-0 flex items-center justify-center px-6">
                 <h1 className="text-white text-2xl font-semibold text-center leading-tight drop-shadow-lg">
                     {content.title}
                 </h1>
-            </div> */}
+            </div>
         </section>
     );
 };
