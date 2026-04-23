@@ -1,5 +1,4 @@
-
-// /* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 import ServiceDetails from "../../../components/ServiceDetails/ServiceDetails";
 import Summery from "../../../components/Summery/Summery";
 import Cover from "../../../components/Cover/Cover";
@@ -44,7 +43,7 @@ const Services = () => {
         const saved = JSON.parse(localStorage.getItem("item")) || [];
         return saved.reduce((acc, id) => ({ ...acc, [id]: 1 }), {});
     } catch { return {}; }
-});
+    });
 
     // ── Scroll active button into view (scroll-spy driven) ──────────────────
     useEffect(() => {
@@ -123,7 +122,6 @@ const handleChange = (e) => {
     setQuery(value);
 
     if (value.trim() === "") {
-        // query খালি হলে সব দেখাও
         setSuggestions(propertyItem);
         setShowBackdrop(true);
         return;
@@ -135,8 +133,7 @@ const handleChange = (e) => {
     setSuggestions(filtered);
     setShowBackdrop(filtered.length > 0);
     if (filtered.length > 0) setSearchOpen(true);
-};
-
+    };
 
     const closeSuggestions = () => {
         setSuggestions([]);
@@ -187,9 +184,9 @@ const handleChange = (e) => {
                                     ? <RxCross2 className="text-2xl font-bold" />
                                     : <CiSearch 
                                         onClick={() => {
-        setSuggestions(propertyItem);
-        setShowBackdrop(true);
-    }}
+                                                   setSuggestions(propertyItem);
+                                                   setShowBackdrop(true);
+                                                }}
                                     className="text-2xl font-bold" />
                                 }
                             </button>
@@ -403,8 +400,8 @@ const handleChange = (e) => {
                                                         }}
                                                         className={`
                                                             snap-start shrink-0 whitespace-nowrap
-                                                            px-2 md:px-3 py-1 md:py-1.5 rounded-full border
-                                                            flex items-center gap-2 cursor-pointer transition-colors text-sm
+                                                            px-2 md:px-3 py-1 md:py-2 rounded-full border
+                                                            flex items-center gap-2 cursor-pointer transition-colors text-[16px]
                                                             ${activeId === b.id
                                                                 ? "text-red-600 border-red-600 border-2 bg-[#FFF2EE]"
                                                                 : "text-[#01788E] border-[#01788E] bg-white"
